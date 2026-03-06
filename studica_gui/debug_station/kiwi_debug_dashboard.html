@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KIWI Debug Station</title>
+<script src="https://cdn.jsdelivr.net/npm/roslib@1/build/roslib.min.js"></script>
+<style>
+:root {
+  --bg: #0a0e17;
+  --panel: #0f1824;
+  --panel2: #151f2e;
+  --border: #1e2d3d;
+  --accent: #00d4ff;
+  --accent2: #ff6b35;
+  --green: #4dff91;
+  --red: #ff4455;
+  --yellow: #ffcc00;
+  --text: #ddeeff;
+  --muted: #3d5870;
+  --muted2: #5a7a94;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+.header {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header h1 {
+  color: var(--accent);
+  font-size: 24px;
+  letter-spacing: 3px;
+  font-weight: 900;
+}
+
+.header h1 span {
+  color: var(--accent2);
+}
+
+.header .subtitle {
+  color: var(--muted2);
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+}
+
+.status-badge {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+}
+
+.status-badge.connected {
+  color: var(--green);
+  border-color: var(--green);
+  background: rgba(77, 255, 145, 0.07);
+}
+
+.status-badge.disconnected {
+  color: var(--red);
+  border-color: var(--red);
+  background: rgba(255, 68, 85, 0.07);
+}
+
+.status-badge.connecting {
+  color: var(--yellow);
+  border-color: var(--yellow);
+  background: rgba(255, 204, 0, 0.07);
+}
+
+.container {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr 1fr;
+  gap: 20px;
+  padding: 20px;
+  min-height: calc(100vh - 80px);
+}
+
+.section {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section-title {
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 700;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+
+/* ========== LEFT SECTION - UL SENSORS ========== */
+.sensor-visual-container {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 320px;
+}
+
+#sensorVisual {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.sensor-values {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.sensor-box {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 12px;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.sensor-box:hover {
+  border-color: var(--accent);
+}
+
+.sensor-box .label {
+  font-size: 10px;
+  color: var(--muted2);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.sensor-box .value {
+  font-size: 22px;
+  font-weight: 700;
+  font-family: 'Consolas', monospace;
+}
+
+.sensor-box .value.nil {
+  color: var(--red);
+}
+
+.sensor-box .value.active {
+  color: var(--accent);
+}
+
+.topic-status {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px 14px;
+  font-size: 11px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Consolas', monospace;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--red);
+  animation: pulse 2s infinite;
+}
+
+.status-dot.active {
+  background: var(--green);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ========== CENTER SECTION - ODOM & BOT TF ========== */
+.odom-panel {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 20px;
+}
+
+.odom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.odom-value {
+  text-align: center;
+}
+
+.odom-value .label {
+  font-size: 10px;
+  color: var(--muted2);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.odom-value .number {
+  font-size: 28px;
+  color: var(--accent);
+  font-weight: 700;
+  font-family: 'Consolas', monospace;
+}
+
+.bot-tf-container {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 350px;
+}
+
+#botTfVisual {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* ========== RIGHT SECTION - TOPICS & LOG ========== */
+.topics-panel {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 14px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.topics-panel h4 {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.topic-list {
+  font-size: 11px;
+  color: var(--text);
+  line-height: 1.8;
+  margin-bottom: 16px;
+}
+
+.topic-item {
+  padding: 6px 10px;
+  background: var(--panel);
+  border-radius: 3px;
+  margin-bottom: 5px;
+  font-family: 'Consolas', monospace;
+  color: var(--green);
+  border-left: 2px solid var(--green);
+  font-size: 10px;
+}
+
+.log-panel {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 14px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 300px;
+}
+
+.log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.log-count {
+  font-size: 10px;
+  color: var(--muted2);
+  background: var(--panel);
+  padding: 4px 10px;
+  border-radius: 3px;
+}
+
+.log-content {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 10px;
+  font-family: 'Consolas', monospace;
+  font-size: 10px;
+  line-height: 1.8;
+  margin-bottom: 12px;
+  max-height: 400px;
+}
+
+.log-entry {
+  margin-bottom: 10px;
+  padding: 6px;
+  border-left: 2px solid var(--muted);
+  background: rgba(15, 24, 36, 0.5);
+  border-radius: 2px;
+}
+
+.log-entry .timestamp {
+  color: var(--muted2);
+  margin-right: 8px;
+}
+
+.log-entry .type {
+  color: var(--accent);
+  font-weight: 700;
+  margin-right: 8px;
+  text-transform: uppercase;
+}
+
+.log-entry.waypoint .type {
+  color: var(--green);
+}
+
+.log-entry.cancel .type {
+  color: var(--red);
+}
+
+.log-entry .data {
+  color: var(--text);
+}
+
+.export-btn {
+  background: var(--accent2);
+  border: none;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+
+.export-btn:hover {
+  background: #ff8555;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.export-btn:active {
+  transform: translateY(0);
+}
+
+.topics-panel::-webkit-scrollbar,
+.log-content::-webkit-scrollbar {
+  width: 5px;
+}
+
+.topics-panel::-webkit-scrollbar-thumb,
+.log-content::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.topics-panel::-webkit-scrollbar-thumb:hover,
+.log-content::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>🔍 KIWI <span>DEBUG</span> STATION</h1>
+    <div class="subtitle">Real-time sensor monitoring & waypoint logging system</div>
+  </div>
+  <div class="connection-status">
+    <span style="color: var(--muted2);">ROS Bridge:</span>
+    <div class="status-badge connecting" id="rosStatus">CONNECTING</div>
+  </div>
+</div>
+
+<div class="container">
+  
+  <!-- ========== LEFT SECTION: UL SENSOR DATA ========== -->
+  <div class="section">
+    <div class="section-title">🎯 Ultrasonic Sensor Data</div>
+    
+    <div class="sensor-visual-container">
+      <canvas id="sensorVisual" width="300" height="320"></canvas>
+    </div>
+    
+    <div class="sensor-values">
+      <div class="sensor-box">
+        <div class="label">Front Left</div>
+        <div class="value nil" id="sensorFL">NIL</div>
+      </div>
+      <div class="sensor-box">
+        <div class="label">Front Right</div>
+        <div class="value nil" id="sensorFR">NIL</div>
+      </div>
+      <div class="sensor-box">
+        <div class="label">Left</div>
+        <div class="value nil" id="sensorL">NIL</div>
+      </div>
+      <div class="sensor-box">
+        <div class="label">Right</div>
+        <div class="value nil" id="sensorR">NIL</div>
+      </div>
+    </div>
+    
+    <div class="topic-status">
+      <span>Topic: /dis_data</span>
+      <div class="status-dot" id="disDataStatus"></div>
+    </div>
+  </div>
+  
+  <!-- ========== CENTER SECTION: ODOM & BOT TF ========== -->
+  <div class="section">
+    <div class="section-title">📍 Odometry Data</div>
+    
+    <div class="odom-panel">
+      <div class="odom-grid">
+        <div class="odom-value">
+          <div class="label">X Position</div>
+          <div class="number" id="odomX">0.00</div>
+        </div>
+        <div class="odom-value">
+          <div class="label">Y Position</div>
+          <div class="number" id="odomY">0.00</div>
+        </div>
+        <div class="odom-value">
+          <div class="label">YAW Angle</div>
+          <div class="number" id="odomYaw">0°</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="section-title" style="margin-top: 16px;">🧭 Bot Orientation (TF)</div>
+    
+    <div class="bot-tf-container">
+      <canvas id="botTfVisual" width="400" height="350"></canvas>
+    </div>
+  </div>
+  
+  <!-- ========== RIGHT SECTION: TOPICS & LOG ========== -->
+  <div class="section">
+    <div class="section-title">📡 Active ROS Topics</div>
+    
+    <div class="topics-panel">
+      <h4>📤 Publishing</h4>
+      <div class="topic-list" id="publishingTopics">
+        <div style="color: var(--muted2); font-size: 10px;">Discovering topics...</div>
+      </div>
+      
+      <h4>📥 Subscribing</h4>
+      <div class="topic-list" id="subscribingTopics">
+        <div style="color: var(--muted2); font-size: 10px;">Discovering topics...</div>
+      </div>
+    </div>
+    
+    <div class="section-title" style="margin-top: 16px;">📝 Waypoint Log</div>
+    
+    <div class="log-panel">
+      <div class="log-header">
+        <span style="font-size: 11px; color: var(--muted2);">Session Log</span>
+        <div class="log-count" id="logCount">0 entries</div>
+      </div>
+      <div class="log-content" id="logContent">
+        <div style="color: var(--muted2); text-align: center; padding: 20px;">
+          Waiting for waypoint data...
+        </div>
+      </div>
+      
+      <button class="export-btn" onclick="exportLog()">📦 Export JSON</button>
+    </div>
+  </div>
+  
+</div>
+
+<script>
+// ========== ROS CONNECTION ==========
+let ros = new ROSLIB.Ros({
+  url: 'ws://localhost:9090'
+});
+
+const rosStatusEl = document.getElementById('rosStatus');
+
+ros.on('connection', function() {
+  console.log('✅ Connected to ROS bridge');
+  rosStatusEl.textContent = 'CONNECTED';
+  rosStatusEl.className = 'status-badge connected';
+  initTopics();
+  discoverTopics();
+});
+
+ros.on('error', function(error) {
+  console.error('❌ ROS connection error:', error);
+  rosStatusEl.textContent = 'ERROR';
+  rosStatusEl.className = 'status-badge disconnected';
+});
+
+ros.on('close', function() {
+  console.log('⚠️ ROS connection closed');
+  rosStatusEl.textContent = 'DISCONNECTED';
+  rosStatusEl.className = 'status-badge disconnected';
+  setTimeout(() => {
+    console.log('🔄 Attempting to reconnect...');
+    ros.connect('ws://localhost:9090');
+  }, 3000);
+});
+
+// ========== WAYPOINT LOG ==========
+let waypointLog = [];
+
+function addLogEntry(type, data) {
+  const timestamp = new Date().toLocaleTimeString();
+  const entry = { timestamp, type, data };
+  waypointLog.push(entry);
+  
+  const logContent = document.getElementById('logContent');
+  const logCount = document.getElementById('logCount');
+  
+  // Clear placeholder
+  if (waypointLog.length === 1) {
+    logContent.innerHTML = '';
+  }
+  
+  const entryEl = document.createElement('div');
+  entryEl.className = `log-entry ${type}`;
+  
+  let dataStr = '';
+  if (type === 'waypoint') {
+    if (data.waypoints) {
+      dataStr = `${data.waypoints.length} waypoint(s): `;
+      dataStr += data.waypoints.map(wp => `(${wp.x}, ${wp.y}, ${wp.yaw}°)`).join(', ');
+    }
+  } else if (type === 'cancel') {
+    dataStr = 'Mission cancelled';
+  }
+  
+  entryEl.innerHTML = `
+    <span class="timestamp">[${timestamp}]</span>
+    <span class="type">${type}</span>
+    <span class="data">${dataStr}</span>
+  `;
+  
+  logContent.appendChild(entryEl);
+  logContent.scrollTop = logContent.scrollHeight;
+  
+  logCount.textContent = `${waypointLog.length} entries`;
+}
+
+function exportLog() {
+  const exportData = {
+    session_start: waypointLog.length > 0 ? waypointLog[0].timestamp : new Date().toISOString(),
+    total_entries: waypointLog.length,
+    entries: waypointLog
+  };
+  
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `kiwi_waypoint_log_${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  console.log('📦 Exported', waypointLog.length, 'log entries');
+}
+
+// ========== ROS TOPICS ==========
+let odomSub, waypointsSub, cancelSub, disDataSub;
+
+function initTopics() {
+  // Subscribe to odometry
+  odomSub = new ROSLIB.Topic({
+    ros: ros,
+    name: '/odom',
+    messageType: 'nav_msgs/Odometry'
+  });
+  
+  odomSub.subscribe(function(message) {
+    updateOdometry(message);
+  });
+  
+  // Subscribe to waypoints
+  waypointsSub = new ROSLIB.Topic({
+    ros: ros,
+    name: '/kiwi/waypoints',
+    messageType: 'std_msgs/String'
+  });
+  
+  waypointsSub.subscribe(function(message) {
+    try {
+      const data = JSON.parse(message.data);
+      addLogEntry('waypoint', data);
+    } catch (e) {
+      console.error('Failed to parse waypoint data:', e);
+    }
+  });
+  
+  // Subscribe to cancel
+  cancelSub = new ROSLIB.Topic({
+    ros: ros,
+    name: '/kiwi/cancel',
+    messageType: 'std_msgs/String'
+  });
+  
+  cancelSub.subscribe(function(message) {
+    addLogEntry('cancel', { msg: message.data });
+  });
+  
+  // Subscribe to distance data (placeholder)
+  disDataSub = new ROSLIB.Topic({
+    ros: ros,
+    name: '/dis_data',
+    messageType: 'std_msgs/String'
+  });
+  
+  disDataSub.subscribe(function(message) {
+    document.getElementById('disDataStatus').classList.add('active');
+    try {
+      const data = JSON.parse(message.data);
+      updateSensorData(data);
+    } catch (e) {
+      console.error('Failed to parse sensor data:', e);
+    }
+  });
+  
+  console.log('✅ Subscribed to ROS topics');
+}
+
+// ========== ODOMETRY UPDATE ==========
+let currentYaw = 0;
+
+function updateOdometry(message) {
+  const x = message.pose.pose.position.x;
+  const y = message.pose.pose.position.y;
+  
+  // Convert quaternion to yaw
+  const qz = message.pose.pose.orientation.z;
+  const qw = message.pose.pose.orientation.w;
+  const yaw = Math.atan2(2 * (qw * qz), 1 - 2 * (qz * qz));
+  const yawDeg = (yaw * 180 / Math.PI).toFixed(0);
+  
+  currentYaw = yaw;
+  
+  document.getElementById('odomX').textContent = x.toFixed(2);
+  document.getElementById('odomY').textContent = y.toFixed(2);
+  document.getElementById('odomYaw').textContent = yawDeg + '°';
+  
+  drawBotOrientation();
+}
+
+// ========== SENSOR DATA UPDATE ==========
+function updateSensorData(data) {
+  const flEl = document.getElementById('sensorFL');
+  const frEl = document.getElementById('sensorFR');
+  const lEl = document.getElementById('sensorL');
+  const rEl = document.getElementById('sensorR');
+  
+  if (data.fl !== undefined) {
+    flEl.textContent = data.fl + ' cm';
+    flEl.className = 'value active';
+  }
+  if (data.fr !== undefined) {
+    frEl.textContent = data.fr + ' cm';
+    frEl.className = 'value active';
+  }
+  if (data.l !== undefined) {
+    lEl.textContent = data.l + ' cm';
+    lEl.className = 'value active';
+  }
+  if (data.r !== undefined) {
+    rEl.textContent = data.r + ' cm';
+    rEl.className = 'value active';
+  }
+  
+  drawSensorVisual(data);
+}
+
+// ========== DISCOVER TOPICS ==========
+function discoverTopics() {
+  ros.getTopics(function(topics) {
+    // Get publishers
+    const pubList = document.getElementById('publishingTopics');
+    pubList.innerHTML = '';
+    
+    topics.topics.slice(0, 10).forEach(topic => {
+      const item = document.createElement('div');
+      item.className = 'topic-item';
+      item.textContent = topic;
+      pubList.appendChild(item);
+    });
+    
+    // Get subscribers (same for now)
+    const subList = document.getElementById('subscribingTopics');
+    subList.innerHTML = '';
+    
+    ['/kiwi/waypoints', '/kiwi/cancel', '/odom', '/dis_data'].forEach(topic => {
+      const item = document.createElement('div');
+      item.className = 'topic-item';
+      item.textContent = topic;
+      subList.appendChild(item);
+    });
+  });
+}
+
+// ========== CANVAS DRAWING: SENSOR VISUAL ==========
+let sensorCanvas, sensorCtx, botCanvas, botCtx;
+
+function drawSensorVisual(data = {}) {
+  if (!sensorCtx) return;
+  
+  const ctx = sensorCtx;
+  const w = sensorCanvas.width;
+  const h = sensorCanvas.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  const centerX = w / 2;
+  const centerY = h / 2;
+  const robotWidth = 100;
+  const robotHeight = 100;
+  
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  
+  // Draw square/rectangular robot body
+  ctx.fillStyle = 'rgba(15, 24, 36, 0.8)';
+  ctx.fillRect(-robotWidth/2, -robotHeight/2, robotWidth, robotHeight);
+  ctx.strokeStyle = '#00d4ff';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-robotWidth/2, -robotHeight/2, robotWidth, robotHeight);
+  
+  // Front indicator (top edge - thicker line)
+  ctx.beginPath();
+  ctx.moveTo(-robotWidth/2, -robotHeight/2);
+  ctx.lineTo(robotWidth/2, -robotHeight/2);
+  ctx.strokeStyle = '#ff6b35';
+  ctx.lineWidth = 6;
+  ctx.stroke();
+  
+  // Center label
+  ctx.fillStyle = '#5a7a94';
+  ctx.font = 'bold 11px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('KIWI', 0, 5);
+  
+  // Draw sensor positions
+  const sensors = [
+    { label: 'FL', x: -25, y: -robotHeight/2 - 25, value: data.fl },
+    { label: 'FR', x: 25, y: -robotHeight/2 - 25, value: data.fr },
+    { label: 'L', x: -robotWidth/2 - 35, y: 0, value: data.l },
+    { label: 'R', x: robotWidth/2 + 35, y: 0, value: data.r }
+  ];
+  
+  sensors.forEach(sensor => {
+    // Sensor box
+    ctx.fillStyle = 'rgba(30, 45, 61, 0.9)';
+    ctx.strokeStyle = sensor.value ? '#4dff91' : '#5a7a94';
+    ctx.lineWidth = 2;
+    ctx.fillRect(sensor.x - 15, sensor.y - 10, 30, 20);
+    ctx.strokeRect(sensor.x - 15, sensor.y - 10, 30, 20);
+    
+    // Label
+    ctx.fillStyle = '#ddeeff';
+    ctx.font = '9px Consolas';
+    ctx.textAlign = 'center';
+    ctx.fillText(sensor.label, sensor.x, sensor.y + 4);
+    
+    // Beam line (dashed connection to robot)
+    if (sensor.value) {
+      ctx.beginPath();
+      ctx.setLineDash([3, 3]);
+      
+      // Connect sensor to robot edge
+      if (sensor.label === 'FL') {
+        ctx.moveTo(-25, -robotHeight/2);
+        ctx.lineTo(sensor.x, sensor.y + 10);
+      } else if (sensor.label === 'FR') {
+        ctx.moveTo(25, -robotHeight/2);
+        ctx.lineTo(sensor.x, sensor.y + 10);
+      } else if (sensor.label === 'L') {
+        ctx.moveTo(-robotWidth/2, 0);
+        ctx.lineTo(sensor.x + 15, sensor.y);
+      } else if (sensor.label === 'R') {
+        ctx.moveTo(robotWidth/2, 0);
+        ctx.lineTo(sensor.x - 15, sensor.y);
+      }
+      
+      ctx.strokeStyle = 'rgba(77, 255, 145, 0.3)';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  });
+  
+  ctx.restore();
+}
+
+// ========== CANVAS DRAWING: BOT ORIENTATION ==========
+function drawBotOrientation() {
+  if (!botCtx) return;
+  
+  const ctx = botCtx;
+  const w = botCanvas.width;
+  const h = botCanvas.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  const centerX = w / 2;
+  const centerY = h / 2;
+  const radius = 120;
+  
+  // Draw compass circle
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+  ctx.strokeStyle = '#1e2d3d';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  
+  // Compass rings
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, radius - 20, 0, 2 * Math.PI);
+  ctx.strokeStyle = 'rgba(0, 212, 255, 0.15)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  
+  // Cardinal directions
+  const directions = [
+    { label: '0° N', angle: -Math.PI / 2, color: '#00d4ff' },
+    { label: '90° E', angle: 0, color: '#5a7a94' },
+    { label: '180° S', angle: Math.PI / 2, color: '#5a7a94' },
+    { label: '270° W', angle: Math.PI, color: '#5a7a94' }
+  ];
+  
+  directions.forEach(dir => {
+    const x = centerX + (radius + 30) * Math.cos(dir.angle);
+    const y = centerY + (radius + 30) * Math.sin(dir.angle);
+    
+    ctx.fillStyle = dir.color;
+    ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(dir.label, x, y + 5);
+    
+    // Tick marks
+    const tx1 = centerX + radius * Math.cos(dir.angle);
+    const ty1 = centerY + radius * Math.sin(dir.angle);
+    const tx2 = centerX + (radius - 10) * Math.cos(dir.angle);
+    const ty2 = centerY + (radius - 10) * Math.sin(dir.angle);
+    
+    ctx.beginPath();
+    ctx.moveTo(tx1, ty1);
+    ctx.lineTo(tx2, ty2);
+    ctx.strokeStyle = dir.color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  });
+  
+  // Draw hexagon robot
+  const hexSize = 40;
+  
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  ctx.rotate(currentYaw);
+  
+  // Hexagon body
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const angle = (Math.PI / 3) * i;
+    const x = hexSize * Math.cos(angle);
+    const y = hexSize * Math.sin(angle);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(0, 212, 255, 0.3)';
+  ctx.fill();
+  ctx.strokeStyle = '#00d4ff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  
+  // Thick front line
+  ctx.beginPath();
+  ctx.moveTo(hexSize * Math.cos(0), hexSize * Math.sin(0));
+  ctx.lineTo(hexSize * Math.cos(Math.PI / 3), hexSize * Math.sin(Math.PI / 3));
+  ctx.strokeStyle = '#00d4ff';
+  ctx.lineWidth = 6;
+  ctx.stroke();
+  
+  // Front indicator
+  ctx.beginPath();
+  ctx.moveTo(hexSize * Math.cos(0), hexSize * Math.sin(0));
+  ctx.lineTo(hexSize * Math.cos(Math.PI / 3), hexSize * Math.sin(Math.PI / 3));
+  ctx.strokeStyle = '#ff6b35';
+  ctx.lineWidth = 5;
+  ctx.stroke();
+  
+  // Direction arrow
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(hexSize + 30, 0);
+  ctx.strokeStyle = '#ff6b35';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  
+  // Arrowhead
+  ctx.beginPath();
+  ctx.moveTo(hexSize + 30, 0);
+  ctx.lineTo(hexSize + 20, -8);
+  ctx.lineTo(hexSize + 20, 8);
+  ctx.closePath();
+  ctx.fillStyle = '#ff6b35';
+  ctx.fill();
+  
+  ctx.restore();
+}
+
+// ========== INITIAL DRAWS ==========
+window.addEventListener('load', function() {
+  console.log('Page loaded, initializing canvases...');
+  
+  // Initialize canvas elements and contexts
+  sensorCanvas = document.getElementById('sensorVisual');
+  botCanvas = document.getElementById('botTfVisual');
+  
+  if (sensorCanvas) {
+    sensorCtx = sensorCanvas.getContext('2d');
+    console.log('✅ Sensor canvas found:', sensorCanvas.width, 'x', sensorCanvas.height);
+  } else {
+    console.error('❌ Sensor canvas NOT found!');
+  }
+  
+  if (botCanvas) {
+    botCtx = botCanvas.getContext('2d');
+    console.log('✅ Bot canvas found:', botCanvas.width, 'x', botCanvas.height);
+  } else {
+    console.error('❌ Bot canvas NOT found!');
+  }
+  
+  try {
+    drawSensorVisual();
+    console.log('✅ Sensor visual drawn');
+  } catch (e) {
+    console.error('❌ Error drawing sensor visual:', e);
+  }
+  
+  try {
+    drawBotOrientation();
+    console.log('✅ Bot orientation drawn');
+  } catch (e) {
+    console.error('❌ Error drawing bot orientation:', e);
+  }
+  
+  // Redraw bot orientation every 100ms to keep it smooth
+  setInterval(() => {
+    drawBotOrientation();
+  }, 100);
+});
+
+</script>
+
+</body>
+</html>
