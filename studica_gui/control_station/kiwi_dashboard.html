@@ -269,6 +269,14 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .dir-popup .dp-cancel{flex:1;padding:6px;background:transparent;border:1px solid var(--border);color:var(--muted2);font-family:inherit;font-size:11px;cursor:pointer;border-radius:3px;}
 .dir-popup .dp-cancel:hover{border-color:var(--red);color:var(--red);}
 
+/* Move command buttons - transparent by default, colored when active */
+.move-cmd-btn{background:transparent;border:1.5px solid var(--muted2);color:var(--muted2);padding:8px 12px;border-radius:4px;cursor:pointer;font-family:inherit;font-size:11px;transition:all .15s;}
+.move-cmd-btn:hover{border-color:var(--muted);color:var(--muted);}
+.move-cmd-btn.forward-active{background:rgba(0,212,255,.2);border-color:var(--accent);color:var(--accent);font-weight:700;}
+.move-cmd-btn.backward-active{background:rgba(0,212,255,.2);border-color:var(--accent);color:var(--accent);font-weight:700;}
+.move-cmd-btn.cw-active{background:rgba(0,212,255,.2);border-color:var(--accent);color:var(--accent);font-weight:700;}
+.move-cmd-btn.ccw-active{background:rgba(0,212,255,.2);border-color:var(--accent);color:var(--accent);font-weight:700;}
+
 /* anchor point dot */
 .anchor-hint{font-size:9px;color:var(--accent2);margin-top:4px;letter-spacing:.5px;}
 /* Right panel tabs */
@@ -592,10 +600,10 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
     <div class="sec" id="moveSection" style="display:none;">
       <div class="sec-title">Move Command</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
-        <button class="orig-btn" onclick="startMoveCommand('forward')" style="background:rgba(77,255,145,.15);border-color:var(--green);color:var(--green);">⬆ Forward</button>
-        <button class="orig-btn" onclick="startMoveCommand('backward')" style="background:rgba(255,107,53,.15);border-color:var(--accent2);color:var(--accent2);">⬇ Backward</button>
-        <button class="orig-btn" onclick="startRotateCommand('cw')" style="background:rgba(0,212,255,.15);border-color:var(--accent);color:var(--accent);">↻ CW</button>
-        <button class="orig-btn" onclick="startRotateCommand('ccw')" style="background:rgba(0,212,255,.15);border-color:var(--accent);color:var(--accent);">↺ CCW</button>
+        <button class="move-cmd-btn" id="moveBtn_forward" onclick="startMoveCommand('forward')">⬆ Forward</button>
+        <button class="move-cmd-btn" id="moveBtn_backward" onclick="startMoveCommand('backward')">⬇ Backward</button>
+        <button class="move-cmd-btn" id="moveBtn_cw" onclick="startRotateCommand('cw')">↻ CW</button>
+        <button class="move-cmd-btn" id="moveBtn_ccw" onclick="startRotateCommand('ccw')">↺ CCW</button>
       </div>
       <div id="movePanel" style="display:none;background:var(--panel2);border:1px solid var(--border);padding:8px;border-radius:4px;text-align:center;">
         <div style="font-size:10px;color:var(--muted2);margin-bottom:6px;" id="moveDir">Forward</div>
@@ -604,7 +612,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
           <input type="number" id="moveDist" style="flex:1;background:#21262d;border:1px solid var(--border);color:var(--accent);font-size:11px;padding:4px;border-radius:3px;" value="1.0" min="0.1" step="0.1">
         </div>
         <button class="run-btn" id="moveRunBtn" onclick="executeMoveCommand()" style="width:100%;margin-bottom:4px;">▶ RUN MOVE</button>
-        <button class="orig-btn" onclick="cancelMoveCommand()" style="width:100%;background:rgba(255,68,85,.1);border-color:var(--red);color:var(--red);">✕ Cancel</button>
+        <button class="run-btn" onclick="addMoveAsWaypoint()" style="width:100%;background:rgba(0,212,255,.12);border-color:var(--accent);color:var(--accent);margin-bottom:0;">➕ ADD TO WP</button>
       </div>
     </div>
 
@@ -1691,6 +1699,12 @@ function startMoveCommand(dir){
   document.getElementById('moveInputRow').style.display = '';
   document.getElementById('moveRunBtn').textContent = '▶ RUN MOVE';
   document.getElementById('moveDist').focus();
+  
+  // Update button states
+  document.getElementById('moveBtn_forward').classList.toggle('forward-active', dir === 'forward');
+  document.getElementById('moveBtn_backward').classList.toggle('backward-active', dir === 'backward');
+  document.getElementById('moveBtn_cw').classList.remove('cw-active');
+  document.getElementById('moveBtn_ccw').classList.remove('ccw-active');
 }
 
 function startRotateCommand(rotDir){
@@ -1700,12 +1714,102 @@ function startRotateCommand(rotDir){
   document.getElementById('movePanel').style.display = 'block';
   document.getElementById('moveInputRow').style.display = 'none';
   document.getElementById('moveRunBtn').textContent = '▶ RUN ROTATE';
+  
+  // Update button states
+  document.getElementById('moveBtn_forward').classList.remove('forward-active');
+  document.getElementById('moveBtn_backward').classList.remove('backward-active');
+  document.getElementById('moveBtn_cw').classList.toggle('cw-active', rotDir === 'cw');
+  document.getElementById('moveBtn_ccw').classList.toggle('ccw-active', rotDir === 'ccw');
 }
 
 function cancelMoveCommand(){
   moveDir = null;
   rotateMode = false;
   document.getElementById('movePanel').style.display = 'none';
+  document.getElementById('moveInputRow').style.display = '';
+  
+  // Clear all active button states
+  document.getElementById('moveBtn_forward').classList.remove('forward-active');
+  document.getElementById('moveBtn_backward').classList.remove('backward-active');
+  document.getElementById('moveBtn_cw').classList.remove('cw-active');
+  document.getElementById('moveBtn_ccw').classList.remove('ccw-active');
+}
+
+function addMoveAsWaypoint(){
+  if(!moveDir){
+    showToast('❌ Please select Forward, Backward, CW, or CCW first');
+    return;
+  }
+  
+  const distance = parseFloat(document.getElementById('moveDist').value);
+  if(isNaN(distance) || distance <= 0) { showToast('❌ Invalid distance'); return; }
+  
+  // Get reference from previous waypoint or current robot position
+  const refWp = waypoints.length ? waypoints[waypoints.length-1] : null;
+  const baseX = refWp ? refWp.x_m : robot.x;
+  const baseY = refWp ? refWp.y_m : robot.y;
+  const baseYaw = refWp ? (refWp.yaw_rad) : robot.yaw;
+  
+  let finalX, finalY, finalYaw;
+  
+  if(rotateMode){
+    // Rotate 90° CW or CCW - keep x, y same, only change yaw
+    finalX = baseX;
+    finalY = baseY;
+    finalYaw = baseYaw;
+    if(moveDir === 'cw'){
+      finalYaw += Math.PI/2;
+    } else if(moveDir === 'ccw'){
+      finalYaw -= Math.PI/2;
+    }
+  } else {
+    // Move forward/backward - transform relative movement using base yaw
+    const dx = moveDir === 'forward' ? distance : -distance;
+    const dy = 0;  // no lateral movement
+    
+    // Transform relative movement (dx, dy) from robot frame to world frame using yaw
+    // Robot frame: dx is forward (along robot's heading), dy is left strafe
+    // World frame: X is forward at baseYaw=0, Y is left at baseYaw=0
+    const worldDx = dx * Math.cos(baseYaw) - dy * Math.sin(baseYaw);
+    const worldDy = dx * Math.sin(baseYaw) + dy * Math.cos(baseYaw);
+    
+    finalX = baseX + worldDx;
+    finalY = baseY + worldDy;
+    finalYaw = baseYaw;
+  }
+  
+  // Apply global error value to finalX with conditional logic
+  const prevWpX = waypoints.length > 0 ? waypoints[waypoints.length - 1].x_m : null;
+  if ((prevWpX !== null && (prevWpX < finalX || prevWpX < robot.x)) || (prevWpX === null && finalX < robot.x)) {
+    finalX = finalX - globalErrorValue;
+  } else {
+    finalX = finalX + globalErrorValue;
+  }
+  
+  if(isNaN(finalX) || isNaN(finalY)){
+    showToast('❌ Invalid coordinates');
+    return;
+  }
+  
+  // Normalize yaw to [0, 2π)
+  finalYaw = finalYaw % (2 * Math.PI);
+  if(finalYaw < 0) finalYaw += 2 * Math.PI;
+  
+  let yaw_deg = Math.round(finalYaw * 180 / Math.PI);
+  if (yaw_deg === 360) yaw_deg = 0;
+  
+  waypoints.push({
+    id: waypoints.length + 1,
+    x_m: +finalX.toFixed(4),
+    y_m: +finalY.toFixed(4),
+    yaw_deg: yaw_deg,
+    yaw_rad: finalYaw,
+    createdFrom: 'MOVE',
+    type: rotateMode ? (moveDir === 'cw' ? 'CW' : 'CCW') : (moveDir === 'forward' ? 'FWD' : 'BWD')
+  });
+  showToast('✅ Move waypoint added to list');
+  updateWPList();
+  renderMap();
 }
 
 function executeMoveCommand(){
