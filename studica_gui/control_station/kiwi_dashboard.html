@@ -2188,27 +2188,25 @@ mapCanvas.addEventListener('click', e=>{
 document.addEventListener('keydown', e=>{
   // Waypoint orientation mode
   if(wpMapClickActive) {
-    // Only allow 0, 90, 180, 270 degrees
-    const allowedAngles = [0, Math.PI/2, Math.PI, -Math.PI/2];
-    let idx = allowedAngles.findIndex(a => Math.abs(a - wpOrientation) < 0.01);
-    if(idx === -1) idx = 0;
-    if(e.key === 'ArrowLeft') {
-      // Rotate left (CCW): next higher index
-      idx = (idx - 1 + allowedAngles.length) % allowedAngles.length;
-      wpOrientation = allowedAngles[idx];
+    if(e.key === 'ArrowRight') {
+      // Face right on the visual map
+      wpOrientation = 0 + (originYaw * Math.PI / 180);
       updateWaypointDisplay(); renderMap();
     }
-    else if(e.key === 'ArrowRight') {
-      // Rotate right (CW): next lower index
-      idx = (idx + 1) % allowedAngles.length;
-      wpOrientation = allowedAngles[idx];
+    else if(e.key === 'ArrowLeft') {
+      // Face left on the visual map
+      wpOrientation = Math.PI + (originYaw * Math.PI / 180);
       updateWaypointDisplay(); renderMap();
     }
     else if(e.key === 'ArrowUp') {
-      wpOrientation = Math.PI/2; updateWaypointDisplay(); renderMap();
+      // Face up on the visual map
+      wpOrientation = -Math.PI/2 + (originYaw * Math.PI / 180);
+      updateWaypointDisplay(); renderMap();
     }
     else if(e.key === 'ArrowDown') {
-      wpOrientation = -Math.PI/2; updateWaypointDisplay(); renderMap();
+      // Face down on the visual map
+      wpOrientation = Math.PI/2 + (originYaw * Math.PI / 180);
+      updateWaypointDisplay(); renderMap();
     }
     else if(e.key === 'Enter') { confirmAddWP(); }  // Confirm waypoint with Enter
     else if(e.key === 'Escape') { closeAddWP(); }   // Cancel with Escape
@@ -2419,8 +2417,19 @@ function confirmAddWP(){
     createdFrom: wpModeSelection === 'waypoint' ? 'WP' : 'MOVE'
   });
   
-  updateWPList(); renderMap(); closeAddWP();
-  showToast(`✅ WP ${waypoints.length} added (${finalX.toFixed(2)}, ${finalY.toFixed(2)}, ${Math.round(finalYaw*180/Math.PI)}°)`);
+  updateWPList(); renderMap();
+  
+  if(wpModeSelection === 'waypoint') {
+    // Stay in waypoint mode - reset selection for next waypoint
+    wpSelectedX = null;
+    wpSelectedY = null;
+    wpOrientation = robot.yaw;
+    showToast(`✅ WP ${waypoints.length} added — click map again or press ESC to exit`);
+  } else {
+    // Close move mode after adding waypoint
+    closeAddWP();
+    showToast(`✅ WP ${waypoints.length} added (${finalX.toFixed(2)}, ${finalY.toFixed(2)}, ${Math.round(finalYaw*180/Math.PI)}°)`);
+  }
 }
 
 // Event listeners for waypoint dialogs
