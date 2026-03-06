@@ -85,7 +85,9 @@ canvas{display:block;image-rendering:pixelated;max-width:100vw;max-height:90vh;}
 .leg{font-size:10px;color:var(--muted2);}.leg b{margin-right:4px;}
 
 /* ── RIGHT PANEL ── */
-.right{width:260px;background:var(--panel);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;}
+.right{width:260px;background:var(--panel);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;justify-content:flex-start;}
+.right > .sec:nth-child(-n+3){flex-shrink:0;}
+.right-spacer{flex:1;min-height:0;}
 .right::-webkit-scrollbar{width:3px;}.right::-webkit-scrollbar-thumb{background:var(--border);}
 .sec{padding:8px 10px;border-bottom:1px solid var(--border);}
 .sec-title{font-size:0.95em;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:7px;font-weight:700;}
@@ -269,6 +271,10 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 
 /* anchor point dot */
 .anchor-hint{font-size:9px;color:var(--accent2);margin-top:4px;letter-spacing:.5px;}
+/* Right panel tabs */
+.right-tabbar{display:flex;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border);align-items:center}
+.tab-btn{flex:1;padding:6px;border-radius:4px;background:transparent;border:1px solid var(--border);color:var(--muted2);cursor:pointer;font-family:inherit}
+.tab-btn.active{background:var(--panel2);border-color:var(--accent);color:var(--accent);}
 </style>
 </head>
 <body>
@@ -576,7 +582,14 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
       </div>
     </div>
 
-    <div class="sec">
+    <div class="right-spacer"></div>
+
+    <div class="right-tabbar" style="margin:6px 10px 0 10px;border-top:1px solid var(--border);border-bottom:none;">
+      <button class="tab-btn active" id="tabJoyBtn" onclick="showRightTab('joy')">Joystick</button>
+      <button class="tab-btn" id="tabMoveBtn" onclick="showRightTab('move')">Move</button>
+    </div>
+
+    <div class="sec" id="moveSection" style="display:none;">
       <div class="sec-title">Move Command</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
         <button class="orig-btn" onclick="startMoveCommand('forward')" style="background:rgba(77,255,145,.15);border-color:var(--green);color:var(--green);">⬆ Forward</button>
@@ -595,8 +608,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
       </div>
     </div>
 
-    <div class="sec">
-      <div class="sec-title">Joystick → /cmd_vel</div>
+    <div class="sec" id="joySection">
       <div class="joy-area">
         <div class="joy-pad" id="joyPad">
           <div class="joy-ring"></div><div class="joy-cross-h"></div><div class="joy-cross-v"></div>
@@ -2549,6 +2561,25 @@ document.addEventListener('keydown', function(e) {
     e.preventDefault();
   }
 });
+</script>
+<script>
+// Right-panel tab switching
+function showRightTab(tab){
+  const m = document.getElementById('moveSection');
+  const j = document.getElementById('joySection');
+  const bJoy = document.getElementById('tabJoyBtn');
+  const bMove = document.getElementById('tabMoveBtn');
+  if(!m||!j||!bJoy||!bMove) return;
+  if(tab==='move'){
+    m.style.display=''; j.style.display='none';
+    bMove.classList.add('active'); bJoy.classList.remove('active');
+  } else {
+    m.style.display='none'; j.style.display='';
+    bJoy.classList.add('active'); bMove.classList.remove('active');
+  }
+}
+// default to joystick
+document.addEventListener('DOMContentLoaded', ()=> showRightTab('joy'));
 </script>
 </body>
 </html>
