@@ -204,6 +204,38 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 @keyframes pFlash{0%,100%{outline:none}40%{outline:3px solid var(--green);outline-offset:0px;}}
 .p-flash{animation:pFlash .45s ease;}
 
+/* Move Command Modal */
+.move-modal-overlay{position:fixed;right:10px;bottom:10px;background:transparent;z-index:1050;display:none;flex-direction:column;align-items:center;justify-content:center;width:240px;height:auto;}
+.move-modal-overlay.open{display:flex;}
+.move-modal-box{background:var(--panel);border:1px solid var(--accent);border-radius:8px;padding:14px;width:100%;box-shadow:0 4px 32px rgba(0,0,0,.8);position:relative;}
+
+/* Origin Modal */
+.origin-modal-overlay{position:fixed;right:10px;bottom:10px;background:transparent;z-index:1050;display:none;flex-direction:column;align-items:center;justify-content:center;width:240px;height:auto;}
+.origin-modal-overlay.open{display:flex;}
+.origin-modal-box{background:var(--panel);border:1px solid var(--accent2);border-radius:8px;padding:14px;width:100%;box-shadow:0 4px 32px rgba(0,0,0,.8);position:relative;}
+.origin-modal-title{font-size:13px;color:var(--accent2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;font-weight:700;}
+.origin-modal-close{position:absolute;top:8px;right:8px;background:none;border:none;color:var(--red);font-size:20px;cursor:pointer;padding:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;transition:color .15s;}
+.origin-modal-close:hover{color:#ff6655;}
+.origin-modal-content{background:var(--panel2);border:1px solid var(--border);border-radius:4px;padding:9px;text-align:left;margin-bottom:9px;}
+.origin-modal-input{display:flex;align-items:center;gap:4px;margin-bottom:8px;}
+.origin-modal-input label{font-size:9px;color:var(--muted2);width:50px;flex-shrink:0;}
+.origin-modal-input input{flex:1;background:#21262d;border:1px solid var(--border);color:var(--accent);font-family:inherit;font-size:11px;padding:4px 6px;border-radius:3px;min-width:0;}
+.origin-modal-actions{display:flex;gap:5px;}
+.origin-modal-actions button{flex:1;padding:7px;font-family:inherit;font-size:10px;cursor:pointer;border-radius:3px;border:1px solid;}
+
+.move-modal-close{position:absolute;top:8px;right:8px;background:none;border:none;color:var(--red);font-size:20px;cursor:pointer;padding:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;transition:color .15s;}
+.move-modal-close:hover{color:#ff6655;}
+.move-modal-title{font-size:13px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;font-weight:700;}
+.move-modal-buttons{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;margin-bottom:10px;}
+.move-modal-buttons .move-cmd-btn{padding:7px 5px;font-size:10px;}
+.move-modal-content{background:var(--panel2);border:1px solid var(--border);border-radius:4px;padding:9px;text-align:center;margin-bottom:9px;}
+.move-modal-dir{font-size:12px;color:var(--muted2);margin-bottom:6px;}
+.move-modal-input{display:flex;align-items:center;gap:4px;margin-bottom:6px;}
+.move-modal-input label{font-size:10px;color:var(--muted2);white-space:nowrap;flex-shrink:0;}
+.move-modal-input input{flex:1;background:#21262d;border:1px solid var(--border);color:var(--accent);font-family:inherit;font-size:14px;padding:6px 8px;border-radius:3px;min-width:0;}
+.move-modal-actions{display:flex;gap:5px;}
+.move-modal-actions button{flex:1;padding:10px;font-family:inherit;font-size:12px;cursor:pointer;border-radius:3px;border:1px solid;}
+
 /* ═══════════════════════════════════════════════
    MAP EDITOR MODAL
 ═══════════════════════════════════════════════ */
@@ -270,7 +302,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .dir-popup .dp-cancel:hover{border-color:var(--red);color:var(--red);}
 
 /* Move command buttons - transparent by default, colored when active */
-.move-cmd-btn{background:transparent;border:1.5px solid var(--muted2);color:var(--muted2);padding:8px 12px;border-radius:4px;cursor:pointer;font-family:inherit;font-size:11px;transition:all .15s;}
+.move-cmd-btn{background:transparent;border:1.5px solid var(--muted2);color:var(--muted2);padding:8px 12px;border-radius:4px;cursor:pointer;font-family:inherit;font-size:13px;transition:all .15s;}
 .move-cmd-btn:hover{border-color:var(--muted);color:var(--muted);}
 .move-cmd-btn.forward-active{background:rgba(0,212,255,.2);border-color:var(--accent);color:var(--accent);font-weight:700;}
 .move-cmd-btn.backward-active{background:rgba(0,212,255,.2);border-color:var(--accent);color:var(--accent);font-weight:700;}
@@ -599,26 +631,18 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
       <button class="tab-btn" id="tabMoveBtn" onclick="showRightTab('move')">Move</button>
     </div>
 
-    <div class="sec" id="moveSection" style="display:none;">
+    <div class="sec" id="moveSection" style="display:none;height:200px;">
       <div class="sec-title">Move Command</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
         <button class="move-cmd-btn" id="moveBtn_forward" onclick="startMoveCommand('forward')">⬆ Forward</button>
         <button class="move-cmd-btn" id="moveBtn_backward" onclick="startMoveCommand('backward')">⬇ Backward</button>
         <button class="move-cmd-btn" id="moveBtn_cw" onclick="startRotateCommand('cw')">↻ CW</button>
         <button class="move-cmd-btn" id="moveBtn_ccw" onclick="startRotateCommand('ccw')">↺ CCW</button>
-      </div>
-      <div id="movePanel" style="display:none;background:var(--panel2);border:1px solid var(--border);padding:8px;border-radius:4px;text-align:center;">
-        <div style="font-size:10px;color:var(--muted2);margin-bottom:6px;" id="moveDir">Forward</div>
-        <div id="moveInputRow" style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
-          <label style="font-size:9px;color:var(--muted2);">Distance (m):</label>
-          <input type="number" id="moveDist" style="flex:1;background:#21262d;border:1px solid var(--border);color:var(--accent);font-size:11px;padding:4px;border-radius:3px;" value="1.0" min="0.1" step="0.1">
-        </div>
-        <button class="run-btn" id="moveRunBtn" onclick="executeMoveCommand()" style="width:100%;margin-bottom:4px;">▶ RUN MOVE</button>
-        <button class="run-btn" onclick="addMoveAsWaypoint()" style="width:100%;background:rgba(0,212,255,.12);border-color:var(--accent);color:var(--accent);margin-bottom:0;">➕ ADD TO WP</button>
+        <button class="move-cmd-btn" onclick="openOriginPopup()" style="grid-column:1/-1;">📍 GO TO</button>
       </div>
     </div>
 
-    <div class="sec" id="joySection">
+    <div class="sec" id="joySection" style="height:200px;">
       <div class="joy-area">
         <div class="joy-pad" id="joyPad">
           <div class="joy-ring"></div><div class="joy-cross-h"></div><div class="joy-cross-v"></div>
@@ -657,6 +681,25 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
   <div class="dp-btns">
     <button class="dp-ok" onclick="applyDirWall()">✔ Place Wall</button>
     <button class="dp-cancel" onclick="closeDirPopup()">✕ Cancel</button>
+  </div>
+</div>
+
+<!-- MOVE COMMAND MODAL -->
+<div class="move-modal-overlay" id="moveModalOverlay">
+  <div class="move-modal-box">
+    <button class="move-modal-close" onclick="closeMoveModal()">✕</button>
+    <div class="move-modal-title" id="moveModalTitle">Move Command</div>
+    <div class="move-modal-content">
+      <div class="move-modal-dir" id="moveModalDir">Forward</div>
+      <div class="move-modal-input">
+        <label>Distance (m):</label>
+        <input type="number" id="moveModalDist" value="1.0" min="0.1" step="0.1">
+      </div>
+      <div class="move-modal-actions">
+        <button class="run-btn" id="moveModalRunBtn" onclick="sendDirectMove()" style="margin:0;">▶ RUN MOVE</button>
+        <button class="run-btn" onclick="addMoveAsWaypoint()" style="background:rgba(0,212,255,.12);border-color:var(--accent);color:var(--accent);margin:0;">➕ ADD TO WP</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -709,6 +752,32 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
     <div class="addwp-btns">
       <button class="addwp-ok" onclick="confirmAddWP()">✔ Add</button>
       <button class="addwp-cancel" onclick="closeAddWP()">✕ Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ORIGIN POPUP -->
+<div class="origin-modal-overlay" id="originPopup">
+  <div class="origin-modal-box">
+    <button class="origin-modal-close" onclick="closeOriginPopup()">✕</button>
+    <div class="origin-modal-title">📍 GO TO</div>
+    <div class="origin-modal-content">
+      <div class="origin-modal-input">
+        <label>X (m):</label>
+        <input type="number" id="originX" value="0.0" step="0.1">
+      </div>
+      <div class="origin-modal-input">
+        <label>Y (m):</label>
+        <input type="number" id="originY" value="0.0" step="0.1">
+      </div>
+      <div class="origin-modal-input">
+        <label>Yaw (°):</label>
+        <input type="number" id="originYaw" value="0.0" step="1">
+      </div>
+      <div class="origin-modal-actions">
+        <button class="run-btn" onclick="sendOriginAsMove()" style="margin:0;">▶ RUN MOVE</button>
+        <button class="run-btn" onclick="addOriginAsWaypoint()" style="margin:0;background:rgba(147,197,253,.12);border-color:#5a7adb;color:#5a7adb;">+ ADD TO WP</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1693,48 +1762,93 @@ function clearWP(){ if(!waypoints.length)return; if(confirm('Clear all waypoints
 let moveDir = null;  // 'forward', 'backward', 'cw', 'ccw'
 let rotateMode = false;
 
+function openMoveModal(){
+  document.getElementById('moveModalOverlay').classList.add('open');
+}
+
+function closeMoveModal(){
+  document.getElementById('moveModalOverlay').classList.remove('open');
+}
+
 function startMoveCommand(dir){
   moveDir = dir;
   rotateMode = false;
-  document.getElementById('moveDir').textContent = dir.charAt(0).toUpperCase() + dir.slice(1);
-  document.getElementById('movePanel').style.display = 'block';
-  document.getElementById('moveInputRow').style.display = '';
-  document.getElementById('moveRunBtn').textContent = '▶ RUN MOVE';
-  document.getElementById('moveDist').focus();
+  const dirDisplay = dir.charAt(0).toUpperCase() + dir.slice(1);
+  document.getElementById('moveModalDir').textContent = dirDisplay;
+  document.getElementById('moveModalDist').style.display = '';
+  document.getElementById('moveModalRunBtn').textContent = '▶ RUN MOVE';
+  openMoveModal();
   
   // Update button states
-  document.getElementById('moveBtn_forward').classList.toggle('forward-active', dir === 'forward');
-  document.getElementById('moveBtn_backward').classList.toggle('backward-active', dir === 'backward');
-  document.getElementById('moveBtn_cw').classList.remove('cw-active');
-  document.getElementById('moveBtn_ccw').classList.remove('ccw-active');
+  document.getElementById('moveModalBtn_forward').classList.toggle('forward-active', dir === 'forward');
+  document.getElementById('moveModalBtn_backward').classList.toggle('backward-active', dir === 'backward');
+  document.getElementById('moveModalBtn_cw').classList.remove('cw-active');
+  document.getElementById('moveModalBtn_ccw').classList.remove('ccw-active');
 }
 
 function startRotateCommand(rotDir){
   moveDir = rotDir;
   rotateMode = true;
-  document.getElementById('moveDir').textContent = rotDir === 'cw' ? 'Rotate CW (↻)' : 'Rotate CCW (↺)';
-  document.getElementById('movePanel').style.display = 'block';
-  document.getElementById('moveInputRow').style.display = 'none';
-  document.getElementById('moveRunBtn').textContent = '▶ RUN ROTATE';
+  document.getElementById('moveModalDir').textContent = rotDir === 'cw' ? 'Rotate CW (↻)' : 'Rotate CCW (↺)';
+  document.getElementById('moveModalDist').style.display = 'none';
+  document.getElementById('moveModalRunBtn').textContent = '▶ RUN ROTATE';
+  openMoveModal();
   
   // Update button states
-  document.getElementById('moveBtn_forward').classList.remove('forward-active');
-  document.getElementById('moveBtn_backward').classList.remove('backward-active');
-  document.getElementById('moveBtn_cw').classList.toggle('cw-active', rotDir === 'cw');
-  document.getElementById('moveBtn_ccw').classList.toggle('ccw-active', rotDir === 'ccw');
+  document.getElementById('moveModalBtn_forward').classList.remove('forward-active');
+  document.getElementById('moveModalBtn_backward').classList.remove('backward-active');
+  document.getElementById('moveModalBtn_cw').classList.toggle('cw-active', rotDir === 'cw');
+  document.getElementById('moveModalBtn_ccw').classList.toggle('ccw-active', rotDir === 'ccw');
 }
 
 function cancelMoveCommand(){
   moveDir = null;
   rotateMode = false;
-  document.getElementById('movePanel').style.display = 'none';
-  document.getElementById('moveInputRow').style.display = '';
+  closeMoveModal();
+}
+
+function sendDirectMove(){
+  if(!moveDir) return;
   
-  // Clear all active button states
-  document.getElementById('moveBtn_forward').classList.remove('forward-active');
-  document.getElementById('moveBtn_backward').classList.remove('backward-active');
-  document.getElementById('moveBtn_cw').classList.remove('cw-active');
-  document.getElementById('moveBtn_ccw').classList.remove('ccw-active');
+  let waypoint;
+  if(rotateMode){
+    // Rotate 90° CW or CCW
+    let newYaw = robot.yaw;
+    if(moveDir === 'cw'){
+      newYaw += Math.PI/2;
+    } else if(moveDir === 'ccw'){
+      newYaw -= Math.PI/2;
+    }
+    newYaw = Math.atan2(Math.sin(newYaw), Math.cos(newYaw));
+    waypoint = {x: robot.x, y: robot.y, yaw: Math.round(newYaw * 180 / Math.PI)};
+  } else {
+    // Move forward/backward
+    const distance = parseFloat(document.getElementById('moveModalDist').value);
+    if(isNaN(distance) || distance <= 0) { showToast('❌ Invalid distance'); return; }
+    const forward = moveDir === 'forward' ? distance : -distance;
+    const dx = forward * Math.cos(robot.yaw);
+    const dy = forward * Math.sin(robot.yaw);
+    const newX = robot.x + dx;
+    const newY = robot.y + dy;
+    waypoint = {x: newX, y: newY, yaw: Math.round(robot.yaw * 180 / Math.PI)};
+  }
+  
+  // Close modal first
+  closeMoveModal();
+  
+  // Send single move command directly to robot
+  const payload = {
+    type: 'run_waypoints',
+    waypoints: [waypoint]
+  };
+  send(payload);
+  
+  // Update UI to show running status
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('stopBtn').style.display = 'block';
+  updateMissionPanel({state:'running', current:0, total:1, msg:'Executing direct move command…'});
+  
+  cancelMoveCommand();
 }
 
 function addMoveAsWaypoint(){
@@ -1743,7 +1857,7 @@ function addMoveAsWaypoint(){
     return;
   }
   
-  const distance = parseFloat(document.getElementById('moveDist').value);
+  const distance = parseFloat(document.getElementById('moveModalDist').value);
   if(isNaN(distance) || distance <= 0) { showToast('❌ Invalid distance'); return; }
   
   // Get reference from previous waypoint or current robot position
@@ -1814,6 +1928,7 @@ function addMoveAsWaypoint(){
   showToast('✅ Move waypoint added to list');
   updateWPList();
   renderMap();
+  closeMoveModal();
 }
 
 function executeMoveCommand(){
@@ -1855,7 +1970,7 @@ function executeMoveCommand(){
     return;
   }
   // Move forward/backward
-  const distance = parseFloat(document.getElementById('moveDist').value);
+  const distance = parseFloat(document.getElementById('moveModalDist').value);
   if(isNaN(distance) || distance <= 0) { showToast('❌ Invalid distance'); return; }
   const forward = moveDir === 'forward' ? distance : -distance;
   const dx = forward * Math.cos(robot.yaw);
@@ -2077,6 +2192,100 @@ function closeAddWP(){
   selectedMarkerY = null;
   mapCanvas.style.cursor = 'default';
   renderMap();
+}
+
+function openOriginPopup(){
+  // Reset input fields to default values
+  document.getElementById('originX').value = '0.0';
+  document.getElementById('originY').value = '0.0';
+  document.getElementById('originYaw').value = '0.0';
+  document.getElementById('originPopup').classList.add('open');
+}
+
+function closeOriginPopup(){
+  document.getElementById('originPopup').classList.remove('open');
+}
+
+function sendOriginAsMove(){
+  const x = parseFloat(document.getElementById('originX').value);
+  const y = parseFloat(document.getElementById('originY').value);
+  const yaw = parseFloat(document.getElementById('originYaw').value);
+  
+  if(isNaN(x) || isNaN(y) || isNaN(yaw)){
+    showToast('❌ Invalid X, Y, or Yaw values');
+    return;
+  }
+  
+  // Create waypoint with absolute coordinates
+  const waypoint = {
+    x: x,
+    y: y,
+    yaw: Math.round(yaw)
+  };
+  
+  // Close modal
+  closeOriginPopup();
+  
+  // Send single move command to robot
+  const payload = {
+    type: 'run_waypoints',
+    waypoints: [waypoint]
+  };
+  send(payload);
+  
+  // Update UI to show running status
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('stopBtn').style.display = 'block';
+  updateMissionPanel({state:'running', current:0, total:1, msg:'Executing GO TO command…'});
+  
+  showToast('▶ Moving to (' + x.toFixed(2) + ', ' + y.toFixed(2) + ', ' + yaw.toFixed(1) + '°)');
+}
+
+function addOriginAsWaypoint(){
+  const x = parseFloat(document.getElementById('originX').value);
+  const y = parseFloat(document.getElementById('originY').value);
+  const yaw = parseFloat(document.getElementById('originYaw').value);
+  
+  if(isNaN(x) || isNaN(y) || isNaN(yaw)){
+    showToast('❌ Invalid X, Y, or Yaw values');
+    return;
+  }
+  
+  // Add to waypoint list
+  waypoints.push({
+    id: waypoints.length + 1,
+    x_m: +x.toFixed(4),
+    y_m: +y.toFixed(4),
+    yaw_deg: Math.round(yaw),
+    yaw_rad: yaw * Math.PI / 180,
+    createdFrom: 'GOTO',
+    type: 'GOTO'
+  });
+  
+  showToast('✓ GO TO waypoint added');
+  updateWPList();
+  renderMap();
+  closeOriginPopup();
+}
+
+function applyOrigin(){
+  const x = parseFloat(document.getElementById('originX').value);
+  const y = parseFloat(document.getElementById('originY').value);
+  const yaw = parseFloat(document.getElementById('originYaw').value);
+  
+  if(isNaN(x) || isNaN(y) || isNaN(yaw)){
+    showToast('❌ Invalid values');
+    return;
+  }
+  
+  // Set robot position to the origin values
+  robot.x = x;
+  robot.y = y;
+  robot.yaw = yaw * Math.PI / 180;  // Convert degrees to radians
+  
+  showToast('✔ Origin set: (' + x.toFixed(2) + ', ' + y.toFixed(2) + ', ' + yaw.toFixed(1) + '°)');
+  renderMap();
+  closeOriginPopup();
 }
 
 function confirmAddWP(){
