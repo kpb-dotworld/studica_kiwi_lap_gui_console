@@ -297,13 +297,60 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 
 
   <div class="wp-sidebar" style="width:240px;min-width:200px;max-width:280px;background:var(--panel2);display:flex;flex-direction:column;gap:0;box-shadow:1px 0 0 var(--border);">
+    <div class="sec" style="border:none;border-bottom:1px solid var(--border);background:var(--panel);">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:1em;color:var(--accent2);font-weight:700;">Error: <input id="errorInput" type="number" step="0.001" value="0.000" style="width: 60px; text-align: center; background: var(--panel2); border: 1px solid var(--border); color: var(--accent); font-family: inherit; font-size: 1em; padding: 2px 4px; border-radius: 3px;"> m</div>
+        <button class="addwp-btn" style="font-size:12px;padding:4px 10px;" onclick="applyErrorToWaypoints()">Apply</button>
+      </div>
+
+      <script>
+      let globalErrorValue = 0.0;
+      
+      function applyErrorToWaypoints() {
+        const errorInput = document.getElementById('errorInput');
+        globalErrorValue = parseFloat(errorInput.value) || 0;
+
+        if (window.showToast) {
+          window.showToast('Error value set to ' + globalErrorValue.toFixed(3) + ' m. Will apply to new waypoints.');
+        }
+      }
+      </script>
+      <div style="font-size:10px;color:var(--muted2);margin-top:2px;">Avg. odom error (X, 1m fwd/bwd)</div>
+    </div>
+
+    <script>
+    function updateErrorValue() {
+      const errorInput = document.getElementById('errorInput');
+      const errorVal = document.getElementById('errorVal');
+      errorVal.textContent = parseFloat(errorInput.value).toFixed(3);
+    }
+    </script>
     <div class="sec" style="border:none;border-bottom:1px solid var(--border);">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
         <div class="sec-title" style="margin:0">Waypoints [P]</div>
-        <div style="display:flex;gap:5px;align-items:center;">
+        <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
           <button class="addwp-btn" onclick="selectWaypointMode()">WP</button>
           <button class="addwp-btn" onclick="selectMoveMode()">MOVE</button>
-          <button class="clr-btn" onclick="clearWP()">✕ Clear</button>
+          <button class="addwp-btn" onclick="moveToOrigin()" style="background:var(--accent);color:#fff;">Origin</button>
+          <button class="clr-btn" onclick="clearWP()" style="margin-left:auto;">✕ Clear</button>
+        <script>
+        function moveToOrigin() {
+          // Add a waypoint at (globalErrorValue, 0, 0) and run mission
+          waypoints.length = 0;
+          waypoints.push({
+            id: 1,
+            x_m: +(0.0 + globalErrorValue).toFixed(4),
+            y_m: 0.0,
+            yaw_deg: 0,
+            yaw_rad: 0.0,
+            createdFrom: 'ORIGIN',
+            type: 'ORIGIN'
+          });
+          updateWPList();
+          renderMap();
+          runMission();
+        }
+        </script>
         </div>
       </div>
       <div class="wp-list" id="wpList">
@@ -561,6 +608,76 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
         <input type="range" id="spdSlider" min="0.05" max="1.0" step="0.05" value="0.6" oninput="onSpdChange()">
         <span class="spd-val" id="spdVal">0.60</span>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- toast notification -->
+<div class="toast" id="toast"></div>
+
+<!-- direction wall popup -->
+<div class="dir-popup" id="dirPopup" style="display:none">
+  <div class="dp-title" id="dpTitle">Place wall — direction</div>
+  <div class="dp-row">
+    <label id="dpLabel">Length (m):</label>
+    <input type="number" id="dpValue" value="0.5" min="0.01" step="0.1">
+  </div>
+  <div class="dp-row" style="font-size:10px;color:var(--muted2);" id="dpInfo">Distance to wall: —</div>
+  <div class="dp-btns">
+    <button class="dp-ok" onclick="applyDirWall()">✔ Place Wall</button>
+    <button class="dp-cancel" onclick="closeDirPopup()">✕ Cancel</button>
+  </div>
+</div>
+
+<!-- WAYPOINT MODE CHOICE popup -->
+<div class="wpmode-overlay" id="wpmodeOverlay">
+  <div class="wpmode-box">
+    <div class="wpmode-title">➕ Add Waypoint — Choose Mode</div>
+    <div class="wpmode-desc">
+      <b>Waypoint:</b> Click on map to set position, use arrow keys for orientation<br>
+      <b>Move:</b> Enter relative offset from current position
+    </div>
+    <div class="wpmode-btns">
+      <button class="wpmode-btn wpmode-waypoint" onclick="selectWaypointMode()">🎯 WAYPOINT</button>
+      <button class="wpmode-btn wpmode-move" onclick="selectMoveMode()">➤ MOVE</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD WAYPOINT MANUALLY popup -->
+<div class="addwp-overlay" id="addWpOverlay">
+  <div class="addwp-box">
+    <div class="addwp-title" id="addwpTitle">➕ Add Waypoint</div>
+    <div id="waypointModeContent" style="display:none;">
+      <div class="addwp-hint" style="margin-bottom:12px;">
+        🖱️ Click on the map to select position<br>
+        ⬅️➡️⬆️⬇️ Use arrow keys to set orientation
+      </div>
+      <div class="addwp-hint">
+        Selected: X:<b id="awX_display">—</b> Y:<b id="awY_display">—</b> YAW:<b id="awYaw_display">—</b>°
+      </div>
+    </div>
+    <div id="moveModeContent" style="display:none;">
+      <div class="addwp-row">
+        <label>ΔX (m)</label>
+        <input type="number" id="awX" value="0.00" step="0.01" placeholder="0.00">
+      </div>
+      <div class="addwp-row">
+        <label>ΔY (m)</label>
+        <input type="number" id="awY" value="0.00" step="0.01" placeholder="0.00">
+      </div>
+      <div class="addwp-row">
+        <label>ΔYAW °</label>
+        <input type="number" id="awYaw" value="0" step="1" placeholder="0">
+      </div>
+      <div class="addwp-hint">
+        Relative offset from current robot position.<br>
+        Current: X:<b id="awCurX">—</b>  Y:<b id="awCurY">—</b>  YAW:<b id="awCurYaw">—</b>
+      </div>
+    </div>
+    <div class="addwp-btns">
+      <button class="addwp-ok" onclick="confirmAddWP()">✔ Add</button>
+      <button class="addwp-cancel" onclick="closeAddWP()">✕ Cancel</button>
     </div>
   </div>
 </div>
@@ -1442,7 +1559,7 @@ document.addEventListener('keydown',e=>{ if((e.key==='p'||e.key==='P')&&!e.targe
 function markWP(){
   waypoints.push({
     id: waypoints.length + 1,
-    x_m: +robot.x.toFixed(4),
+    x_m: +(robot.x + globalErrorValue).toFixed(4),
     y_m: +robot.y.toFixed(4),
     yaw_deg: Math.round(robot.yaw * 180 / Math.PI),
     yaw_rad: robot.yaw,
@@ -1574,7 +1691,7 @@ function executeMoveCommand(){
     newYaw = Math.atan2(Math.sin(newYaw), Math.cos(newYaw));
     waypoints.push({
       id: waypoints.length + 1,
-      x_m: +robot.x.toFixed(4),
+      x_m: +(robot.x + globalErrorValue).toFixed(4),
       y_m: +robot.y.toFixed(4),
       yaw_deg: Math.round(newYaw * 180 / Math.PI),
       yaw_rad: newYaw,
@@ -1594,7 +1711,7 @@ function executeMoveCommand(){
   const forward = moveDir === 'forward' ? distance : -distance;
   const dx = forward * Math.cos(robot.yaw);
   const dy = forward * Math.sin(robot.yaw);
-  const newX = robot.x + dx;
+  const newX = robot.x + dx + globalErrorValue;
   const newY = robot.y + dy;
   waypoints.push({
     id: waypoints.length + 1,
@@ -1650,7 +1767,7 @@ function selectMoveMode(){
   const lastWp = waypoints.length ? waypoints[waypoints.length-1] : null;
   const refX = lastWp ? lastWp.x_m : robot.x;
   const refY = lastWp ? lastWp.y_m : robot.y;
-  const refYaw = lastWp ? lastWp.yaw_deg : Math.round(robot.yaw * 180 / Math.PI);
+  const refYaw = lastWp ? (refWp.yaw_rad) : robot.yaw;
   
   document.getElementById('awCurX').textContent = refX.toFixed(3);
   document.getElementById('awCurY').textContent = refY.toFixed(3);
@@ -1837,6 +1954,9 @@ function confirmAddWP(){
     finalY = baseY + worldDy;
     finalYaw = baseYaw + (dyaw * Math.PI / 180);
   }
+  
+  // Apply global error value to finalX
+  finalX = finalX + globalErrorValue;
   
   if(isNaN(finalX) || isNaN(finalY)){
     showToast('❌ Invalid coordinates');
