@@ -2244,6 +2244,32 @@ document.addEventListener('keydown', e=>{
     e.preventDefault();
     return;
   }
+  // WASD movement - move in absolute odometry space (W always moves in odometry +Y, regardless of where origin faces)
+  const moveStep = 0.2; // meters per key press
+  if(e.key === 'w' || e.key === 'W') { 
+    robot.y += moveStep; // Always move in positive Y odometry direction
+    renderMap();
+    e.preventDefault();
+    return;
+  }
+  else if(e.key === 'a' || e.key === 'A') { 
+    robot.x -= moveStep; // Always move in negative X odometry direction
+    renderMap();
+    e.preventDefault();
+    return;
+  }
+  else if(e.key === 's' || e.key === 'S') { 
+    robot.y -= moveStep; // Always move in negative Y odometry direction
+    renderMap();
+    e.preventDefault();
+    return;
+  }
+  else if(e.key === 'd' || e.key === 'D') { 
+    robot.x += moveStep; // Always move in positive X odometry direction
+    renderMap();
+    e.preventDefault();
+    return;
+  }
 });
 
 function closeAddWP(){
