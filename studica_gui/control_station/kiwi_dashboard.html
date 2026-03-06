@@ -2130,6 +2130,7 @@ let hoverPixelX = null, hoverPixelY = null;  // cursor hover position in pixel c
 // Waypoint editor state
 let wpEditMode = false;
 let wpEditIndex = -1;  // index of waypoint being edited
+let wpDragging = false;  // is user dragging the waypoint?
 
 // Mouse move for waypoint preview
 mapCanvas.addEventListener('mousemove', e=>{
@@ -2150,6 +2151,12 @@ mapCanvas.addEventListener('mousemove', e=>{
     if(pos){
       wpHoverX = pos.x;
       wpHoverY = pos.y;
+      // If dragging in edit mode, update the selected position
+      if(wpEditMode && wpDragging){
+        wpSelectedX = pos.x;
+        wpSelectedY = pos.y;
+        updateWaypointDisplay();
+      }
       renderMap();
     }
   }
@@ -2168,7 +2175,38 @@ mapCanvas.addEventListener('mouseleave', e=>{
   wpHoverY = null;
   hoverPixelX = null;
   hoverPixelY = null;
+  wpDragging = false;  // Stop dragging if mouse leaves canvas
   renderMap();
+});
+
+// Mouse down to start dragging in edit mode
+mapCanvas.addEventListener('mousedown', e=>{
+  if(!wpMapClickActive || !wpEditMode) return;
+  if(wpSelectedX === null) return;
+  
+  const r = mapCanvas.getBoundingClientRect();
+  const cssScaleX = mapCanvas.width / r.width;
+  const cssScaleY = mapCanvas.height / r.height;
+  const clickX = (e.clientX - r.left) * cssScaleX;
+  const clickY = (e.clientY - r.top) * cssScaleY;
+  
+  // Check if clicking on the robot model
+  const wp = odomToCanvas(wpSelectedX, wpSelectedY);
+  if(wp){
+    const dist = Math.sqrt(Math.pow(clickX - wp.x, 2) + Math.pow(clickY - wp.y, 2));
+    if(dist < 50){  // Within robot model area
+      wpDragging = true;
+      mapCanvas.style.cursor = 'grabbing';
+    }
+  }
+});
+
+// Mouse up to stop dragging
+mapCanvas.addEventListener('mouseup', e=>{
+  if(wpDragging){
+    wpDragging = false;
+    mapCanvas.style.cursor = wpMapClickActive ? 'crosshair' : 'default';
+  }
 });
 
 mapCanvas.addEventListener('click', e=>{
@@ -2228,7 +2266,7 @@ mapCanvas.addEventListener('dblclick', e=>{
       wpOrientation = wp.yaw_rad;
       mapCanvas.style.cursor = 'crosshair';
       renderMap();
-      showToast(`📝 Editing WP ${i+1} — click to move, arrows to rotate, ENTER to save, ESC to cancel`);
+      showToast(`📝 Editing WP ${i+1} — drag to move, arrows to rotate, ENTER to save, ESC to cancel`);
       return;
     }
   }
@@ -2362,6 +2400,7 @@ function closeAddWP(){
   selectedMarkerY = null;
   wpEditMode = false;
   wpEditIndex = -1;
+  wpDragging = false;
   mapCanvas.style.cursor = 'default';
   renderMap();
 }
@@ -2398,6 +2437,7 @@ function confirmWPEdit(){
   // Exit edit mode
   wpEditMode = false;
   wpEditIndex = -1;
+  wpDragging = false;
   wpMapClickActive = false;
   wpSelectedX = null;
   wpSelectedY = null;
@@ -2412,6 +2452,7 @@ function cancelWPEdit(){
   showToast('Edit cancelled');
   wpEditMode = false;
   wpEditIndex = -1;
+  wpDragging = false;
   wpMapClickActive = false;
   wpSelectedX = null;
   wpSelectedY = null;
