@@ -141,8 +141,8 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .wp-empty b{color:var(--accent2);}
 .exp-btn{width:100%;padding:8px;background:rgba(0,212,255,.08);border:1px solid var(--accent);color:var(--accent);font-family:inherit;font-size:11px;cursor:pointer;border-radius:3px;letter-spacing:1.5px;text-transform:uppercase;transition:all .15s;}
 .exp-btn:hover{background:rgba(0,212,255,.18);}
-.run-btn{width:100%;padding:10px;background:rgba(0,212,255,.12);border:1px solid var(--accent);color:var(--accent);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;border-radius:3px;letter-spacing:2px;text-transform:uppercase;transition:all .15s;margin-bottom:6px;}
-.run-btn:hover{background:rgba(0,212,255,.25);}
+.run-btn{width:100%;padding:10px;background:rgba(77,255,145,.12);border:1px solid var(--green);color:var(--green);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;border-radius:3px;letter-spacing:2px;text-transform:uppercase;transition:all .15s;margin-bottom:6px;}
+.run-btn:hover{background:rgba(77,255,145,.25);}
 .run-btn:disabled{opacity:.35;cursor:not-allowed;}
 .stop-btn{width:100%;padding:7px;background:rgba(255,68,85,.1);border:1px solid var(--red);color:var(--red);font-family:inherit;font-size:11px;cursor:pointer;border-radius:3px;letter-spacing:1.5px;text-transform:uppercase;transition:all .15s;margin-bottom:6px;display:none;}
 .stop-btn:hover{background:rgba(255,68,85,.22);}
@@ -338,7 +338,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
   &nbsp;|&nbsp;map:<span id="dbgMap">none</span>
 </div>
 
-<!-- ═══ MAIN ══════════════════════════════════════════════════════════════════ -->
+<!-- ═══ MAIN LAYOUT ── -->
 <div class="main">
 
 
@@ -422,25 +422,18 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
     <div style="flex:1;"></div>
     <div class="sec" style="border:none;border-bottom:1px solid var(--border);">
       <button class="run-btn" id="runBtn" onclick="runMission()">▶ RUN WAYPOINTS</button>
-        <button class="run-btn" id="visualizeBtn" style="margin-top:7px;" onclick="startWaypointSimulation()">👁️ Visualize</button>
-        <button class="stop-btn" id="stopSimBtn" style="margin-top:7px;display:none;" onclick="stopWaypointSimulation()">⏹ Stop Simulation</button>
+        <button class="run-btn" id="visualizeBtn" style="margin-top:7px;background:rgba(0,212,255,.12);border-color:var(--accent);color:var(--accent);" onclick="toggleWaypointSimulation()">👁️ Visualize</button>
       <!-- Waypoint Simulation Logic -->
       <script>
       let simActive = false, simPaused = false, simIdx = 0, simRobot = null, simTimer = null;
+      let simEditMode = false;  // Edit mode while paused
 
       function toggleWaypointSimulation() {
         if (!simActive && !simPaused) {
           startWaypointSimulation();
-        } else if (simActive && !simPaused) {
-          // Pause immediately
-          simPaused = true;
-          if (simTimer) clearTimeout(simTimer);
-          document.getElementById('visualizeBtn').textContent = '▶ Resume';
-        } else if (simPaused) {
-          // Resume
-          simPaused = false;
-          document.getElementById('visualizeBtn').textContent = '⏸ Pause';
-          stepWaypointSimulation();
+        } else if (simActive) {
+          // Cancel and exit visualization
+          stopWaypointSimulation();
         }
       }
       function startWaypointSimulation() {
@@ -457,8 +450,10 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
           y: window._simWaypoints[0].y_m,
           yaw: window._simWaypoints[0].yaw_rad
         };
-        document.getElementById('visualizeBtn').textContent = '⏸ Pause';
-        document.getElementById('stopSimBtn').style.display = '';
+        document.getElementById('visualizeBtn').textContent = '✕ Cancel';
+        document.getElementById('visualizeBtn').style.background = 'rgba(255,68,85,.15)';
+        document.getElementById('visualizeBtn').style.borderColor = 'var(--red)';
+        document.getElementById('visualizeBtn').style.color = 'var(--red)';
         stepWaypointSimulation();
       }
       function stepWaypointSimulation() {
@@ -469,8 +464,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
             simActive = false;
             simPaused = false;
             simRobot = null;
-            document.getElementById('visualizeBtn').textContent = '👁️ Visualize';
-            document.getElementById('stopSimBtn').style.display = 'none';
+            resetVisualizeBtn();
             window._simWaypoints = null;
             renderMap();
           }
@@ -485,8 +479,8 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
         // Normalize angle to [-PI, PI]
         dyaw = Math.atan2(Math.sin(dyaw), Math.cos(dyaw));
         // Set speeds (m/s and rad/s)
-        const speed = 0.5; // m/s
-        const rotSpeed = Math.PI/2; // rad/s (90 deg/s)
+        const speed = 0.8; // m/s
+        const rotSpeed = 2*Math.PI/3; // rad/s (120 deg/s)
         const moveTime = dist / speed;
         const rotTime = Math.abs(dyaw) / rotSpeed;
         const fps = 30;
@@ -542,17 +536,28 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
       function stopWaypointSimulation() {
         simActive = false;
         simPaused = false;
+        simEditMode = false;
         simRobot = null;
         if (simTimer) clearTimeout(simTimer);
-        document.getElementById('visualizeBtn').textContent = '👁️ Visualize';
-        document.getElementById('stopSimBtn').style.display = 'none';
+        resetVisualizeBtn();
+        mapCanvas.style.cursor = 'default';
         window._simWaypoints = null;
         renderMap();
+      }
+      function resetVisualizeBtn() {
+        const btn = document.getElementById('visualizeBtn');
+        btn.textContent = '👁️ Visualize';
+        btn.style.background = '';
+        btn.style.borderColor = '';
+        btn.style.color = '';
       }
       </script>
     </div>
     <div class="sec" style="border:none;">
-      <button class="exp-btn" onclick="exportWP()">⬇ Export Waypoints JSON</button>
+      <div style="display:flex;gap:6px;">
+        <button class="exp-btn" onclick="openSaveWPPopup()" style="flex:1;">💾 Save WP</button>
+        <button class="exp-btn" onclick="openImportWPPopup()" style="flex:1;">📂 Import WP</button>
+      </div>
     </div>
   </div>
 
@@ -693,8 +698,8 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
         <input type="number" id="moveModalDist" value="1.0" min="0.1" step="0.1">
       </div>
       <div class="move-modal-actions">
-        <button class="run-btn" id="moveModalRunBtn" onclick="sendDirectMove()" style="margin:0;">▶ RUN MOVE</button>
-        <button class="run-btn" onclick="addMoveAsWaypoint()" style="background:rgba(0,212,255,.12);border-color:var(--accent);color:var(--accent);margin:0;">➕ ADD TO WP</button>
+        <button class="run-btn" id="moveModalRunBtn" onclick="sendDirectMove()" style="margin:0; background-color: #4dff91; color: #000;">▶ RUN MOVE</button>
+        <button onclick="addMoveAsWaypoint()" style="padding:10px;background:rgba(0,212,255,.12);border:1px solid var(--accent);color:var(--accent);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;border-radius:3px;letter-spacing:2px;text-transform:uppercase;margin:0;">➕ ADD TO WP</button>
       </div>
     </div>
   </div>
@@ -715,7 +720,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
   </div>
 </div>
 
-<!-- ADD WAYPOINT MANUALLY popup -->
+<!-- ADD WP popup -->
 <div class="addwp-overlay" id="addWpOverlay">
   <div class="addwp-box">
     <div class="addwp-title" id="addwpTitle">➕ Add Waypoint</div>
@@ -772,8 +777,8 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
         <input type="number" id="originYaw" value="0.0" step="1">
       </div>
       <div class="origin-modal-actions">
-        <button class="run-btn" onclick="sendOriginAsMove()" style="margin:0;">▶ RUN MOVE</button>
-        <button class="run-btn" onclick="addOriginAsWaypoint()" style="margin:0;background:rgba(0,212,255,.12);border-color:var(--accent);color:var(--accent);">+ ADD TO WP</button>
+        <button class="run-btn" onclick="sendOriginAsMove()" style="margin:0; background-color: #4dff91; color: #000;">▶ RUN MOVE</button>
+        <button onclick="addOriginAsWaypoint()" style="margin:0;padding:10px;background:rgba(0,212,255,.12);border:1px solid var(--accent);color:var(--accent);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;border-radius:3px;letter-spacing:2px;text-transform:uppercase;">+ ADD TO WP</button>
       </div>
     </div>
   </div>
@@ -883,7 +888,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
   </div>
 </div>
 
-<!-- ADD WAYPOINT MANUALLY popup -->
+<!-- ADD WP popup -->
 <div class="addwp-overlay" id="addWpOverlay">
   <div class="addwp-box">
     <div class="addwp-title" id="addwpTitle">➕ Add Waypoint</div>
@@ -917,6 +922,62 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
     <div class="addwp-btns">
       <button class="addwp-ok" onclick="confirmAddWP()">✔ Add</button>
       <button class="addwp-cancel" onclick="closeAddWP()">✕ Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ORIGIN POPUP -->
+<div class="origin-modal-overlay" id="originPopup">
+  <div class="origin-modal-box">
+    <button class="origin-modal-close" onclick="closeOriginPopup()">✕</button>
+    <div class="origin-modal-title">📍 GO TO</div>
+    <div class="origin-modal-content">
+      <div class="origin-modal-input">
+        <label>X (m):</label>
+        <input type="number" id="originX" value="0.0" step="0.1">
+      </div>
+      <div class="origin-modal-input">
+        <label>Y (m):</label>
+        <input type="number" id="originY" value="0.0" step="0.1">
+      </div>
+      <div class="origin-modal-input">
+        <label>Yaw (°):</label>
+        <input type="number" id="originYaw" value="0.0" step="1">
+      </div>
+      <div class="origin-modal-actions">
+        <button class="run-btn" onclick="sendOriginAsMove()" style="margin:0; background-color: #4dff91; color: #000;">▶ RUN MOVE</button>
+        <button onclick="addOriginAsWaypoint()" style="margin:0;padding:10px;background:rgba(0,212,255,.12);border:1px solid var(--accent);color:var(--accent);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;border-radius:3px;letter-spacing:2px;text-transform:uppercase;">+ ADD TO WP</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SAVE WAYPOINTS POPUP -->
+<div class="addwp-overlay" id="saveWPOverlay">
+  <div class="addwp-box" style="border-color:var(--green);">
+    <div class="addwp-title" style="color:var(--green);">💾 Save Waypoints</div>
+    <div class="addwp-row">
+      <label style="width:70px;">Filename:</label>
+      <input type="text" id="saveWPName" placeholder="my_waypoints" style="flex:1;background:#21262d;border:1px solid var(--border);color:var(--accent);font-family:inherit;font-size:13px;padding:5px 8px;border-radius:3px;">
+    </div>
+    <div class="addwp-hint">Waypoints will be saved to ~/kiwi_waypoints/</div>
+    <div class="addwp-btns">
+      <button class="addwp-ok" onclick="saveWaypoints()">💾 Save</button>
+      <button class="addwp-cancel" onclick="closeSaveWPPopup()">✕ Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT WAYPOINTS POPUP -->
+<div class="addwp-overlay" id="importWPOverlay">
+  <div class="addwp-box" style="border-color:var(--accent);width:300px;">
+    <div class="addwp-title" style="color:var(--accent);">📂 Import Waypoints</div>
+    <div class="addwp-hint">Select a saved waypoint file to load:</div>
+    <div id="wpFileList" style="max-height:200px;overflow-y:auto;margin-bottom:10px;">
+      <div style="text-align:center;color:var(--muted);padding:20px;">Loading...</div>
+    </div>
+    <div class="addwp-btns">
+      <button class="addwp-cancel" onclick="closeImportWPPopup()">✕ Close</button>
     </div>
   </div>
 </div>
@@ -1608,6 +1669,24 @@ function connect(){
       if(d.type==='map_saved'){ showToast('💾 Map saved: '+d.name); send({type:'list_maps'}); }
       if(d.type==='map_save_error') showToast('❌ Save error: '+d.msg);
       if(d.type==='mission_status') updateMissionPanel(d);
+      // Waypoints handlers
+      if(d.type==='waypoints_list') {
+        console.log('[WP] Received waypoints_list:', d.waypoints);
+        renderWPFileList(d.waypoints);
+      }
+      if(d.type==='waypoints_data') {
+        console.log('[WP] Received waypoints_data:', d.name);
+        applyLoadedWaypoints(d.data);
+      }
+      if(d.type==='waypoints_saved') {
+        showToast('💾 Waypoints saved: ' + d.name);
+      }
+      if(d.type==='waypoints_save_error') {
+        showToast('❌ Waypoints save error: ' + d.msg);
+      }
+      if(d.type==='waypoints_load_error') {
+        showToast('❌ Waypoints load error: ' + d.error);
+      }
     }catch(err){
       console.error('[WS] Error processing message:', err, 'Raw:', e.data);
       showToast('❌ Message error: ' + err.message);
@@ -2229,8 +2308,10 @@ mapCanvas.addEventListener('click', e=>{
 
 // Double-click on waypoint to edit it
 mapCanvas.addEventListener('dblclick', e=>{
-  console.log('[DBLCLICK] Event fired, wpMapClickActive:', wpMapClickActive, 'settingOrig:', settingOrig);
-  if(wpMapClickActive || settingOrig) return;  // Don't allow edit while in placement mode
+  console.log('[DBLCLICK] Event fired, wpMapClickActive:', wpMapClickActive, 'settingOrig:', settingOrig, 'simEditMode:', simEditMode);
+  // Allow edit in simEditMode (paused visualization) or normal mode
+  if(settingOrig) return;  // Don't allow edit while setting origin
+  if(wpMapClickActive && !simEditMode) return;  // Don't allow if already in waypoint mode (unless sim edit)
   
   const r = mapCanvas.getBoundingClientRect();
   // Use the same coordinate system as single click but without dividing by SC
@@ -2434,14 +2515,14 @@ function confirmWPEdit(){
   const wpNum = wpEditIndex + 1;
   showToast(`✅ WP ${wpNum} updated (${wpSelectedX.toFixed(2)}, ${wpSelectedY.toFixed(2)}, ${yaw_deg}°)`);
   
-  // Exit edit mode
+  // Exit edit mode but stay in simEditMode if visualizing
   wpEditMode = false;
   wpEditIndex = -1;
   wpDragging = false;
-  wpMapClickActive = false;
+  wpMapClickActive = simEditMode;  // Stay active if in sim edit mode
   wpSelectedX = null;
   wpSelectedY = null;
-  mapCanvas.style.cursor = 'default';
+  mapCanvas.style.cursor = simEditMode ? 'crosshair' : 'default';
   
   updateWPList();
   renderMap();
@@ -2453,10 +2534,10 @@ function cancelWPEdit(){
   wpEditMode = false;
   wpEditIndex = -1;
   wpDragging = false;
-  wpMapClickActive = false;
+  wpMapClickActive = simEditMode;  // Stay active if in sim edit mode
   wpSelectedX = null;
   wpSelectedY = null;
-  mapCanvas.style.cursor = 'default';
+  mapCanvas.style.cursor = simEditMode ? 'crosshair' : 'default';
   renderMap();
 }
 
@@ -2661,6 +2742,236 @@ function showPopup(txt){
   div.innerHTML=`<div class="popup"><div class="popup-title">📄 kiwi_waypoints.json</div><textarea readonly>${txt}</textarea><div class="popup-row"><button class="popup-btn" onclick="navigator.clipboard.writeText(document.querySelector('#__pop textarea').value).then(()=>{this.textContent='✓ Copied!'})">📋 Copy</button><button class="popup-btn close" onclick="document.getElementById('__pop').remove()">✕ Close</button></div></div>`;
   document.body.appendChild(div);
 }
+
+// ── SAVE/IMPORT WAYPOINTS ─────────────────────────────────────────────────────
+function openSaveWPPopup() {
+  if(!waypoints.length){ alert('No waypoints to save.'); return; }
+  document.getElementById('saveWPName').value = '';
+  document.getElementById('saveWPOverlay').classList.add('open');
+  document.getElementById('saveWPName').focus();
+}
+
+function closeSaveWPPopup() {
+  document.getElementById('saveWPOverlay').classList.remove('open');
+}
+
+function saveWaypoints() {
+  const name = document.getElementById('saveWPName').value.trim();
+  if(!name){ alert('Please enter a filename.'); return; }
+  if(!waypoints.length){ alert('No waypoints to save.'); return; }
+  if(!originPx){ alert('Origin not set. Please set origin first.'); return; }
+  
+  // Convert waypoints to map pixel coordinates
+  const waypointsInMapPixels = waypoints.map(w => {
+    const mapPx = odomToMapPixel(w.x_m, w.y_m);
+    const mapYaw = odomYawToMapYaw(w.yaw_deg);
+    return {
+      id: w.id,
+      x_px: mapPx ? +mapPx.x.toFixed(4) : 0,
+      y_px: mapPx ? +mapPx.y.toFixed(4) : 0,
+      yaw_deg: mapYaw,
+      createdFrom: w.createdFrom,
+      type: w.type
+    };
+  });
+  
+  const msg = {
+    type: 'save_waypoints',
+    name: name,
+    map_info: { width: mapW, height: mapH, resolution_cm: mapRes },
+    waypoints: waypointsInMapPixels
+  };
+  
+  if(ws && ws.readyState === 1) {
+    ws.send(JSON.stringify(msg));
+    showToast('Saving waypoints...');
+    closeSaveWPPopup();
+  } else {
+    alert('WebSocket not connected.');
+  }
+}
+
+// Convert odom coordinates to map pixel coordinates (bottom-left = 0,0, y increases upward)
+function odomToMapPixel(ox_m, oy_m) {
+  if(!originPx) return null;
+  const ang = originYaw * Math.PI / 180;
+  const fwdX = Math.cos(ang);
+  const fwdY = -Math.sin(ang);
+  const lftX = Math.sin(ang);
+  const lftY = Math.cos(ang);
+  const cells = 100 / mapRes; // cells per metre
+  const dx = (ox_m * fwdX + oy_m * lftX) * cells;
+  const dy = (ox_m * fwdY + oy_m * lftY) * cells;
+  
+  // Canvas cell coordinates (top-left = 0,0)
+  const canvasCellX = originPx.x + dx;
+  const canvasCellY = originPx.y + dy;
+  
+  // Convert to map pixel coordinates (bottom-left = 0,0, Y increases upward)
+  const mapPixelX = canvasCellX;
+  const mapPixelY = (mapH - 1) - canvasCellY;
+  
+  return { x: mapPixelX, y: mapPixelY };
+}
+
+// Convert odom yaw to map yaw (0=up, 90=right, CW from up)
+// Takes into account the origin's orientation to get absolute map direction
+function odomYawToMapYaw(odom_yaw_deg) {
+  // odom yaw is relative to origin's forward direction
+  // Get absolute screen direction: screen 0=right, 90=up, CCW positive
+  const absoluteScreenYaw = (originYaw + odom_yaw_deg + 360) % 360;
+  // Map convention: 0=up, 90=right, CW from up
+  // Conversion: screen 0(right)->map 90, screen 90(up)->map 0
+  let mapYaw = (90 - absoluteScreenYaw + 360) % 360;
+  return Math.round(mapYaw);
+}
+
+// Convert map pixel coordinates to odom coordinates
+function mapPixelToOdom(mapPixelX, mapPixelY) {
+  if(!originPx) return null;
+  // Convert from map pixel (bottom-left = 0,0) to canvas cell (top-left = 0,0)
+  const canvasCellX = mapPixelX;
+  const canvasCellY = (mapH - 1) - mapPixelY;
+  
+  const ang = originYaw * Math.PI / 180;
+  const fwdX = Math.cos(ang);
+  const fwdY = -Math.sin(ang);
+  const lftX = Math.sin(ang);
+  const lftY = Math.cos(ang);
+  const cells = 100 / mapRes;
+  
+  const dxCell = canvasCellX - originPx.x;
+  const dyCell = canvasCellY - originPx.y;
+  
+  // Project onto forward and left axes
+  const fwdDist = dxCell * fwdX + dyCell * fwdY;
+  const lftDist = dxCell * lftX + dyCell * lftY;
+  
+  const ox_m = fwdDist / cells;
+  const oy_m = lftDist / cells;
+  
+  return { x: ox_m, y: oy_m };
+}
+
+// Convert map yaw to odom yaw
+// Takes into account the origin's orientation to get odom-relative direction
+function mapYawToOdomYaw(map_yaw_deg) {
+  // map: 0=up, 90=right (CW from up)
+  // screen: 0=right, 90=up (CCW from right)
+  // Reverse: map 0(up)->screen 90, map 90(right)->screen 0
+  const absoluteScreenYaw = (90 - map_yaw_deg + 360) % 360;
+  // Convert to odom yaw (relative to current origin's forward direction)
+  let odomYaw = (absoluteScreenYaw - originYaw + 360) % 360;
+  return Math.round(odomYaw);
+}
+
+function openImportWPPopup() {
+  // Check if origin is set first
+  if(!originPx) {
+    alert('Origin not set. Please set origin first, then import waypoints.');
+    return;
+  }
+  
+  document.getElementById('importWPOverlay').classList.add('open');
+  document.getElementById('wpFileList').innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;">Loading...</div>';
+  // Request waypoints list from server
+  if(ws && ws.readyState === 1) {
+    ws.send(JSON.stringify({ type: 'list_waypoints' }));
+  } else {
+    document.getElementById('wpFileList').innerHTML = '<div style="text-align:center;color:var(--red);padding:20px;">WebSocket not connected</div>';
+  }
+}
+
+function closeImportWPPopup() {
+  document.getElementById('importWPOverlay').classList.remove('open');
+}
+
+function renderWPFileList(files) {
+  const el = document.getElementById('wpFileList');
+  if(!files || !files.length) {
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;">No saved waypoints found.<br>Save some waypoints first.</div>';
+    return;
+  }
+  el.innerHTML = files.map(f => `
+    <div class="map-item" onclick="loadWaypoints('${f.name}')" style="cursor:pointer;">
+      <div class="mn">${f.name}</div>
+      <div class="ms">${f.count} WP</div>
+    </div>
+  `).join('');
+}
+
+function loadWaypoints(name) {
+  if(ws && ws.readyState === 1) {
+    ws.send(JSON.stringify({ type: 'load_waypoints', name: name }));
+    showToast('Loading waypoints...');
+  }
+}
+
+function applyLoadedWaypoints(data) {
+  if(!data || !data.waypoints) {
+    alert('Invalid waypoint data.');
+    return;
+  }
+  
+  // Must have origin set to convert coordinates
+  if(!originPx) {
+    alert('Origin not set. Please set origin first, then import waypoints.');
+    closeImportWPPopup();
+    return;
+  }
+  
+  // Clear current waypoints
+  waypoints.length = 0;
+  
+  // Load waypoints - convert from map pixel coordinates to odom coordinates
+  data.waypoints.forEach(w => {
+    // Check if this is new format (x_px, y_px) or old format (x_m, y_m)
+    let ox_m, oy_m, odom_yaw_deg;
+    
+    if(w.x_px !== undefined && w.y_px !== undefined) {
+      // New format: map pixel coordinates
+      const odomCoords = mapPixelToOdom(w.x_px, w.y_px);
+      ox_m = odomCoords ? +odomCoords.x.toFixed(4) : 0;
+      oy_m = odomCoords ? +odomCoords.y.toFixed(4) : 0;
+      odom_yaw_deg = mapYawToOdomYaw(w.yaw_deg);
+    } else {
+      // Old format: odom coordinates (for backward compatibility)
+      ox_m = w.x_m;
+      oy_m = w.y_m;
+      odom_yaw_deg = w.yaw_deg;
+    }
+    
+    waypoints.push({
+      id: w.id,
+      x_m: ox_m,
+      y_m: oy_m,
+      yaw_deg: odom_yaw_deg,
+      yaw_rad: odom_yaw_deg * Math.PI / 180,
+      createdFrom: w.createdFrom || 'WP',
+      type: w.type || 'WP'
+    });
+  });
+  
+  updateWPList();
+  renderMap();
+  closeImportWPPopup();
+  showToast(`Loaded ${waypoints.length} waypoints from "${data.name}"`);
+}
+
+// Event listeners for save/import popups
+document.getElementById('saveWPOverlay').addEventListener('click', e => {
+  if(e.target === document.getElementById('saveWPOverlay')) closeSaveWPPopup();
+});
+document.getElementById('saveWPOverlay').addEventListener('keydown', e => {
+  if(e.key === 'Enter') saveWaypoints();
+  if(e.key === 'Escape') closeSaveWPPopup();
+});
+document.getElementById('importWPOverlay').addEventListener('click', e => {
+  if(e.target === document.getElementById('importWPOverlay')) closeImportWPPopup();
+});
+document.getElementById('importWPOverlay').addEventListener('keydown', e => {
+  if(e.key === 'Escape') closeImportWPPopup();
+});
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
 function showToast(msg, dur=2800){

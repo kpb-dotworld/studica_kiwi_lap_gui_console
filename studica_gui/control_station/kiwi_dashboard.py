@@ -40,7 +40,9 @@ from typing import Set
 
 HTTP_PORT   = 8080
 MAPS_DIR    = os.path.expanduser("~/kiwi_maps")
+WAYPOINTS_DIR = os.path.expanduser("~/kiwi_waypoints")
 os.makedirs(MAPS_DIR, exist_ok=True)
+os.makedirs(WAYPOINTS_DIR, exist_ok=True)
 
 state_lock   = threading.Lock()
 shared_state = {"cmd_vel": {"linear_x": 0.0, "linear_y": 0.0, "angular_z": 0.0},
@@ -136,6 +138,12 @@ def _handle_ws(client: _WSClient):
                         _send_map_list(client)
                     elif t == "load_map":
                         _send_map_data(client, msg.get("name",""))
+                    elif t == "save_waypoints":
+                        _save_waypoints_from_ws(msg)
+                    elif t == "list_waypoints":
+                        _send_waypoints_list(client)
+                    elif t == "load_waypoints":
+                        _send_waypoints_data(client, msg.get("name",""))
                     elif t == "run_waypoints":
                         _run_waypoints_from_ws(msg)
                     elif t == "cancel_mission":
@@ -273,6 +281,86 @@ def _send_map_data(client: _WSClient, name: str):
         traceback.print_exc()
         client.send(json.dumps({
             "type": "map_load_error",
+            "name": name,
+            "error": str(e)
+        }))
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# WAYPOINTS I/O helpers
+# ═══════════════════════════════════════════════════════════════════════════════
+def _save_waypoints_from_ws(msg):
+    """Receive waypoints data from browser and save to JSON file."""
+    try:
+        name = msg.get("name", "waypoints")
+        waypoints = msg.get("waypoints", [])
+        map_info = msg.get("map_info", {})
+        
+        filepath = os.path.join(WAYPOINTS_DIR, f"{name}.json")
+        
+        data = {
+            "name": name,
+            "map_info": map_info,
+            "waypoints": waypoints
+        }
+        
+        with open(filepath, "w") as f:
+            json.dump(data, f, indent=2)
+        
+        print(f"[WP] Saved → {filepath}")
+        _broadcast({"type": "waypoints_saved", "name": name})
+        _broadcast_waypoints_list()
+    except Exception as e:
+        print(f"[WP] Save error: {e}")
+        _broadcast({"type": "waypoints_save_error", "msg": str(e)})
+
+def _list_waypoints():
+    """List all saved waypoint JSON files."""
+    wps = []
+    for fp in sorted(glob.glob(os.path.join(WAYPOINTS_DIR, "*.json"))):
+        name = os.path.splitext(os.path.basename(fp))[0]
+        try:
+            with open(fp, "r") as f:
+                data = json.load(f)
+                count = len(data.get("waypoints", []))
+                wps.append({"name": name, "count": count})
+        except:
+            wps.append({"name": name, "count": 0})
+    return wps
+
+def _broadcast_waypoints_list():
+    _broadcast({"type": "waypoints_list", "waypoints": _list_waypoints()})
+
+def _send_waypoints_list(client: _WSClient):
+    client.send(json.dumps({"type": "waypoints_list", "waypoints": _list_waypoints()}))
+
+def _send_waypoints_data(client: _WSClient, name: str):
+    """Read waypoint JSON and send to browser."""
+    print(f"[WP] load_waypoints request: name='{name}'")
+    filepath = os.path.join(WAYPOINTS_DIR, f"{name}.json")
+    try:
+        if not os.path.exists(filepath):
+            print(f"[WP] Error: File not found: {filepath}")
+            client.send(json.dumps({
+                "type": "waypoints_load_error",
+                "name": name,
+                "error": f"File not found: {filepath}"
+            }))
+            return
+        
+        with open(filepath, "r") as f:
+            data = json.load(f)
+        
+        print(f"[WP] Loaded waypoints: {name}, count={len(data.get('waypoints', []))}")
+        client.send(json.dumps({
+            "type": "waypoints_data",
+            "name": name,
+            "data": data
+        }))
+    except Exception as e:
+        print(f"[WP] Load error: {e}")
+        client.send(json.dumps({
+            "type": "waypoints_load_error",
             "name": name,
             "error": str(e)
         }))
