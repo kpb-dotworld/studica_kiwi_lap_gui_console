@@ -1198,10 +1198,11 @@ function renderMap(){
   // waypoints: draw robot model at each waypoint with reduced opacity and sequence number
   waypoints.forEach((wp,i)=>{
     const p=wpToCanvas(wp); if(!p) return;
-    // Draw robot model with reduced opacity
+    // Draw robot model with reduced opacity (0° = UP convention)
+    const originYaw_rad = (originYaw - 90) * Math.PI / 180;
     mctx.save();
     mctx.globalAlpha = 0.5;
-    drawTriangle(mctx, p.x, p.y, -wp.yaw_rad, SC*.7, '#ff6b35');
+    drawTriangle(mctx, p.x, p.y, -wp.yaw_rad + originYaw_rad, SC*.7, '#ff6b35');
     mctx.globalAlpha = 1.0;
     mctx.restore();
     // Draw sequence number in a circle
@@ -1267,7 +1268,8 @@ function drawSmallTriangle(ctx, cx, cy, yaw, sz, col) {
   } else {
     const rp=robotToCanvas();
     if(rp){
-      const originYaw_rad = originYaw * Math.PI / 180;
+      // New convention: originYaw 0° = UP, subtract 90° to convert to canvas angle
+      const originYaw_rad = (originYaw - 90) * Math.PI / 180;
       drawTriangle(mctx,rp.x,rp.y, -robot.yaw + originYaw_rad, SC*.85,'#00d4ff');
       mctx.save(); mctx.font='8px Courier New'; mctx.fillStyle='rgba(0,212,255,.8)';
       mctx.textAlign='left'; mctx.textBaseline='alphabetic';
@@ -1281,7 +1283,8 @@ function drawSmallTriangle(ctx, cx, cy, yaw, sz, col) {
     const displayY = wpSelectedY !== null ? wpSelectedY : wpHoverY;
     const wp = odomToCanvas(displayX, displayY);
     if(wp){
-      const originYaw_rad = originYaw * Math.PI / 180;
+      // New convention: originYaw 0° = UP
+      const originYaw_rad = (originYaw - 90) * Math.PI / 180;
       const color = wpSelectedX !== null ? '#4dff91' : '#00d4ff';  // green if selected, cyan while hovering
       // Invert yaw for waypoint orientation to match robot model
       drawTriangle(mctx, wp.x, wp.y, -wpOrientation + originYaw_rad, SC*.85, color);
@@ -1299,8 +1302,8 @@ function drawSmallTriangle(ctx, cx, cy, yaw, sz, col) {
     const px = dispPixelX * SC + SC/2;
     const py = dispPixelY * SC + SC/2;
     const color = selectedMarkerPixelX !== null ? '#ff9900' : '#ff6b35';  // brighter if selected
-    // Use originYaw for orientation during origin placement
-    drawTriangle(mctx, px, py, originYaw * Math.PI / 180, SC*.85, color);
+    // Use originYaw for orientation during origin placement (0° = UP)
+    drawTriangle(mctx, px, py, (originYaw - 90) * Math.PI / 180, SC*.85, color);
     mctx.save(); mctx.font='10px Courier New'; mctx.fillStyle=color;
     mctx.textAlign='left'; mctx.textBaseline='alphabetic';
     mctx.fillText(`origin @ px(${Math.round(dispPixelX)},${Math.round(dispPixelY)})`, px+SC, py-4); 
@@ -1322,16 +1325,12 @@ function drawSmallTriangle(ctx, cx, cy, yaw, sz, col) {
 }
 
 // ── COORDINATE TRANSFORM ──────────────────────────────────────────────────────
-// originYaw tells us which direction the robot's odom-X axis points on the canvas.
-//   0°   → robot forward = RIGHT  on canvas (+canvasX)
-//   90°  → robot forward = UP     on canvas (-canvasY)   ← default old behaviour
-//   180° → robot forward = LEFT   on canvas (-canvasX)
-//   270° → robot forward = DOWN   on canvas (+canvasY)
-//
-// General formula:
-//   world_forward_angle_on_canvas = -(originYaw * PI/180)   [canvas Y is inverted]
-//   canvasFwd = unit vector in that canvas direction
-//   canvasLeft = canvasFwd rotated +90° (robot's left = odom +Y)
+// NEW CONVENTION: Map Yaw 0° = UP (top of screen)
+// originYaw tells us which direction the robot's odom-X axis (forward) points on the canvas:
+//   0°   → robot forward = UP    on canvas (-canvasY)
+//   90°  → robot forward = RIGHT on canvas (+canvasX)
+//   180° → robot forward = DOWN  on canvas (+canvasY)
+//   270° → robot forward = LEFT  on canvas (-canvasX)
 //
 // robot position in canvas pixels relative to origin:
 //   Δcanvas = robot.x * canvasFwd  +  robot.y * canvasLeft
@@ -1339,7 +1338,8 @@ function drawSmallTriangle(ctx, cx, cy, yaw, sz, col) {
 
 function odomToCanvas(ox_m, oy_m){
   if(!originPx) return null;
-  const ang   = -(originYaw * Math.PI / 180); // canvas angle for robot forward
+  // New convention: originYaw 0° = UP, 90° = RIGHT, 180° = DOWN, 270° = LEFT
+  const ang   = -((originYaw - 90) * Math.PI / 180); // canvas angle for robot forward (0° = up)
   // forward unit vector on canvas
   const fwdX  =  Math.cos(ang);
   const fwdY  =  Math.sin(ang);
@@ -1364,7 +1364,8 @@ function wpToCanvas(wp){
 }
 function canvasToOdom(canvasCellX, canvasCellY){
   if(!originPx) return null;
-  const ang   = -(originYaw * Math.PI / 180);
+  // New convention: originYaw 0° = UP, 90° = RIGHT
+  const ang   = -((originYaw - 90) * Math.PI / 180);
   const fwdX  =  Math.cos(ang);
   const fwdY  =  Math.sin(ang);
   const lftX  = -fwdY;
@@ -1382,8 +1383,8 @@ function canvasToOdom(canvasCellX, canvasCellY){
   return { x: ox_m, y: oy_m };
 }
 function drawTriangle(ctx,cx,cy,yaw,sz,col){
-  // Black side is the front: rotate so black side points in yaw direction, but rotated 90deg right
-  ctx.save(); ctx.translate(cx,cy); ctx.rotate(-yaw + Math.PI/2);
+  // Black side is the front: with 0°=UP convention
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(-yaw - Math.PI/2);
   
   // Convert robot dimensions from cm to pixels
   // Robot radius = 27cm, Detection circle = 30cm
@@ -1667,20 +1668,32 @@ window.addEventListener('keyup', e=>{
 
 // Update marker position with WASD during origin/waypoint modes
 setInterval(()=>{
-  // Adjust marker position if one is selected in waypoint mode
+  // Adjust marker position if one is selected in waypoint mode (use pixel coords like origin mode)
   if(wpMapClickActive && wpSelectedX !== null){
-    let moveX = 0, moveY = 0;
+    // Get current position in canvas/pixel coords
+    const wp = odomToCanvas(wpSelectedX, wpSelectedY);
+    if(!wp) return;
     
-    if(wasdKeys.w) moveX += wasdSpeed * 0.1;  // scaled for 100ms interval
-    if(wasdKeys.s) moveX -= wasdSpeed * 0.1;
-    if(wasdKeys.a) moveY += wasdSpeed * 0.1;
-    if(wasdKeys.d) moveY -= wasdSpeed * 0.1;
+    let cellX = wp.x / SC - 0.5;  // convert to cell coords
+    let cellY = wp.y / SC - 0.5;
     
-    if(moveX !== 0 || moveY !== 0){
-      wpSelectedX += moveX;
-      wpSelectedY += moveY;
-      updateWaypointDisplay();
-      renderMap();
+    const pixelSpeed = wasdSpeed * 10 / SC;  // same as origin mode
+    
+    // Move in screen directions (same as origin WASD)
+    if(wasdKeys.w) cellY -= pixelSpeed;  // UP on screen
+    if(wasdKeys.s) cellY += pixelSpeed;  // DOWN on screen
+    if(wasdKeys.a) cellX -= pixelSpeed;  // LEFT on screen
+    if(wasdKeys.d) cellX += pixelSpeed;  // RIGHT on screen
+    
+    if(wasdKeys.w || wasdKeys.s || wasdKeys.a || wasdKeys.d){
+      // Convert back to odom
+      const newOdom = canvasToOdom(cellX, cellY);
+      if(newOdom){
+        wpSelectedX = newOdom.x;
+        wpSelectedY = newOdom.y;
+        updateWaypointDisplay();
+        renderMap();
+      }
     }
   }
   
@@ -2233,24 +2246,27 @@ mapCanvas.addEventListener('dblclick', e=>{
 document.addEventListener('keydown', e=>{
   // Waypoint orientation mode
   if(wpMapClickActive) {
+    // New convention: originYaw 0° = UP on screen
+    // Convert screen direction to robot odom yaw (relative to origin)
+    const originRad = (originYaw - 90) * Math.PI / 180;  // offset for 0°=UP
     if(e.key === 'ArrowRight') {
       // Face right on the visual map
-      wpOrientation = 0 + (originYaw * Math.PI / 180);
+      wpOrientation = Math.PI + originRad;
       updateWaypointDisplay(); renderMap();
     }
     else if(e.key === 'ArrowLeft') {
       // Face left on the visual map
-      wpOrientation = Math.PI + (originYaw * Math.PI / 180);
+      wpOrientation = 0 + originRad;
       updateWaypointDisplay(); renderMap();
     }
     else if(e.key === 'ArrowUp') {
       // Face up on the visual map
-      wpOrientation = -Math.PI/2 + (originYaw * Math.PI / 180);
+      wpOrientation = Math.PI/2 + originRad;
       updateWaypointDisplay(); renderMap();
     }
     else if(e.key === 'ArrowDown') {
       // Face down on the visual map
-      wpOrientation = Math.PI/2 + (originYaw * Math.PI / 180);
+      wpOrientation = -Math.PI/2 + originRad;
       updateWaypointDisplay(); renderMap();
     }
     else if(e.key === 'Enter') {
@@ -2279,10 +2295,10 @@ document.addEventListener('keydown', e=>{
       originYaw = (originYaw + step) % 360;
       setOriginYaw(originYaw);
     } else if(e.key === 'ArrowUp') {
-      originYaw = 90;
+      originYaw = 0;  // UP = 0° (new convention)
       setOriginYaw(originYaw);
     } else if(e.key === 'ArrowDown') {
-      originYaw = 270;
+      originYaw = 180;  // DOWN = 180°
       setOriginYaw(originYaw);
     } else if(e.key === 'Enter') {
       confirmOrigin();
@@ -2301,28 +2317,36 @@ document.addEventListener('keydown', e=>{
     e.preventDefault();
     return;
   }
-  // WASD movement - move in absolute odometry space (W always moves in odometry +Y, regardless of where origin faces)
-  const moveStep = 0.2; // meters per key press
-  if(e.key === 'w' || e.key === 'W') { 
-    robot.y += moveStep; // Always move in positive Y odometry direction
-    renderMap();
-    e.preventDefault();
-    return;
-  }
-  else if(e.key === 'a' || e.key === 'A') { 
-    robot.x -= moveStep; // Always move in negative X odometry direction
-    renderMap();
-    e.preventDefault();
-    return;
-  }
-  else if(e.key === 's' || e.key === 'S') { 
-    robot.y -= moveStep; // Always move in negative Y odometry direction
-    renderMap();
-    e.preventDefault();
-    return;
-  }
-  else if(e.key === 'd' || e.key === 'D') { 
-    robot.x += moveStep; // Always move in positive X odometry direction
+  // WASD movement - move robot in screen directions (map yaw: 0°=UP, independent of originYaw)
+  // W=up, S=down, A=left, D=right on screen regardless of how origin is rotated
+  if(['w','a','s','d','W','A','S','D'].includes(e.key)) {
+    const moveStep = 0.2; // meters per key press
+    // Convert originYaw to radians (0° = UP on screen = odom +X forward)
+    const theta = originYaw * Math.PI / 180;
+    const cosT = Math.cos(theta);
+    const sinT = Math.sin(theta);
+    
+    if(e.key === 'w' || e.key === 'W') {
+      // UP on screen → move in odom direction based on originYaw
+      robot.x += moveStep * cosT;
+      robot.y += moveStep * sinT;
+    }
+    else if(e.key === 's' || e.key === 'S') {
+      // DOWN on screen → opposite of UP
+      robot.x -= moveStep * cosT;
+      robot.y -= moveStep * sinT;
+    }
+    else if(e.key === 'd' || e.key === 'D') {
+      // RIGHT on screen → UP rotated 90° clockwise
+      robot.x += moveStep * sinT;
+      robot.y -= moveStep * cosT;
+    }
+    else if(e.key === 'a' || e.key === 'A') {
+      // LEFT on screen → opposite of RIGHT
+      robot.x -= moveStep * sinT;
+      robot.y += moveStep * cosT;
+    }
+    
     renderMap();
     e.preventDefault();
     return;
