@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>KIWI — Dual Joystick</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+:root{--bg:#080b0f;--surface:#0d1117;--card:#111820;--border:#1c2a38;--border2:#243344;--cyan:#00d4ff;--orange:#ff7b35;--green:#2dff8a;--yellow:#ffd600;--red:#ff2d55;--muted:#3a5268;--text:#b8ccd8;--dim:#2a3e50;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;overflow:hidden;touch-action:none;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.05) 2px,rgba(0,0,0,0.05) 4px);}
+header{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--border);background:rgba(13,17,23,0.97);z-index:10;}
+.logo{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:1rem;letter-spacing:.2em;color:var(--cyan);text-shadow:0 0 14px rgba(0,212,255,.4);}
+.logo em{color:var(--orange);font-style:normal;}
+.hdr-c{display:flex;gap:6px;align-items:center;}
+.ci{background:var(--surface);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.72rem;padding:4px 10px;border-radius:4px;outline:none;width:190px;}
+.ci:focus{border-color:var(--cyan);}
+.hbtn{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;padding:4px 14px;border-radius:4px;cursor:pointer;border:1px solid var(--cyan);color:var(--cyan);background:transparent;transition:all .15s;}
+.hbtn:hover,.hbtn.on{background:var(--cyan);color:var(--bg);}
+.hbtn.disc{border-color:var(--muted);color:var(--muted);}
+.hbtn.disc:hover{background:var(--red);border-color:var(--red);color:#fff;}
+.hdr-r{display:flex;gap:12px;align-items:center;}
+.ind{display:flex;align-items:center;gap:5px;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--red);box-shadow:0 0 6px var(--red);transition:all .3s;}
+.dot.live{background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.ind-lbl{font-size:.68rem;color:var(--muted);letter-spacing:.1em;font-family:'JetBrains Mono',monospace;}
+.estop{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.7rem;letter-spacing:.12em;padding:4px 14px;border-radius:4px;cursor:pointer;border:1px solid var(--red);color:var(--red);background:rgba(255,45,85,.08);transition:all .15s;}
+.estop:hover,.estop.active{background:var(--red);color:#fff;box-shadow:0 0 18px rgba(255,45,85,.5);}
+.layout{display:grid;grid-template-columns:250px 1fr 250px;grid-template-rows:1fr auto;height:calc(100vh - 48px);}
+.side{display:flex;flex-direction:column;gap:10px;padding:12px;border-right:1px solid var(--border);overflow-y:auto;}
+.side.r{border-right:none;border-left:1px solid var(--border);}
+.pc{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.pch{display:flex;align-items:center;gap:7px;padding:6px 12px;border-bottom:1px solid var(--border);background:rgba(0,0,0,.25);}
+.pct{font-size:.6rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--cyan);font-family:'JetBrains Mono',monospace;}
+.pcb{padding:10px 12px;}
+.sdiag{position:relative;width:160px;height:160px;margin:0 auto 10px;}
+.rchass{position:absolute;width:80px;height:80px;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(145deg,#151f2e,#0a1018);border:1px solid var(--border2);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px;}
+.rclbl{font-family:'JetBrains Mono',monospace;font-size:.5rem;color:var(--muted);letter-spacing:.1em;}
+.wdot{position:absolute;width:10px;height:18px;background:var(--border2);border-radius:3px;}
+.wfl{top:8px;right:22px;transform:rotate(30deg);}
+.wfr{top:8px;left:22px;transform:rotate(-30deg);}
+.wbk{bottom:8px;left:50%;transform:translateX(-50%) rotate(90deg);}
+.sind{position:absolute;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.sind.sleft{left:0;top:50%;transform:translateY(-50%);align-items:flex-start;flex-direction:row;gap:4px;}
+.sind.sright{right:0;top:50%;transform:translateY(-50%);align-items:flex-end;flex-direction:row-reverse;gap:4px;}
+.sind.sfl{top:5px;right:10px;align-items:center;}
+.sind.sfr{top:5px;left:10px;align-items:center;}
+.sbadge{width:22px;height:10px;background:var(--surface);border:1px solid var(--orange);border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:.38rem;color:var(--orange);font-family:'JetBrains Mono',monospace;}
+.sv{font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:700;color:var(--green);white-space:nowrap;line-height:1;}
+.sv.w{color:var(--yellow);}.sv.d{color:var(--red);}
+.sbrw{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
+.sbn{font-size:.6rem;color:var(--muted);width:28px;font-family:'JetBrains Mono',monospace;}
+.sbt{flex:1;height:6px;background:rgba(0,0,0,.4);border-radius:3px;overflow:hidden;}
+.sbf{height:100%;width:0%;background:var(--green);border-radius:3px;transition:width .15s,background .2s;}
+.sbf.w{background:var(--yellow);}.sbf.d{background:var(--red);}
+.sbnum{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--text);width:44px;text-align:right;}
+.ovals{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;}
+.oval{background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:5px;padding:6px 8px;}
+.ovl{font-size:.52rem;color:var(--muted);letter-spacing:.1em;margin-bottom:2px;font-family:'JetBrains Mono',monospace;}
+.ovn{font-family:'JetBrains Mono',monospace;font-size:.8rem;font-weight:700;color:var(--cyan);}
+.oval.hi .ovn{color:var(--orange);}
+.mwrap{position:relative;}
+canvas#tmap{display:block;width:100%;background:#060a0e;border:1px solid var(--border);border-radius:5px;}
+.mreset{position:absolute;top:5px;right:5px;font-family:'JetBrains Mono',monospace;font-size:.55rem;padding:2px 7px;border-radius:3px;background:rgba(8,11,15,.85);border:1px solid var(--border2);color:var(--muted);cursor:pointer;}
+.mreset:hover{color:var(--cyan);border-color:var(--cyan);}
+.center{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:16px;background:var(--surface);position:relative;}
+.ksch{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:130px;height:130px;opacity:.06;pointer-events:none;}
+.ksch circle,.ksch line{stroke:var(--cyan);}
+.jrow{display:flex;gap:40px;align-items:flex-start;z-index:1;}
+.jw{display:flex;flex-direction:column;align-items:center;gap:10px;}
+.jlbl{font-family:'JetBrains Mono',monospace;font-size:.62rem;text-transform:uppercase;letter-spacing:.18em;}
+.jlbl.m{color:var(--cyan);text-shadow:0 0 12px rgba(0,212,255,.4);}
+.jlbl.r{color:var(--orange);text-shadow:0 0 12px rgba(255,123,53,.4);}
+.jo{width:200px;height:200px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#121e2c 0%,#080c12 70%);border:2px solid var(--border2);position:relative;cursor:grab;touch-action:none;box-shadow:0 4px 40px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.03);transition:border-color .2s;}
+.jo.m{border-color:rgba(0,212,255,.3);}
+.jo.r{border-color:rgba(255,123,53,.3);}
+.jo.m.drag{border-color:var(--cyan);box-shadow:0 0 30px rgba(0,212,255,.2);}
+.jo.r.drag{border-color:var(--orange);box-shadow:0 0 30px rgba(255,123,53,.2);}
+.jr1,.jr2{position:absolute;border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;}
+.jo.m .jr1{width:66%;height:66%;border:1px dashed rgba(0,212,255,.12);}
+.jo.m .jr2{width:33%;height:33%;border:1px dashed rgba(0,212,255,.08);}
+.jo.r .jr1{width:66%;height:66%;border:1px dashed rgba(255,123,53,.12);}
+.jo.r .jr2{width:33%;height:33%;border:1px dashed rgba(255,123,53,.08);}
+.jch,.jcv{position:absolute;pointer-events:none;top:50%;left:50%;transform:translate(-50%,-50%);}
+.jo.m .jch{width:90%;height:1px;background:rgba(0,212,255,.08);}
+.jo.m .jcv{width:1px;height:90%;background:rgba(0,212,255,.08);}
+.jo.r .jch{width:90%;height:1px;background:rgba(255,123,53,.08);}
+.jo.r .jcv{width:1px;height:90%;background:rgba(255,123,53,.08);}
+.jcd{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:5px;height:5px;border-radius:50%;pointer-events:none;}
+.jo.m .jcd{background:rgba(0,212,255,.3);}
+.jo.r .jcd{background:rgba(255,123,53,.3);}
+.jt{position:absolute;width:68px;height:68px;border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;display:flex;align-items:center;justify-content:center;}
+.jo.m .jt{background:radial-gradient(circle at 35% 30%,#1c3850,#0a1a28);border:2px solid rgba(0,212,255,.6);box-shadow:0 2px 12px rgba(0,0,0,.6);}
+.jo.r .jt{background:radial-gradient(circle at 35% 30%,#3a1c0a,#1a0c04);border:2px solid rgba(255,123,53,.6);box-shadow:0 2px 12px rgba(0,0,0,.6);}
+.jo.m.drag .jt{box-shadow:0 0 20px rgba(0,212,255,.4);}
+.jo.r.drag .jt{box-shadow:0 0 20px rgba(255,123,53,.4);}
+.tp{width:20px;height:20px;border-radius:50%;}
+.jo.m .tp{background:radial-gradient(circle at 35% 30%,rgba(0,212,255,.6),rgba(0,100,160,.3));border:1px solid rgba(0,212,255,.4);}
+.jo.r .tp{background:radial-gradient(circle at 35% 30%,rgba(255,123,53,.6),rgba(160,60,10,.3));border:1px solid rgba(255,123,53,.4);}
+.jro{display:grid;gap:5px;width:200px;}
+.jro.m{grid-template-columns:1fr 1fr;}
+.jro.r{grid-template-columns:1fr;}
+.jrb{background:rgba(0,0,0,.35);border:1px solid var(--border);border-radius:5px;padding:5px 8px;text-align:center;}
+.jrl{font-size:.52rem;color:var(--muted);letter-spacing:.1em;margin-bottom:2px;font-family:'JetBrains Mono',monospace;}
+.jrv{font-family:'JetBrains Mono',monospace;font-size:.78rem;font-weight:700;}
+.jrv.c{color:var(--cyan);}.jrv.o{color:var(--orange);}
+.wfrow{display:flex;gap:10px;align-items:center;z-index:1;}
+.wfc{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:8px 12px;text-align:center;min-width:72px;}
+.wfn{font-size:.55rem;color:var(--muted);letter-spacing:.1em;margin-bottom:4px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;}
+.wfv{font-family:'JetBrains Mono',monospace;font-size:.82rem;font-weight:700;color:var(--green);}
+.wfbw{height:4px;background:rgba(0,0,0,.4);border-radius:2px;margin-top:4px;overflow:hidden;}
+.wfb{height:100%;border-radius:2px;transition:width .1s,background .1s;}
+.cvrow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:8px;}
+.logstrip{grid-column:1/-1;height:44px;display:flex;align-items:center;gap:8px;padding:0 14px;border-top:1px solid var(--border);background:rgba(8,11,15,.98);overflow:hidden;}
+.ltag{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--muted);white-space:nowrap;}
+.lmsg{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--text);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.lmsg.ok{color:var(--green);}.lmsg.warn{color:var(--yellow);}.lmsg.err{color:var(--red);}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+input[type=range]{accent-color:var(--cyan);}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">KIWI<em>BOT</em> <span style="font-size:.65rem;color:var(--muted);font-weight:400;letter-spacing:.1em;">3-WHEEL OMNI</span></div>
+  <div class="hdr-c">
+    <input class="ci" id="wsurl" value="ws://localhost:9090" placeholder="ws://robot-ip:9090">
+    <button class="hbtn" id="cbtn" onclick="toggleConn()">CONNECT</button>
+  </div>
+  <div class="hdr-r">
+    <div class="ind"><div class="dot" id="dot"></div><span class="ind-lbl" id="clbl">OFFLINE</span></div>
+    <button class="estop" id="estop" onclick="eStop()">&#x2B21; E-STOP</button>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- LEFT: sensors + cmd_vel -->
+  <div class="side">
+    <div class="pc">
+      <div class="pch"><span class="pct">&#x25C8; Ultrasonic /dis_data</span></div>
+      <div class="pcb">
+        <div class="sdiag">
+          <div class="rchass">
+            <div class="wdot wfl"></div><div class="wdot wfr"></div><div class="wdot wbk"></div>
+            <div class="rclbl">KIWI</div>
+          </div>
+          <div class="sind sleft"><div class="sbadge">US</div><div class="sv" id="sv-l">---</div></div>
+          <div class="sind sright"><div class="sbadge">US</div><div class="sv" id="sv-r">---</div></div>
+          <div class="sind sfl"><div class="sbadge">US</div><div class="sv" id="sv-fl">---</div></div>
+          <div class="sind sfr"><div class="sbadge">US</div><div class="sv" id="sv-fr">---</div></div>
+        </div>
+        <div class="sbrw"><span class="sbn">LEFT</span><div class="sbt"><div class="sbf" id="sb-l"></div></div><span class="sbnum" id="sn-l">-</span></div>
+        <div class="sbrw"><span class="sbn">RGHT</span><div class="sbt"><div class="sbf" id="sb-r"></div></div><span class="sbnum" id="sn-r">-</span></div>
+        <div class="sbrw"><span class="sbn">F-LT</span><div class="sbt"><div class="sbf" id="sb-fl"></div></div><span class="sbnum" id="sn-fl">-</span></div>
+        <div class="sbrw"><span class="sbn">F-RT</span><div class="sbt"><div class="sbf" id="sb-fr"></div></div><span class="sbnum" id="sn-fr">-</span></div>
+      </div>
+    </div>
+
+    <div class="pc">
+      <div class="pch"><span class="pct">&#x25B8; /cmd_vel published</span></div>
+      <div class="pcb">
+        <div class="cvrow">
+          <div class="oval"><div class="ovl">lin.x</div><div class="ovn" id="cv-lx">+0.00000</div></div>
+          <div class="oval"><div class="ovl">lin.y</div><div class="ovn" id="cv-ly">+0.00000</div></div>
+          <div class="oval hi"><div class="ovl">ang.z</div><div class="ovn" id="cv-az">+0.00000</div></div>
+        </div>
+        <div class="sbrw"><span class="sbn" style="width:55px;font-size:.52rem;">LIN m/s</span><input type="range" id="ls" min="0.05" max="2" step="0.05" value="0.5" style="flex:1;"><span class="sbnum" id="lsv">0.50</span></div>
+        <div class="sbrw"><span class="sbn" style="width:55px;font-size:.52rem;">ANG r/s</span><input type="range" id="as" min="0.05" max="3" step="0.05" value="1.0" style="flex:1;accent-color:var(--orange);"><span class="sbnum" id="asv">1.00</span></div>
+        <div class="sbrw"><span class="sbn" style="width:55px;font-size:.52rem;">PUB Hz</span><input type="range" id="hz" min="5" max="50" step="5" value="20" style="flex:1;accent-color:var(--green);"><span class="sbnum" id="hzv">20</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER: dual joysticks -->
+  <div class="center">
+    <svg class="ksch" viewBox="0 0 120 120" fill="none" stroke-width="1.5">
+      <circle cx="60" cy="60" r="55"/>
+      <circle cx="60" cy="60" r="35"/>
+      <line x1="60" y1="60" x2="60" y2="5"/>
+      <line x1="60" y1="60" x2="107" y2="82"/>
+      <line x1="60" y1="60" x2="13" y2="82"/>
+    </svg>
+
+    <div class="jrow">
+      <!-- LEFT joystick: movement Vx/Vy -->
+      <div class="jw">
+        <div class="jlbl m">MOVE &nbsp; Vx / Vy</div>
+        <div class="jo m" id="jL">
+          <div class="jr1"></div><div class="jr2"></div>
+          <div class="jch"></div><div class="jcv"></div>
+          <div class="jcd"></div>
+          <div class="jt" id="jLt"><div class="tp"></div></div>
+        </div>
+        <div class="jro m">
+          <div class="jrb"><div class="jrl">Vx fwd</div><div class="jrv c" id="jLx">+0.00000</div></div>
+          <div class="jrb"><div class="jrl">Vy str</div><div class="jrv c" id="jLy">+0.00000</div></div>
+        </div>
+      </div>
+
+      <!-- RIGHT joystick: rotation Wz -->
+      <div class="jw">
+        <div class="jlbl r">ROTATE &nbsp; Wz</div>
+        <div class="jo r" id="jR">
+          <div class="jr1"></div><div class="jr2"></div>
+          <div class="jch"></div><div class="jcv"></div>
+          <div class="jcd"></div>
+          <div class="jt" id="jRt"><div class="tp"></div></div>
+        </div>
+        <div class="jro r">
+          <div class="jrb"><div class="jrl">Wz angular</div><div class="jrv o" id="jRz">+0.00000</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wheel forces -->
+    <div class="wfrow">
+      <div class="wfc">
+        <div class="wfn">FL wheel<br><span style="font-size:.48rem;color:var(--muted)">30 deg</span></div>
+        <div class="wfv" id="wf-fl">+0.00</div>
+        <div class="wfbw"><div class="wfb" id="wb-fl" style="width:50%;background:var(--cyan)"></div></div>
+      </div>
+      <div class="wfc">
+        <div class="wfn">FR wheel<br><span style="font-size:.48rem;color:var(--muted)">150 deg</span></div>
+        <div class="wfv" id="wf-fr">+0.00</div>
+        <div class="wfbw"><div class="wfb" id="wb-fr" style="width:50%;background:var(--cyan)"></div></div>
+      </div>
+      <div class="wfc">
+        <div class="wfn">BACK wheel<br><span style="font-size:.48rem;color:var(--muted)">270 deg</span></div>
+        <div class="wfv" id="wf-bk">+0.00</div>
+        <div class="wfbw"><div class="wfb" id="wb-bk" style="width:50%;background:var(--cyan)"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: odometry -->
+  <div class="side r">
+    <div class="pc">
+      <div class="pch"><span class="pct">&#x229E; Odometry /odom</span></div>
+      <div class="pcb">
+        <div class="ovals">
+          <div class="oval"><div class="ovl">pos.x (m)</div><div class="ovn" id="ox">+0.00000</div></div>
+          <div class="oval"><div class="ovl">pos.y (m)</div><div class="ovn" id="oy">+0.00000</div></div>
+          <div class="oval hi"><div class="ovl">yaw (deg)</div><div class="ovn" id="oyaw">+0.000</div></div>
+          <div class="oval"><div class="ovl">speed m/s</div><div class="ovn" id="ospd">+0.00000</div></div>
+          <div class="oval"><div class="ovl">twist.vx</div><div class="ovn" id="ovx">+0.00000</div></div>
+          <div class="oval"><div class="ovl">twist.vy</div><div class="ovn" id="ovy">+0.00000</div></div>
+        </div>
+        <div class="mwrap">
+          <canvas id="tmap" width="220" height="160"></canvas>
+          <button class="mreset" onclick="resetTrail()">CLR</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="logstrip">
+    <span class="ltag">SYS &#x25B8;</span>
+    <span class="lmsg ok" id="logmsg">Initialised - connect to rosbridge to begin</span>
+  </div>
+</div>
+
+<script>
+var ros=null,pub=null,disSub=null,odomSub=null;
+var connected=false,estopped=false;
+var linMax=0.5,angMax=1.0,pubHz=20;
+var vx=0,vy=0,wz=0;
+var ptimer=null;
+var trail=[],tcx=0,tcy=0,tscale=55;
+var ox=0,oy=0,oyaw=0;
+
+// ─── Joystick ─────────────────────────────────────────────────
+function Joystick(elId, thumbId, xOnly){
+  var el=document.getElementById(elId);
+  var th=document.getElementById(thumbId);
+  var active=false;
+  this.nx=0; this.ny=0;
+  var MAXR=75;
+  var self=this;
+  function center(){var r=el.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2};}
+  function start(e){e.preventDefault();el.setPointerCapture(e.pointerId);active=true;el.classList.add('drag');move(e);}
+  function move(e){
+    if(!active)return;e.preventDefault();
+    var c=center();
+    var dx=e.clientX-c.x, dy=xOnly?0:(e.clientY-c.y);
+    var dist=Math.sqrt(dx*dx+dy*dy);
+    var clamped=Math.min(dist,MAXR);
+    var angle=Math.atan2(dy,dx);
+    var cx=Math.cos(angle)*clamped, cy=Math.sin(angle)*clamped;
+    self.nx=cx/MAXR;
+    self.ny=-cy/MAXR;
+    th.style.left=(50+(cx/(el.offsetWidth/2))*50)+'%';
+    th.style.top=(50+(cy/(el.offsetHeight/2))*50)+'%';
+  }
+  function end(e){active=false;self.nx=0;self.ny=0;el.classList.remove('drag');th.style.left='50%';th.style.top='50%';}
+  el.addEventListener('pointerdown',start,{passive:false});
+  el.addEventListener('pointermove',move,{passive:false});
+  el.addEventListener('pointerup',end);
+  el.addEventListener('pointercancel',end);
+}
+var jL=new Joystick('jL','jLt',false);
+var jR=new Joystick('jR','jRt',true);
+
+// ─── Connection ───────────────────────────────────────────────
+function toggleConn(){connected?disconnect():connect();}
+function connect(){
+  var url=document.getElementById('wsurl').value.trim();
+  slog('Connecting to '+url,'warn');
+  ros=new ROSLIB.Ros({url:url});
+  ros.on('connection',function(){connected=true;setDot(true);slog('rosbridge connected','ok');setupTopics();startLoop();});
+  ros.on('error',function(e){slog('Error: '+e,'err');setDot(false);});
+  ros.on('close',function(){connected=false;setDot(false);slog('Disconnected','warn');stopLoop();});
+}
+function disconnect(){if(ros)ros.close();}
+function setDot(on){
+  document.getElementById('dot').className='dot'+(on?' live':'');
+  document.getElementById('clbl').textContent=on?'ONLINE':'OFFLINE';
+  document.getElementById('cbtn').textContent=on?'DISCONNECT':'CONNECT';
+  document.getElementById('cbtn').className='hbtn'+(on?' disc':'');
+}
+
+// ─── Topics ───────────────────────────────────────────────────
+function setupTopics(){
+  pub=new ROSLIB.Topic({ros:ros,name:'/cmd_vel',messageType:'geometry_msgs/Twist'});
+  disSub=new ROSLIB.Topic({ros:ros,name:'/dis_data',messageType:'std_msgs/Float32MultiArray'});
+  disSub.subscribe(function(msg){if(msg.data&&msg.data.length>=4)updateSensors(msg.data[0],msg.data[1],msg.data[2],msg.data[3]);});
+  odomSub=new ROSLIB.Topic({ros:ros,name:'/odom',messageType:'nav_msgs/Odometry'});
+  odomSub.subscribe(function(msg){
+    var p=msg.pose.pose.position,q=msg.pose.pose.orientation,tw=msg.twist.twist;
+    var yaw=Math.atan2(2*(q.w*q.z+q.x*q.y),1-2*(q.y*q.y+q.z*q.z));
+    var spd=Math.sqrt(tw.linear.x*tw.linear.x+tw.linear.y*tw.linear.y);
+    updateOdom(p.x,p.y,yaw,spd,tw.linear.x,tw.linear.y);
+  });
+  slog('/cmd_vel pub | /dis_data /odom sub ready','ok');
+}
+
+// ─── Publish loop ─────────────────────────────────────────────
+function startLoop(){stopLoop();ptimer=setInterval(tick,1000/pubHz);}
+function stopLoop(){if(ptimer)clearInterval(ptimer);}
+function tick(){
+  if(!connected||estopped)return;
+  vx=jL.ny*linMax;
+  vy=-jL.nx*linMax;
+  wz=jR.nx*angMax;
+  doPub();
+}
+function doPub(){
+  if(!pub)return;
+  pub.publish(new ROSLIB.Message({linear:{x:vx,y:vy,z:0},angular:{x:0,y:0,z:wz}}));
+  document.getElementById('cv-lx').textContent=f5(vx);
+  document.getElementById('cv-ly').textContent=f5(vy);
+  document.getElementById('cv-az').textContent=f5(wz);
+  document.getElementById('jLx').textContent=f5(vx);
+  document.getElementById('jLy').textContent=f5(vy);
+  document.getElementById('jRz').textContent=f5(wz);
+  updateWheels();
+}
+
+// ─── Kiwi kinematics (30,150,270 deg) ─────────────────────────
+var WA=[30,150,270].map(function(d){return d*Math.PI/180;});
+function wheelSpeeds(vx,vy,wz){
+  return WA.map(function(th){return -Math.sin(th)*vx+Math.cos(th)*vy+wz;});
+}
+function updateWheels(){
+  var ws=wheelSpeeds(vx,vy,wz);
+  var ids=['fl','fr','bk'];
+  var maxA=Math.max.apply(null,ws.map(Math.abs).concat([0.001]));
+  ws.forEach(function(w,i){
+    var id=ids[i];
+    document.getElementById('wf-'+id).textContent=(w>=0?'+':'')+w.toFixed(2);
+    var pct=Math.min(Math.abs(w)/maxA*100,100);
+    var bar=document.getElementById('wb-'+id);
+    bar.style.width=pct+'%';
+    bar.style.background=w>=0?'var(--cyan)':'var(--orange)';
+  });
+}
+
+// ─── Sensors ─────────────────────────────────────────────────
+var SMAX=4.0;
+function updateSensors(left,right,fl,fr){
+  [{id:'l',v:left},{id:'r',v:right},{id:'fl',v:fl},{id:'fr',v:fr}].forEach(function(s){
+    var cls=s.v<0.2?'d':s.v<0.5?'w':'';
+    var sv=document.getElementById('sv-'+s.id);
+    sv.textContent=isFinite(s.v)?s.v.toFixed(2):'-';
+    sv.className='sv'+(cls?' '+cls:'');
+    document.getElementById('sn-'+s.id).textContent=isFinite(s.v)?s.v.toFixed(3)+' m':'-';
+    var pct=Math.min(s.v/SMAX*100,100);
+    var bar=document.getElementById('sb-'+s.id);
+    bar.style.width=pct+'%';
+    bar.className='sbf'+(cls?' '+cls:'');
+  });
+}
+
+// ─── Odometry ────────────────────────────────────────────────
+function updateOdom(x,y,yaw,spd,tvx,tvy){
+  ox=x;oy=y;oyaw=yaw;
+  document.getElementById('ox').textContent=f5(x);
+  document.getElementById('oy').textContent=f5(y);
+  document.getElementById('oyaw').textContent=(yaw*180/Math.PI>=0?'+':'')+( yaw*180/Math.PI).toFixed(3);
+  document.getElementById('ospd').textContent=f5(spd);
+  document.getElementById('ovx').textContent=f5(tvx);
+  document.getElementById('ovy').textContent=f5(tvy);
+  trail.push({x:x,y:y});
+  if(trail.length>3000)trail.shift();
+  drawTrail();
+}
+function resetTrail(){trail=[];tcx=ox;tcy=oy;drawTrail();}
+var tc=document.getElementById('tmap');
+var tx=tc.getContext('2d');
+function drawTrail(){
+  var W=tc.width,H=tc.height;
+  tx.clearRect(0,0,W,H);
+  tx.strokeStyle='rgba(28,42,56,.9)';tx.lineWidth=1;
+  var gs=tscale;
+  var offx=((W/2-tcx*gs)%gs+gs)%gs,offy=((H/2+tcy*gs)%gs+gs)%gs;
+  for(var gx=offx;gx<W;gx+=gs){tx.beginPath();tx.moveTo(gx,0);tx.lineTo(gx,H);tx.stroke();}
+  for(var gy=offy;gy<H;gy+=gs){tx.beginPath();tx.moveTo(0,gy);tx.lineTo(W,gy);tx.stroke();}
+  var ox0=W/2-tcx*gs,oy0=H/2+tcy*gs;
+  tx.strokeStyle='rgba(0,212,255,.18)';
+  tx.beginPath();tx.moveTo(ox0-7,oy0);tx.lineTo(ox0+7,oy0);tx.stroke();
+  tx.beginPath();tx.moveTo(ox0,oy0-7);tx.lineTo(ox0,oy0+7);tx.stroke();
+  if(trail.length>1){
+    tx.beginPath();tx.strokeStyle='rgba(0,212,255,.45)';tx.lineWidth=1.5;
+    trail.forEach(function(p,i){var px=W/2+(p.x-tcx)*gs,py=H/2-(p.y-tcy)*gs;i===0?tx.moveTo(px,py):tx.lineTo(px,py);});
+    tx.stroke();
+  }
+  var rx=W/2+(ox-tcx)*gs,ry=H/2-(oy-tcy)*gs;
+  tx.save();tx.translate(rx,ry);tx.rotate(-oyaw);
+  tx.beginPath();tx.moveTo(0,-9);tx.lineTo(6,5);tx.lineTo(0,2);tx.lineTo(-6,5);tx.closePath();
+  tx.fillStyle='#ff7b35';tx.shadowColor='#ff7b35';tx.shadowBlur=8;tx.fill();
+  tx.restore();
+}
+drawTrail();
+
+// ─── E-STOP ──────────────────────────────────────────────────
+function eStop(){
+  estopped=!estopped;
+  var btn=document.getElementById('estop');
+  if(estopped){vx=0;vy=0;wz=0;if(pub)doPub();btn.classList.add('active');btn.textContent='STOPPED';slog('E-STOP - motion halted','err');}
+  else{btn.classList.remove('active');btn.textContent='\u2B21 E-STOP';slog('E-STOP released','ok');}
+}
+
+// ─── Sliders ─────────────────────────────────────────────────
+document.getElementById('ls').oninput=function(){linMax=+this.value;document.getElementById('lsv').textContent=linMax.toFixed(2);};
+document.getElementById('as').oninput=function(){angMax=+this.value;document.getElementById('asv').textContent=angMax.toFixed(2);};
+document.getElementById('hz').oninput=function(){pubHz=+this.value;document.getElementById('hzv').textContent=pubHz;if(connected)startLoop();};
+
+// ─── Utils ────────────────────────────────────────────────────
+function f5(v){return(v>=0?'+':'')+v.toFixed(5);}
+function slog(msg,type){var el=document.getElementById('logmsg');el.textContent=msg;el.className='lmsg'+(type?' '+type:'');}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/roslib@1.3.0/build/roslib.min.js"></script>
+</body>
+</html>
