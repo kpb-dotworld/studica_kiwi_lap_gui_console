@@ -5,19 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Cooper Bot Dashboard v3</title>
 <style>
-/* Dotted adder box for WP/MOVE */
-.adder-box {
-  border: 3px dashed #222;
-  border-radius: 18px;
-  padding: 18px 10px 12px 10px;
-  margin: 12px 10px 0 10px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 18px;
-  background: rgba(0,0,0,0.03);
-  min-height: 48px;
-}
 
 :root{
   --bg:#0a0e17;--panel:#0f1824;--panel2:#151f2e;--border:#1e2d3d;
@@ -311,12 +298,17 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 
   <div class="wp-sidebar" style="width:270px;min-width:220px;max-width:320px;background:var(--panel2);display:flex;flex-direction:column;gap:0;box-shadow:1px 0 0 var(--border);">
     <div class="sec" style="border:none;border-bottom:1px solid var(--border);">
-      <div class="sec-title" style="margin:0 0 8px 0">Waypoints [P]</div>
-      <div id="adderBoxes"></div>
-      <div class="wp-list" id="wpList">
-        <div class="wp-empty">No waypoints.<br>Use the adder below to add a waypoint.</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div class="sec-title" style="margin:0">Waypoints [P]</div>
+        <div style="display:flex;gap:5px;align-items:center;">
+          <button class="addwp-btn" onclick="selectWaypointMode()">WP</button>
+          <button class="addwp-btn" onclick="selectMoveMode()">MOVE</button>
+          <button class="clr-btn" onclick="clearWP()">✕ Clear</button>
+        </div>
       </div>
-      <button class="clr-btn" onclick="clearWP()" style="margin-top:10px;">✕ Clear</button>
+      <div class="wp-list" id="wpList">
+        <div class="wp-empty">No waypoints.<br>Drive robot → press <b>[P]</b> or <b>ADD WP</b></div>
+      </div>
     </div>
     <div class="sec" style="border:none;border-bottom:1px solid var(--border);">
       <button class="run-btn" id="runBtn" onclick="runMission()">▶ RUN WAYPOINTS</button>
@@ -419,12 +411,18 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
           step();
         }
         // 1. Rotate to face next point
-        const targetYaw = Math.atan2(dy, dx);
+        // Helper to round angle (rad) to nearest 0, 90, 180, 270 deg
+        function snapYaw(rad) {
+          const deg = rad * 180 / Math.PI;
+          const snapped = Math.round(deg / 90) * 90;
+          return (snapped * Math.PI / 180);
+        }
+        const targetYaw = snapYaw(Math.atan2(dy, dx));
         animateRotate(simRobot.yaw, targetYaw, Math.abs(targetYaw-simRobot.yaw)/rotSpeed, ()=>{
           // 2. Move straight to next point
           animateMove({x:curr.x_m, y:curr.y_m}, {x:next.x_m, y:next.y_m}, targetYaw, moveTime, ()=>{
-            // 3. Rotate to final yaw
-            animateRotate(targetYaw, next.yaw_rad, Math.abs(next.yaw_rad-targetYaw)/rotSpeed, ()=>{
+            // 3. Rotate to final yaw (snap as well)
+            animateRotate(targetYaw, snapYaw(next.yaw_rad), Math.abs(snapYaw(next.yaw_rad)-targetYaw)/rotSpeed, ()=>{
               simIdx++;
               stepWaypointSimulation();
             });
@@ -694,33 +692,6 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
      JAVASCRIPT
 ════════════════════════════════════════════════════════════════════════════ -->
 <script>
-// Render adder boxes for WP/MOVE
-function renderAdderBoxes() {
-  const adderDiv = document.getElementById('adderBoxes');
-  adderDiv.innerHTML = '';
-  // Only show one adder at a time (after each add, a new one appears)
-  const adder = document.createElement('div');
-  adder.className = 'adder-box';
-  const wpBtn = document.createElement('button');
-  wpBtn.className = 'addwp-btn';
-  wpBtn.textContent = 'WP';
-  wpBtn.onclick = () => { selectWaypointMode(); };
-  const moveBtn = document.createElement('button');
-  moveBtn.className = 'addwp-btn';
-  moveBtn.textContent = 'MOVE';
-  moveBtn.onclick = () => { selectMoveMode(); };
-  adder.appendChild(wpBtn);
-  adder.appendChild(moveBtn);
-  adderDiv.appendChild(adder);
-}
-
-// Call this after adding a waypoint to show a new adder
-function onWaypointAdded() {
-  renderAdderBoxes();
-}
-
-// Initial render
-document.addEventListener('DOMContentLoaded', renderAdderBoxes);
 // --- Origin orientation by WASD and keyboard arrows ---
 // --- Origin placement: WASD = move marker, Arrow keys = rotate orientation ---
 document.addEventListener('keydown', function(e) {
@@ -1003,7 +974,7 @@ function drawSmallTriangle(ctx, cx, cy, yaw, sz, col) {
   if (simActive && simRobot) {
     const rp = odomToCanvas(simRobot.x, simRobot.y);
     if (rp) {
-      drawTriangle(mctx, rp.x, rp.y, simRobot.yaw, SC*.85, '#00d4ff');
+      drawTriangle(mctx, rp.x, rp.y, -simRobot.yaw, SC*.85, '#00d4ff');
       mctx.save(); mctx.font='8px Courier New'; mctx.fillStyle='rgba(0,212,255,.8)';
       mctx.textAlign='left'; mctx.textBaseline='alphabetic';
       mctx.fillText(`SIM x:${simRobot.x.toFixed(2)} y:${simRobot.y.toFixed(2)}`, rp.x+SC, rp.y-4); mctx.restore();
@@ -1012,7 +983,7 @@ function drawSmallTriangle(ctx, cx, cy, yaw, sz, col) {
     const rp=robotToCanvas();
     if(rp){
       const originYaw_rad = originYaw * Math.PI / 180;
-      drawTriangle(mctx,rp.x,rp.y, robot.yaw + originYaw_rad, SC*.85,'#00d4ff');
+      drawTriangle(mctx,rp.x,rp.y, -robot.yaw + originYaw_rad, SC*.85,'#00d4ff');
       mctx.save(); mctx.font='8px Courier New'; mctx.fillStyle='rgba(0,212,255,.8)';
       mctx.textAlign='left'; mctx.textBaseline='alphabetic';
       mctx.fillText(`x:${robot.x.toFixed(2)} y:${robot.y.toFixed(2)}`,rp.x+SC,rp.y-4); mctx.restore();
@@ -1027,7 +998,8 @@ function drawSmallTriangle(ctx, cx, cy, yaw, sz, col) {
     if(wp){
       const originYaw_rad = originYaw * Math.PI / 180;
       const color = wpSelectedX !== null ? '#4dff91' : '#00d4ff';  // green if selected, cyan while hovering
-      drawTriangle(mctx, wp.x, wp.y, wpOrientation + originYaw_rad, SC*.85, color);
+      // Invert yaw for waypoint orientation to match robot model
+      drawTriangle(mctx, wp.x, wp.y, -wpOrientation + originYaw_rad, SC*.85, color);
       mctx.save(); mctx.font='10px Courier New'; mctx.fillStyle=color;
       mctx.textAlign='left'; mctx.textBaseline='alphabetic';
       mctx.fillText(`x:${displayX.toFixed(2)} y:${displayY.toFixed(2)} yaw:${Math.round(wpOrientation*180/Math.PI)}°`, wp.x+SC, wp.y-4); 
@@ -1054,7 +1026,7 @@ function drawSmallTriangle(ctx, cx, cy, yaw, sz, col) {
   if(!originPx && robot.x !== undefined){
     const canvasCenterX = mapCanvas.width / 2;
     const canvasCenterY = mapCanvas.height / 2;
-    drawTriangle(mctx, canvasCenterX, canvasCenterY, robot.yaw, SC*.85,'#00d4ff');
+    drawTriangle(mctx, canvasCenterX, canvasCenterY, -robot.yaw, SC*.85,'#00d4ff');
     mctx.save(); mctx.font='8px Courier New'; mctx.fillStyle='rgba(0,212,255,.8)';
     mctx.textAlign='left'; mctx.textBaseline='alphabetic';
     mctx.fillText(`(no origin set)`, canvasCenterX+SC, canvasCenterY-4); 
@@ -1303,13 +1275,16 @@ function connect(){
       if(d.type==='odom'){
         odomCount++; document.getElementById('dbgOdom').textContent=odomCount;
         robot.x=d.x; robot.y=d.y; robot.yaw=d.yaw;
-        const deg=(d.yaw*180/Math.PI).toFixed(1);
+        // Convert yaw to [0,360) degrees, CCW from X axis
+        let deg = (d.yaw * 180 / Math.PI);
+        if (deg < 0) deg += 360;
+        deg = deg % 360;
         document.getElementById('oX').textContent=d.x.toFixed(3);
         document.getElementById('oY').textContent=d.y.toFixed(3);
-        document.getElementById('oYaw').textContent=deg;
+        document.getElementById('oYaw').textContent=deg.toFixed(2);
         document.getElementById('sOX').textContent=d.x.toFixed(3);
         document.getElementById('sOY').textContent=d.y.toFixed(3);
-        document.getElementById('sOYaw').textContent=deg+'°';
+        document.getElementById('sOYaw').textContent=deg.toFixed(2)+'°';
         renderMap();
         // Set odom indicator to green
         if(window._odomTimeout) clearTimeout(window._odomTimeout);
@@ -1452,7 +1427,6 @@ function markWP(){
   document.body.classList.remove('p-flash'); void document.body.offsetWidth; document.body.classList.add('p-flash');
   setTimeout(()=>document.body.classList.remove('p-flash'),500);
   updateWPList(); renderMap();
-  onWaypointAdded();
 }
 function updateWPList(){
   const el=document.getElementById('wpList');
@@ -1652,11 +1626,28 @@ mapCanvas.addEventListener('click', e=>{
 document.addEventListener('keydown', e=>{
   // Waypoint orientation mode
   if(wpMapClickActive) {
-    const step = 15 * Math.PI / 180;  // 15 degree steps
-    if(e.key === 'ArrowRight') { wpOrientation -= step; updateWaypointDisplay(); renderMap(); }
-    else if(e.key === 'ArrowLeft') { wpOrientation += step; updateWaypointDisplay(); renderMap(); }
-    else if(e.key === 'ArrowUp') { wpOrientation = Math.PI/2; updateWaypointDisplay(); renderMap(); }
-    else if(e.key === 'ArrowDown') { wpOrientation = -Math.PI/2; updateWaypointDisplay(); renderMap(); }
+    // Only allow 0, 90, 180, 270 degrees
+    const allowedAngles = [0, Math.PI/2, Math.PI, -Math.PI/2];
+    let idx = allowedAngles.findIndex(a => Math.abs(a - wpOrientation) < 0.01);
+    if(idx === -1) idx = 0;
+    if(e.key === 'ArrowLeft') {
+      // Rotate left (CCW): next higher index
+      idx = (idx + 1) % allowedAngles.length;
+      wpOrientation = allowedAngles[idx];
+      updateWaypointDisplay(); renderMap();
+    }
+    else if(e.key === 'ArrowRight') {
+      // Rotate right (CW): next lower index
+      idx = (idx - 1 + allowedAngles.length) % allowedAngles.length;
+      wpOrientation = allowedAngles[idx];
+      updateWaypointDisplay(); renderMap();
+    }
+    else if(e.key === 'ArrowUp') {
+      wpOrientation = Math.PI/2; updateWaypointDisplay(); renderMap();
+    }
+    else if(e.key === 'ArrowDown') {
+      wpOrientation = -Math.PI/2; updateWaypointDisplay(); renderMap();
+    }
     else if(e.key === 'Enter') { confirmAddWP(); }  // Confirm waypoint with Enter
     else if(e.key === 'Escape') { closeAddWP(); }   // Cancel with Escape
     return;
