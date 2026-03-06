@@ -3415,6 +3415,15 @@ function loadMapData(d){
   initCanvas();
   console.log('[LOAD] Successfully loaded:', {name: d.name, width: mapW, height: mapH, resolution: mapRes});
   showToast(`✅ Map "${d.name}" loaded  (${mapW}×${mapH})`);
+  
+  // Automatically enter origin-setting mode
+  settingOrig = true;
+  const origBtn2 = document.getElementById('origBtn');
+  if(origBtn2) {
+    origBtn2.classList.add('on');
+    origBtn2.textContent = '⏳ Click on the map to set origin…';
+  }
+  showToast('🎯 Click map to place origin → WASD adjust • ENTER save • ESC cancel');
 }
 
 // ── MISSION CONTROL ───────────────────────────────────────────────────────────
