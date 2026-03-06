@@ -312,6 +312,17 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 
   <div class="wp-sidebar" style="width:240px;min-width:200px;max-width:280px;background:var(--panel2);display:flex;flex-direction:column;gap:0;box-shadow:1px 0 0 var(--border);">
     <div class="sec" style="border:none;border-bottom:1px solid var(--border);background:var(--panel);">
+      <div class="sec-title">Map Origin (0,0)</div>
+      <button class="orig-btn" id="origBtn" onclick="toggleOrigin()">🎯 Click map to set origin</button>
+      <div class="orig-info" id="origInfo">Not set — click button then click on the map</div>
+
+      <!-- orientation selector — shown after origin is set -->
+      <div class="orig-orient" id="origOrient" style="display:none">
+        <!-- Orientation selector removed: use WASD or arrow keys to set direction -->
+      </div>
+    </div>
+
+    <div class="sec" style="border:none;border-bottom:1px solid var(--border);background:var(--panel);">
       <div style="display:flex;align-items:center;justify-content:space-between;">
         <div style="font-size:1em;color:var(--accent2);font-weight:700;">Error: <input id="errorInput" type="number" step="0.001" value="0.000" style="width: 60px; text-align: center; background: var(--panel2); border: 1px solid var(--border); color: var(--accent); font-family: inherit; font-size: 1em; padding: 2px 4px; border-radius: 3px;"> m</div>
         <button class="addwp-btn" style="font-size:12px;padding:4px 10px;" onclick="applyErrorToWaypoints()">Apply</button>
@@ -340,7 +351,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
     }
     </script>
     <div class="sec" style="border:none;border-bottom:1px solid var(--border);">
-      <div class="sec-title" style="margin:0;margin-bottom:8px;">Waypoints [P]</div>
+      <div class="sec-title" style="margin:0;margin-bottom:8px;">WAYPOINTS [P]</div>
       <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
         <button class="addwp-btn" onclick="selectWaypointMode()">WP</button>
         <button class="addwp-btn" onclick="selectMoveMode()">MOVE</button>
@@ -510,20 +521,6 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
         renderMap();
       }
       </script>
-      <button class="stop-btn" id="stopBtn" onclick="cancelMission()">⏹ STOP MISSION</button>
-      <div class="mission-panel" id="missionPanel">
-        <div class="mp-row">
-          <span class="mp-label">STATE</span>
-          <span class="mp-state idle" id="mpState">IDLE</span>
-          <div style="flex:1"></div>
-          <span class="mp-val" id="mpStep">—</span>
-        </div>
-        <div class="mp-row">
-          <span class="mp-label">PROG</span>
-          <div class="mp-bar-wrap"><div class="mp-bar" id="mpBar"></div></div>
-        </div>
-        <div class="mp-msg" id="mpMsg">No mission running. Mark waypoints then press RUN.</div>
-      </div>
     </div>
     <div class="sec" style="border:none;">
       <button class="exp-btn" onclick="exportWP()">⬇ Export Waypoints JSON</button>
@@ -560,18 +557,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
   <!-- ═══ RIGHT PANEL ═══════════════════════════════════════════════════════ -->
   <div class="right">
     <div class="sec">
-      <div class="sec-title">Map Origin (0,0)</div>
-      <button class="orig-btn" id="origBtn" onclick="toggleOrigin()">🎯 Click map to set origin</button>
-      <div class="orig-info" id="origInfo">Not set — click button then click on the map</div>
-
-      <!-- orientation selector — shown after origin is set -->
-      <div class="orig-orient" id="origOrient" style="display:none">
-        <!-- Orientation selector removed: use WASD or arrow keys to set direction -->
-      </div>
-    </div>
-
-    <div class="sec">
-      <div class="sec-title">Odometry  /odom
+      <div class="sec-title">Odometry  
         <span id="odomStatus" title="Odometry topic status" style="display:inline-block;width:13px;height:13px;border-radius:50%;background:#ff4455;border:1.5px solid #222;box-shadow:0 0 2px #000;vertical-align:middle;margin-left:8px;transition:background .3s;"></span>
       </div>
       <div class="odom-row">
@@ -582,11 +568,27 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
     </div>
 
     <div class="sec">
-      <div class="sec-title">cmd_vel (live)</div>
+      <div class="sec-title">cmd_vel</div>
       <div class="cv-row">
         <div class="cvbox"><div class="k">LIN.X</div><div class="n" id="cvLx">0.00</div></div>
         <div class="cvbox"><div class="k">LIN.Y</div><div class="n" id="cvLy">0.00</div></div>
         <div class="cvbox"><div class="k">ANG.Z</div><div class="n" id="cvAz">0.00</div></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <button class="stop-btn" id="stopBtn" onclick="cancelMission()">⏹ STOP MISSION</button>
+      <div class="mission-panel" id="missionPanel">
+        <div class="mp-row">
+          <span class="mp-label">STATE</span>
+          <span class="mp-state idle" id="mpState">IDLE</span>
+          <div style="flex:1"></div>
+          <span class="mp-val" id="mpStep">—</span>
+        </div>
+        <div class="mp-row">
+          <span class="mp-label">PROG</span>
+          <div class="mp-bar-wrap"><div class="mp-bar" id="mpBar"></div></div>
+        </div>
       </div>
     </div>
 
@@ -1779,7 +1781,9 @@ function addMoveAsWaypoint(){
   }
   
   // Apply global error value to finalX with conditional logic
+  // Get previous waypoint X if exists
   const prevWpX = waypoints.length > 0 ? waypoints[waypoints.length - 1].x_m : null;
+  // If prevX < newX OR prevX < odom x, subtract error; otherwise add error
   if ((prevWpX !== null && (prevWpX < finalX || prevWpX < robot.x)) || (prevWpX === null && finalX < robot.x)) {
     finalX = finalX - globalErrorValue;
   } else {
