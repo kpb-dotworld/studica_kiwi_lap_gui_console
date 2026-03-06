@@ -326,33 +326,40 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
     }
     </script>
     <div class="sec" style="border:none;border-bottom:1px solid var(--border);">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <div class="sec-title" style="margin:0">Waypoints [P]</div>
-        <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
-          <button class="addwp-btn" onclick="selectWaypointMode()">WP</button>
-          <button class="addwp-btn" onclick="selectMoveMode()">MOVE</button>
-          <button class="addwp-btn" onclick="moveToOrigin()" style="background:var(--accent);color:#fff;">Origin</button>
-          <button class="clr-btn" onclick="clearWP()" style="margin-left:auto;">✕ Clear</button>
-        <script>
-        function moveToOrigin() {
-          // Add a waypoint at (globalErrorValue, 0, 0) and run mission
-          waypoints.length = 0;
-          waypoints.push({
-            id: 1,
-            x_m: +(0.0 + globalErrorValue).toFixed(4),
-            y_m: 0.0,
-            yaw_deg: 0,
-            yaw_rad: 0.0,
-            createdFrom: 'ORIGIN',
-            type: 'ORIGIN'
-          });
-          updateWPList();
-          renderMap();
-          runMission();
-        }
-        </script>
-        </div>
+      <div class="sec-title" style="margin:0;margin-bottom:8px;">Waypoints [P]</div>
+      <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+        <button class="addwp-btn" onclick="selectWaypointMode()">WP</button>
+        <button class="addwp-btn" onclick="selectMoveMode()">MOVE</button>
+        <button class="addwp-btn" onclick="moveToOrigin()" style="background:var(--accent);color:#fff;">Origin</button>
+        <button class="clr-btn" onclick="clearWP()" style="margin-left:auto;">✕ Clear</button>
       </div>
+      <script>
+      function moveToOrigin() {
+        // Add a waypoint at (0,0,0) with conditional error logic
+        const targetX = 0.0;
+        let wpX = targetX;
+        // If goal x < odom x, subtract error; otherwise add error
+        if (targetX < robot.x) {
+          wpX = targetX - globalErrorValue;
+        } else {
+          wpX = targetX + globalErrorValue;
+        }
+        
+        waypoints.length = 0;
+        waypoints.push({
+          id: 1,
+          x_m: +wpX.toFixed(4),
+          y_m: 0.0,
+          yaw_deg: 0,
+          yaw_rad: 0.0,
+          createdFrom: 'ORIGIN',
+          type: 'ORIGIN'
+        });
+        updateWPList();
+        renderMap();
+        runMission();
+      }
+      </script>
       <div class="wp-list" id="wpList">
         <div class="wp-empty">No waypoints.<br>Drive robot → press <b>[P]</b> or <b>ADD WP</b></div>
       </div>
@@ -831,6 +838,16 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 // --- Origin orientation by WASD and keyboard arrows ---
 // --- Origin placement: WASD = move marker, Arrow keys = rotate orientation ---
 document.addEventListener('keydown', function(e) {
+  // Cancel editing waypoint with ESC
+  if (e.key === 'Escape' && editingWPIndex !== null) {
+    editingWPIndex = null;
+    updateWPList();
+    renderMap();
+    showToast('Cancelled waypoint editing');
+    e.preventDefault();
+    return;
+  }
+  
   if (settingOrig) {
     // Arrow keys: rotate orientation by ±45°
     if (e.key === 'ArrowRight') {
@@ -1043,8 +1060,18 @@ function renderMap(){
   // waypoints: draw small upward-facing triangle marker with facing direction
   waypoints.forEach((wp,i)=>{
     const p=wpToCanvas(wp); if(!p) return;
+    // Highlight waypoint being edited with a glowing circle
+    if (editingWPIndex === i) {
+      mctx.save();
+      mctx.strokeStyle = '#ffff00';
+      mctx.lineWidth = 3;
+      mctx.beginPath();
+      mctx.arc(p.x, p.y, SC*4, 0, Math.PI*2);
+      mctx.stroke();
+      mctx.restore();
+    }
     // Small triangle (like a dot), facing in the direction of wp.yaw_rad (black base = back)
-    drawSmallTriangle(mctx, p.x, p.y, wp.yaw_rad, SC*2.3, '#ff6b35');
+    drawSmallTriangle(mctx, p.x, p.y, wp.yaw_rad, SC*2.3, editingWPIndex === i ? '#ffff00' : '#ff6b35');
     // ...existing code...
 // Show saved maps in header and allow loading
 function showHomeMapLibrary(maps) {
@@ -1557,9 +1584,17 @@ setInterval(()=>{
 
 document.addEventListener('keydown',e=>{ if((e.key==='p'||e.key==='P')&&!e.target.matches('input,textarea')) markWP(); });
 function markWP(){
+  let wpX = robot.x;
+  // If goal x < odom x, subtract error; otherwise add error
+  if (wpX < robot.x) {
+    wpX = wpX - globalErrorValue;
+  } else {
+    wpX = wpX + globalErrorValue;
+  }
+  
   waypoints.push({
     id: waypoints.length + 1,
-    x_m: +(robot.x + globalErrorValue).toFixed(4),
+    x_m: +wpX.toFixed(4),
     y_m: +robot.y.toFixed(4),
     yaw_deg: Math.round(robot.yaw * 180 / Math.PI),
     yaw_rad: robot.yaw,
@@ -1575,7 +1610,7 @@ function updateWPList(){
   el.innerHTML = waypoints.map((wp, i) => {
     let circleColor = '#4caf50'; // Default green for WP
     if (wp.createdFrom === 'MOVE') circleColor = '#ff9800'; // Orange for MOVE
-    return `<div class="wp-item wp-${wp.type && wp.type.toLowerCase ? wp.type.toLowerCase() : 'wp'}" draggable="true" data-idx="${i}" ondragstart="onWpDragStart(event)" ondragover="onWpDragOver(event)" ondrop="onWpDrop(event)" ondragend="onWpDragEnd(event)">
+    return `<div class="wp-item wp-${wp.type && wp.type.toLowerCase ? wp.type.toLowerCase() : 'wp'}" draggable="true" data-idx="${i}" ondblclick="editWPPosition(${i})" ondragstart="onWpDragStart(event)" ondragover="onWpDragOver(event)" ondrop="onWpDrop(event)" ondragend="onWpDragEnd(event)">
       <div class="wp-num" onclick="editWpNum(${i})" style="cursor:pointer; background:${circleColor}; color:#fff;" title="Click to edit order">${i + 1}</div>
       <div class="wp-body"><div class="wp-xy">x:${wp.x_m} y:${wp.y_m} m</div><div class="wp-yaw">yaw:${wp.yaw_deg}°</div></div>
       <button class="wp-del" onclick="delWP(${i})">✕</button>
@@ -1689,9 +1724,17 @@ function executeMoveCommand(){
     }
     // Normalize yaw to [-π, π]
     newYaw = Math.atan2(Math.sin(newYaw), Math.cos(newYaw));
+    let wpX = robot.x;
+    // If goal x < odom x, subtract error; otherwise add error
+    if (wpX < robot.x) {
+      wpX = wpX - globalErrorValue;
+    } else {
+      wpX = wpX + globalErrorValue;
+    }
+    
     waypoints.push({
       id: waypoints.length + 1,
-      x_m: +(robot.x + globalErrorValue).toFixed(4),
+      x_m: +wpX.toFixed(4),
       y_m: +robot.y.toFixed(4),
       yaw_deg: Math.round(newYaw * 180 / Math.PI),
       yaw_rad: newYaw,
@@ -1711,8 +1754,16 @@ function executeMoveCommand(){
   const forward = moveDir === 'forward' ? distance : -distance;
   const dx = forward * Math.cos(robot.yaw);
   const dy = forward * Math.sin(robot.yaw);
-  const newX = robot.x + dx + globalErrorValue;
+  let newX = robot.x + dx;
   const newY = robot.y + dy;
+  
+  // If goal x < odom x, subtract error; otherwise add error
+  if (newX < robot.x) {
+    newX = newX - globalErrorValue;
+  } else {
+    newX = newX + globalErrorValue;
+  }
+  
   waypoints.push({
     id: waypoints.length + 1,
     x_m: +newX.toFixed(4),
@@ -1733,6 +1784,48 @@ function executeMoveCommand(){
 let wpModeSelection = null;  // 'waypoint' or 'move'
 let wpMapClickActive = false;
 let wpOrientation = 0;       // in radians for waypoint mode
+let editingWPIndex = null;   // null when not editing, index when editing
+
+function editWPPosition(wpIndex) {
+  if (editingWPIndex !== null) {
+    showToast('Already editing a waypoint. Press ESC or click another waypoint.');
+    return;
+  }
+  editingWPIndex = wpIndex;
+  showToast('Double-click to confirm new position or press ESC to cancel');
+  renderMap();
+}
+
+// Add double-click handler to map for confirming waypoint position
+mapCanvas.addEventListener('dblclick', e => {
+  if (editingWPIndex === null) return;
+  
+  const r = mapCanvas.getBoundingClientRect();
+  const mx = Math.floor((e.clientX - r.left) / SC);
+  const my = Math.floor((e.clientY - r.top) / SC);
+  
+  if (mx < 0 || mx >= mapW || my < 0 || my >= mapH) return;
+  
+  // Convert pixel coords to world coords
+  const worldX = (mx - originPx.x) / PX_PER_METER;
+  const worldY = (originPx.y - my) / PX_PER_METER;
+  
+  // Update waypoint position with conditional error logic
+  let wpX = worldX;
+  if (wpX < robot.x) {
+    wpX = wpX - globalErrorValue;
+  } else {
+    wpX = wpX + globalErrorValue;
+  }
+  
+  waypoints[editingWPIndex].x_m = +wpX.toFixed(4);
+  waypoints[editingWPIndex].y_m = +worldY.toFixed(4);
+  
+  editingWPIndex = null;
+  updateWPList();
+  renderMap();
+  showToast('✅ Waypoint position updated');
+});
 
 function openAddWP(){
   document.getElementById('wpmodeOverlay').classList.add('open');
@@ -1955,8 +2048,13 @@ function confirmAddWP(){
     finalYaw = baseYaw + (dyaw * Math.PI / 180);
   }
   
-  // Apply global error value to finalX
-  finalX = finalX + globalErrorValue;
+  // Apply global error value to finalX with conditional logic
+  // If goal x < odom x, subtract error; otherwise add error
+  if (finalX < robot.x) {
+    finalX = finalX - globalErrorValue;
+  } else {
+    finalX = finalX + globalErrorValue;
+  }
   
   if(isNaN(finalX) || isNaN(finalY)){
     showToast('❌ Invalid coordinates');
@@ -1991,7 +2089,16 @@ document.getElementById('wpmodeOverlay').addEventListener('click',e=>{
 
 document.getElementById('addWpOverlay').addEventListener('keydown',e=>{
   if(e.key==='Enter') confirmAddWP();
-  if(e.key==='Escape') closeAddWP();
+  if(e.key==='Escape') {
+    if (editingWPIndex !== null) {
+      editingWPIndex = null;
+      updateWPList();
+      renderMap();
+      showToast('Cancelled waypoint editing');
+    } else {
+      closeAddWP();
+    }
+  }
 });
 document.getElementById('addWpOverlay').addEventListener('click',e=>{
   if(e.target===document.getElementById('addWpOverlay')) closeAddWP();
