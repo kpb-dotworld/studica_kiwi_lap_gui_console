@@ -85,10 +85,10 @@ canvas{display:block;image-rendering:pixelated;max-width:100vw;max-height:90vh;}
 .leg{font-size:10px;color:var(--muted2);}.leg b{margin-right:4px;}
 
 /* ── RIGHT PANEL ── */
-.right{width:300px;background:var(--panel);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;}
+.right{width:260px;background:var(--panel);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;}
 .right::-webkit-scrollbar{width:3px;}.right::-webkit-scrollbar-thumb{background:var(--border);}
-.sec{padding:10px 13px;border-bottom:1px solid var(--border);}
-.sec-title{font-size:1.1em;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-weight:700;}
+.sec{padding:8px 10px;border-bottom:1px solid var(--border);}
+.sec-title{font-size:0.95em;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:7px;font-weight:700;}
 .odom-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;}
 .obox{background:var(--panel2);border:1px solid var(--border);border-radius:4px;padding:5px 6px;text-align:center;}
 .obox .k{font-size:var(--font-size-tiny);color:var(--muted2);letter-spacing:.5px;}.obox .n{font-size:1.2em;color:var(--accent);font-weight:700;margin-top:2px;}
@@ -296,7 +296,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 <div class="main">
 
 
-  <div class="wp-sidebar" style="width:270px;min-width:220px;max-width:320px;background:var(--panel2);display:flex;flex-direction:column;gap:0;box-shadow:1px 0 0 var(--border);">
+  <div class="wp-sidebar" style="width:240px;min-width:200px;max-width:280px;background:var(--panel2);display:flex;flex-direction:column;gap:0;box-shadow:1px 0 0 var(--border);">
     <div class="sec" style="border:none;border-bottom:1px solid var(--border);">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
         <div class="sec-title" style="margin:0">Waypoints [P]</div>
@@ -512,6 +512,34 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
     </div>
 
     <div class="sec">
+      <div class="sec-title">cmd_vel (live)</div>
+      <div class="cv-row">
+        <div class="cvbox"><div class="k">LIN.X</div><div class="n" id="cvLx">0.00</div></div>
+        <div class="cvbox"><div class="k">LIN.Y</div><div class="n" id="cvLy">0.00</div></div>
+        <div class="cvbox"><div class="k">ANG.Z</div><div class="n" id="cvAz">0.00</div></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">Move Command</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
+        <button class="orig-btn" onclick="startMoveCommand('forward')" style="background:rgba(77,255,145,.15);border-color:var(--green);color:var(--green);">⬆ Forward</button>
+        <button class="orig-btn" onclick="startMoveCommand('backward')" style="background:rgba(255,107,53,.15);border-color:var(--accent2);color:var(--accent2);">⬇ Backward</button>
+        <button class="orig-btn" onclick="startRotateCommand('cw')" style="background:rgba(0,212,255,.15);border-color:var(--accent);color:var(--accent);">↻ CW</button>
+        <button class="orig-btn" onclick="startRotateCommand('ccw')" style="background:rgba(0,212,255,.15);border-color:var(--accent);color:var(--accent);">↺ CCW</button>
+      </div>
+      <div id="movePanel" style="display:none;background:var(--panel2);border:1px solid var(--border);padding:8px;border-radius:4px;text-align:center;">
+        <div style="font-size:10px;color:var(--muted2);margin-bottom:6px;" id="moveDir">Forward</div>
+        <div id="moveInputRow" style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+          <label style="font-size:9px;color:var(--muted2);">Distance (m):</label>
+          <input type="number" id="moveDist" style="flex:1;background:#21262d;border:1px solid var(--border);color:var(--accent);font-size:11px;padding:4px;border-radius:3px;" value="1.0" min="0.1" step="0.1">
+        </div>
+        <button class="run-btn" id="moveRunBtn" onclick="executeMoveCommand()" style="width:100%;margin-bottom:4px;">▶ RUN MOVE</button>
+        <button class="orig-btn" onclick="cancelMoveCommand()" style="width:100%;background:rgba(255,68,85,.1);border-color:var(--red);color:var(--red);">✕ Cancel</button>
+      </div>
+    </div>
+
+    <div class="sec">
       <div class="sec-title">Joystick → /cmd_vel</div>
       <div class="joy-area">
         <div class="joy-pad" id="joyPad">
@@ -532,15 +560,6 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
         <label>MAX SPD</label>
         <input type="range" id="spdSlider" min="0.05" max="1.0" step="0.05" value="0.6" oninput="onSpdChange()">
         <span class="spd-val" id="spdVal">0.60</span>
-      </div>
-    </div>
-
-    <div class="sec">
-      <div class="sec-title">cmd_vel (live)</div>
-      <div class="cv-row">
-        <div class="cvbox"><div class="k">LIN.X</div><div class="n" id="cvLx">0.00</div></div>
-        <div class="cvbox"><div class="k">LIN.Y</div><div class="n" id="cvLy">0.00</div></div>
-        <div class="cvbox"><div class="k">ANG.Z</div><div class="n" id="cvAz">0.00</div></div>
       </div>
     </div>
   </div>
@@ -1294,6 +1313,11 @@ function connect(){
           document.getElementById('odomStatus').style.background = '#ff4455';
         }, 2000);
       }
+      if(d.type==='actual_cmd_vel'){
+        document.getElementById('cvLx').textContent=d.linear_x.toFixed(2);
+        document.getElementById('cvLy').textContent=d.linear_y.toFixed(2);
+        document.getElementById('cvAz').textContent=d.angular_z.toFixed(2);
+      }
       if(d.type==='dis_data') document.getElementById('sDisData').textContent=d.data;
       if(d.type==='map_list') {
         refreshMapLibrary(d.maps);
@@ -1506,6 +1530,87 @@ function editWpNum(idx) {
 }
 function delWP(i){ waypoints.splice(i,1); waypoints.forEach((w,j)=>w.id=j+1); updateWPList(); renderMap(); }
 function clearWP(){ if(!waypoints.length)return; if(confirm('Clear all waypoints?')){ waypoints=[]; updateWPList(); renderMap(); } }
+
+// ── MOVE COMMAND ───────────────────────────────────────────────────────────────
+let moveDir = null;  // 'forward', 'backward', 'cw', 'ccw'
+let rotateMode = false;
+
+function startMoveCommand(dir){
+  moveDir = dir;
+  rotateMode = false;
+  document.getElementById('moveDir').textContent = dir.charAt(0).toUpperCase() + dir.slice(1);
+  document.getElementById('movePanel').style.display = 'block';
+  document.getElementById('moveInputRow').style.display = '';
+  document.getElementById('moveRunBtn').textContent = '▶ RUN MOVE';
+  document.getElementById('moveDist').focus();
+}
+
+function startRotateCommand(rotDir){
+  moveDir = rotDir;
+  rotateMode = true;
+  document.getElementById('moveDir').textContent = rotDir === 'cw' ? 'Rotate CW (↻)' : 'Rotate CCW (↺)';
+  document.getElementById('movePanel').style.display = 'block';
+  document.getElementById('moveInputRow').style.display = 'none';
+  document.getElementById('moveRunBtn').textContent = '▶ RUN ROTATE';
+}
+
+function cancelMoveCommand(){
+  moveDir = null;
+  rotateMode = false;
+  document.getElementById('movePanel').style.display = 'none';
+}
+
+function executeMoveCommand(){
+  if(!moveDir) return;
+  if(rotateMode){
+    // Rotate 90° CW or CCW
+    let newYaw = robot.yaw;
+    if(moveDir === 'cw'){
+      newYaw += Math.PI/2;
+    } else if(moveDir === 'ccw'){
+      newYaw -= Math.PI/2;
+    }
+    // Normalize yaw to [-π, π]
+    newYaw = Math.atan2(Math.sin(newYaw), Math.cos(newYaw));
+    waypoints.push({
+      id: waypoints.length + 1,
+      x_m: +robot.x.toFixed(4),
+      y_m: +robot.y.toFixed(4),
+      yaw_deg: Math.round(newYaw * 180 / Math.PI),
+      yaw_rad: newYaw,
+      createdFrom: 'ROTATE',
+      type: moveDir === 'cw' ? 'CW' : 'CCW'
+    });
+    showToast('✓ Rotate waypoint added');
+    updateWPList();
+    renderMap();
+    cancelMoveCommand();
+    runMission();
+    return;
+  }
+  // Move forward/backward
+  const distance = parseFloat(document.getElementById('moveDist').value);
+  if(isNaN(distance) || distance <= 0) { showToast('❌ Invalid distance'); return; }
+  const forward = moveDir === 'forward' ? distance : -distance;
+  const dx = forward * Math.cos(robot.yaw);
+  const dy = forward * Math.sin(robot.yaw);
+  const newX = robot.x + dx;
+  const newY = robot.y + dy;
+  waypoints.push({
+    id: waypoints.length + 1,
+    x_m: +newX.toFixed(4),
+    y_m: +newY.toFixed(4),
+    yaw_deg: Math.round(robot.yaw * 180 / Math.PI),
+    yaw_rad: robot.yaw,
+    createdFrom: 'MOVE',
+    type: moveDir === 'forward' ? 'FWD' : 'BWD'
+  });
+  showToast('✓ Move waypoint added');
+  updateWPList();
+  renderMap();
+  cancelMoveCommand();
+  runMission();
+}
 
 // ── ADD WAYPOINT MANUALLY ─────────────────────────────────────────────────────
 let wpModeSelection = null;  // 'waypoint' or 'move'

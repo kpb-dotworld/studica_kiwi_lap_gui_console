@@ -315,6 +315,7 @@ class KiwiDashboardNode(Node):
         self._wp_pub   = self.create_publisher(String, "/kiwi/waypoints", 10)
         self._can_pub  = self.create_publisher(String, "/kiwi/cancel",    10)
         self.create_subscription(Odometry, "/odom",         self._odom_cb,   10)
+        self.create_subscription(Twist,    "/cmd_vel",      self._cmd_vel_cb, 10)
         self.create_subscription(String,   "/dis_data",     self._dis_cb,    10)
         self.create_subscription(String,   "/kiwi/status",  self._status_cb, 10)
         self.create_timer(0.1, self._publish_cmd)
@@ -339,6 +340,12 @@ class KiwiDashboardNode(Node):
             2.0 * (q.w * q.z + q.x * q.y),
             1.0 - 2.0 * (q.y * q.y + q.z * q.z))
         _broadcast({"type":"odom","x":x,"y":y,"yaw":yaw})
+
+    def _cmd_vel_cb(self, msg: Twist):
+        linear_x = msg.linear.x
+        linear_y = msg.linear.y
+        angular_z = msg.angular.z
+        _broadcast({"type":"actual_cmd_vel","linear_x":linear_x,"linear_y":linear_y,"angular_z":angular_z})
 
     def _dis_cb(self, msg: String):
         _broadcast({"type":"dis_data","data":msg.data})
