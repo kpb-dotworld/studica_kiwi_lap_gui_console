@@ -2120,6 +2120,10 @@ let wpSelectedX = null, wpSelectedY = null;
 let wpHoverX = null, wpHoverY = null;  // cursor hover position
 let hoverPixelX = null, hoverPixelY = null;  // cursor hover position in pixel coords (for origin mode)
 
+// Waypoint editor state
+let wpEditMode = false;
+let wpEditIndex = -1;  // index of waypoint being edited
+
 // Mouse move for waypoint preview
 mapCanvas.addEventListener('mousemove', e=>{
   if(!wpMapClickActive && !settingOrig) return;
@@ -2178,6 +2182,53 @@ mapCanvas.addEventListener('click', e=>{
   }
 });
 
+// Double-click on waypoint to edit it
+mapCanvas.addEventListener('dblclick', e=>{
+  console.log('[DBLCLICK] Event fired, wpMapClickActive:', wpMapClickActive, 'settingOrig:', settingOrig);
+  if(wpMapClickActive || settingOrig) return;  // Don't allow edit while in placement mode
+  
+  const r = mapCanvas.getBoundingClientRect();
+  // Use the same coordinate system as single click but without dividing by SC
+  const clickX = e.clientX - r.left;
+  const clickY = e.clientY - r.top;
+  
+  // If CSS is scaling the canvas, we need to account for that
+  const cssScaleX = mapCanvas.width / r.width;
+  const cssScaleY = mapCanvas.height / r.height;
+  const scaledClickX = clickX * cssScaleX;
+  const scaledClickY = clickY * cssScaleY;
+  
+  console.log('[DBLCLICK] Raw click:', clickX, clickY, 'CSS scale:', cssScaleX.toFixed(2), cssScaleY.toFixed(2), 'Scaled:', scaledClickX.toFixed(1), scaledClickY.toFixed(1));
+  console.log('[DBLCLICK] Waypoints count:', waypoints.length);
+  
+  // Check if double-click is near any waypoint
+  for(let i = 0; i < waypoints.length; i++){
+    const wp = waypoints[i];
+    const p = wpToCanvas(wp);
+    console.log('[DBLCLICK] WP', i, 'canvas pos:', p ? `(${p.x.toFixed(1)},${p.y.toFixed(1)})` : 'null', 'odom:', wp.x_m.toFixed(2), wp.y_m.toFixed(2));
+    if(!p) continue;
+    
+    // Check if click is within detection radius of waypoint center
+    const dist = Math.sqrt(Math.pow(scaledClickX - p.x, 2) + Math.pow(scaledClickY - p.y, 2));
+    console.log('[DBLCLICK] Distance to WP', i, ':', dist.toFixed(1));
+    if(dist < 40){
+      // Enter waypoint edit mode
+      wpEditMode = true;
+      wpEditIndex = i;
+      wpMapClickActive = true;
+      wpSelectedX = wp.x_m;
+      wpSelectedY = wp.y_m;
+      wpOrientation = wp.yaw_rad;
+      mapCanvas.style.cursor = 'crosshair';
+      renderMap();
+      showToast(`📝 Editing WP ${i+1} — click to move, arrows to rotate, ENTER to save, ESC to cancel`);
+      return;
+    }
+  }
+  // If we get here, no waypoint was close enough
+  console.log('[DBLCLICK] No waypoint found near click');
+});
+
 // Handle arrow keys for waypoint orientation
 document.addEventListener('keydown', e=>{
   // Waypoint orientation mode
@@ -2202,8 +2253,20 @@ document.addEventListener('keydown', e=>{
       wpOrientation = Math.PI/2 + (originYaw * Math.PI / 180);
       updateWaypointDisplay(); renderMap();
     }
-    else if(e.key === 'Enter') { confirmAddWP(); }  // Confirm waypoint with Enter
-    else if(e.key === 'Escape') { closeAddWP(); }   // Cancel with Escape
+    else if(e.key === 'Enter') {
+      if(wpEditMode) {
+        confirmWPEdit();  // Confirm waypoint edit
+      } else {
+        confirmAddWP();  // Confirm new waypoint
+      }
+    }
+    else if(e.key === 'Escape') {
+      if(wpEditMode) {
+        cancelWPEdit();  // Cancel waypoint edit
+      } else {
+        closeAddWP();   // Cancel with Escape
+      }
+    }
     return;
   }
   // Origin setting mode
@@ -2274,6 +2337,61 @@ function closeAddWP(){
   wpSelectedY = null;
   selectedMarkerX = null;
   selectedMarkerY = null;
+  wpEditMode = false;
+  wpEditIndex = -1;
+  mapCanvas.style.cursor = 'default';
+  renderMap();
+}
+
+// Confirm waypoint edit - update the existing waypoint
+function confirmWPEdit(){
+  if(wpEditIndex < 0 || wpEditIndex >= waypoints.length) {
+    showToast('❌ Invalid waypoint index');
+    cancelWPEdit();
+    return;
+  }
+  
+  if(wpSelectedX === null || wpSelectedY === null){
+    showToast('❌ No position selected');
+    return;
+  }
+  
+  // Normalize yaw to [0, 2π)
+  let finalYaw = wpOrientation % (2 * Math.PI);
+  if(finalYaw < 0) finalYaw += 2 * Math.PI;
+  
+  let yaw_deg = Math.round(finalYaw * 180 / Math.PI);
+  if (yaw_deg === 360) yaw_deg = 0;
+  
+  // Update the waypoint
+  waypoints[wpEditIndex].x_m = +wpSelectedX.toFixed(4);
+  waypoints[wpEditIndex].y_m = +wpSelectedY.toFixed(4);
+  waypoints[wpEditIndex].yaw_deg = yaw_deg;
+  waypoints[wpEditIndex].yaw_rad = finalYaw;
+  
+  const wpNum = wpEditIndex + 1;
+  showToast(`✅ WP ${wpNum} updated (${wpSelectedX.toFixed(2)}, ${wpSelectedY.toFixed(2)}, ${yaw_deg}°)`);
+  
+  // Exit edit mode
+  wpEditMode = false;
+  wpEditIndex = -1;
+  wpMapClickActive = false;
+  wpSelectedX = null;
+  wpSelectedY = null;
+  mapCanvas.style.cursor = 'default';
+  
+  updateWPList();
+  renderMap();
+}
+
+// Cancel waypoint edit
+function cancelWPEdit(){
+  showToast('Edit cancelled');
+  wpEditMode = false;
+  wpEditIndex = -1;
+  wpMapClickActive = false;
+  wpSelectedX = null;
+  wpSelectedY = null;
   mapCanvas.style.cursor = 'default';
   renderMap();
 }
