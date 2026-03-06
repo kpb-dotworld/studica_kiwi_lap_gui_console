@@ -114,7 +114,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .cv-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:5px;}
 .cvbox{background:var(--panel2);border:1px solid var(--border);border-radius:3px;padding:4px 5px;text-align:center;}
 .cvbox .k{font-size:8px;color:var(--muted2);}.cvbox .n{font-size:12px;color:var(--accent2);font-weight:700;}
-.orig-btn{width:100%;padding:7px 10px;background:transparent;border:1px solid var(--border);color:var(--accent2);font-family:inherit;font-size:11px;cursor:pointer;border-radius:3px;transition:all .15s;text-align:left;}
+.orig-btn{width:100%;padding:7px 10px;background:transparent;border:1px solid var(--border);color:var(--accent2);font-family:inherit;font-size:11px;cursor:pointer;border-radius:3px;transition:all .15s;text-align:center;}
 .orig-btn:hover{border-color:var(--accent2);background:rgba(255,107,53,.08);}
 .orig-btn.on{border-color:var(--accent2);background:rgba(255,107,53,.16);color:#fff;}
 .orig-info{margin-top:5px;font-size:10px;color:var(--muted2);}.orig-info b{color:var(--accent2);}
@@ -141,8 +141,8 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .wp-empty b{color:var(--accent2);}
 .exp-btn{width:100%;padding:8px;background:rgba(0,212,255,.08);border:1px solid var(--accent);color:var(--accent);font-family:inherit;font-size:11px;cursor:pointer;border-radius:3px;letter-spacing:1.5px;text-transform:uppercase;transition:all .15s;}
 .exp-btn:hover{background:rgba(0,212,255,.18);}
-.run-btn{width:100%;padding:10px;background:rgba(77,255,145,.12);border:1px solid var(--green);color:var(--green);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;border-radius:3px;letter-spacing:2px;text-transform:uppercase;transition:all .15s;margin-bottom:6px;}
-.run-btn:hover{background:rgba(77,255,145,.25);}
+.run-btn{width:100%;padding:10px;background:rgba(0,212,255,.12);border:1px solid var(--accent);color:var(--accent);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;border-radius:3px;letter-spacing:2px;text-transform:uppercase;transition:all .15s;margin-bottom:6px;}
+.run-btn:hover{background:rgba(0,212,255,.25);}
 .run-btn:disabled{opacity:.35;cursor:not-allowed;}
 .stop-btn{width:100%;padding:7px;background:rgba(255,68,85,.1);border:1px solid var(--red);color:var(--red);font-family:inherit;font-size:11px;cursor:pointer;border-radius:3px;letter-spacing:1.5px;text-transform:uppercase;transition:all .15s;margin-bottom:6px;display:none;}
 .stop-btn:hover{background:rgba(255,68,85,.22);}
@@ -162,8 +162,8 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .mp-state.error   {color:var(--red);border:1px solid var(--red);background:rgba(255,68,85,.07);}
 .clr-btn{font-size:9px;color:var(--red);background:none;border:1px solid transparent;cursor:pointer;font-family:inherit;padding:2px 6px;border-radius:3px;transition:all .15s;}
 .clr-btn:hover{border-color:var(--red);background:rgba(255,68,85,.1);}
-.addwp-btn{font-size:13px;color:var(--green);background:none;border:1.2px solid var(--green);cursor:pointer;font-family:inherit;padding:5px 14px;border-radius:4px;transition:all .15s;letter-spacing:.5px;}
-.addwp-btn:hover{background:rgba(77,255,145,.12);}
+.addwp-btn{font-size:13px;color:var(--accent);background:none;border:1.2px solid var(--accent);cursor:pointer;font-family:inherit;padding:5px 14px;border-radius:4px;transition:all .15s;letter-spacing:.5px;}
+.addwp-btn:hover{background:rgba(0,212,255,.12);}
 /* WAYPOINT MODE CHOICE popup */
 .wpmode-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1200;display:none;align-items:center;justify-content:center;}
 .wpmode-overlay.open{display:flex;}
@@ -221,7 +221,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .origin-modal-input label{font-size:9px;color:var(--muted2);width:50px;flex-shrink:0;}
 .origin-modal-input input{flex:1;background:#21262d;border:1px solid var(--border);color:var(--accent);font-family:inherit;font-size:11px;padding:4px 6px;border-radius:3px;min-width:0;}
 .origin-modal-actions{display:flex;gap:5px;}
-.origin-modal-actions button{flex:1;padding:7px;font-family:inherit;font-size:10px;cursor:pointer;border-radius:3px;border:1px solid;}
+.origin-modal-actions button{flex:1;padding:7px;font-family:inherit;font-size:10px;cursor:pointer;border-radius:3px;border:1px solid var(--accent);background:rgba(0,212,255,.12);color:var(--accent);}
 
 .move-modal-close{position:absolute;top:8px;right:8px;background:none;border:none;color:var(--red);font-size:20px;cursor:pointer;padding:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;transition:color .15s;}
 .move-modal-close:hover{color:#ff6655;}
@@ -234,7 +234,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .move-modal-input label{font-size:10px;color:var(--muted2);white-space:nowrap;flex-shrink:0;}
 .move-modal-input input{flex:1;background:#21262d;border:1px solid var(--border);color:var(--accent);font-family:inherit;font-size:14px;padding:6px 8px;border-radius:3px;min-width:0;}
 .move-modal-actions{display:flex;gap:5px;}
-.move-modal-actions button{flex:1;padding:10px;font-family:inherit;font-size:12px;cursor:pointer;border-radius:3px;border:1px solid;}
+.move-modal-actions button{flex:1;padding:10px;font-family:inherit;font-size:12px;cursor:pointer;border-radius:3px;border:1px solid var(--accent);background:rgba(0,212,255,.12);color:var(--accent);}
 
 /* ═══════════════════════════════════════════════
    MAP EDITOR MODAL
@@ -321,7 +321,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 
 <!-- ═══ HEADER ═══════════════════════════════════════════════════════════════ -->
 <header>
-  <div class="logo">Cooper<b>Bot</b> Dashboard</div>
+  <div class="logo">Team India Dashboard</div>
   <div class="hdr-right">
     <button class="hdr-btn" onclick="openEditor()">🗺 Map Editor</button>
     <button class="hdr-btn" style="margin-left:8px;" onclick="loadM1Map()">M1</button>
@@ -345,8 +345,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
   <div class="wp-sidebar" style="width:240px;min-width:200px;max-width:280px;background:var(--panel2);display:flex;flex-direction:column;gap:0;box-shadow:1px 0 0 var(--border);">
     <div class="sec" style="border:none;border-bottom:1px solid var(--border);background:var(--panel);">
       <div class="sec-title">Map Origin (0,0)</div>
-      <button class="orig-btn" id="origBtn" onclick="toggleOrigin()">🎯 Click map to set origin</button>
-      <div class="orig-info" id="origInfo">Not set — click button then click on the map</div>
+      <button class="orig-btn" id="origBtn" onclick="toggleOrigin()">🎯 Set Origin</button>
 
       <!-- orientation selector — shown after origin is set -->
       <div class="orig-orient" id="origOrient" style="display:none">
@@ -372,7 +371,6 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
         }
       }
       </script>
-      <div style="font-size:10px;color:var(--muted2);margin-top:2px;">Avg. odom error (X, 1m fwd/bwd)</div>
     </div>
 
     <script>
@@ -776,7 +774,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
       </div>
       <div class="origin-modal-actions">
         <button class="run-btn" onclick="sendOriginAsMove()" style="margin:0;">▶ RUN MOVE</button>
-        <button class="run-btn" onclick="addOriginAsWaypoint()" style="margin:0;background:rgba(147,197,253,.12);border-color:#5a7adb;color:#5a7adb;">+ ADD TO WP</button>
+        <button class="run-btn" onclick="addOriginAsWaypoint()" style="margin:0;background:rgba(0,212,255,.12);border-color:var(--accent);color:var(--accent);">+ ADD TO WP</button>
       </div>
     </div>
   </div>
@@ -971,20 +969,53 @@ let missionState = 'idle';
 
 // ── MAP CANVAS INIT ──────────────────────────────────────────────────────────
 const mapCanvas = document.getElementById('mapCanvas');
-const mctx      = mapCanvas.getContext('2d');
+const mctx      = mapCanvas ? mapCanvas.getContext('2d') : null;
+
+console.log('[INIT] mapCanvas exists:', !!mapCanvas);
+console.log('[INIT] mctx exists:', !!mctx);
+
+if(!mapCanvas) {
+  console.error('[INIT] ERROR: mapCanvas element not found! Map display will not work.');
+}
+if(!mctx) {
+  console.error('[INIT] ERROR: 2D context not available! Map display will not work.');
+}
 
 function initCanvas(){
-  if(!mapW || !mapH){ mapCanvas.width=400; mapCanvas.height=400; mctx.fillStyle='#0a1520'; mctx.fillRect(0,0,400,400); return; }
+  console.log('[CANVAS] initCanvas called:', {mapW, mapH, mapRes, mapPixels: mapPixels ? 'exists' : 'null'});
+  
+  if(!mapCanvas) {
+    console.error('[CANVAS] ERROR: mapCanvas is null!');
+    return;
+  }
+  
+  if(!mctx) {
+    console.error('[CANVAS] ERROR: mctx is null!');
+    return;
+  }
+  
+  if(!mapW || !mapH){ 
+    console.warn('[CANVAS] mapW or mapH missing, drawing placeholder');
+    mapCanvas.width=400; mapCanvas.height=400; mctx.fillStyle='#0a1520'; mctx.fillRect(0,0,400,400); return; 
+  }
   const avail = Math.min(window.innerHeight-200, window.innerWidth-340);
   SC = Math.max(4, Math.min(20, Math.floor(avail / Math.max(mapW,mapH))));
+  console.log('[CANVAS] Canvas dimensions:', {mapW, mapH, avail, SC, canvasWidth: mapW * SC, canvasHeight: mapH * SC});
   mapCanvas.width  = mapW * SC;
   mapCanvas.height = mapH * SC;
+  console.log('[CANVAS] Set canvas size:', {actualWidth: mapCanvas.width, actualHeight: mapCanvas.height});
   drawRulerX(); drawRulerY(); renderMap();
-  document.getElementById('legRes').textContent = `${(mapRes/100).toFixed(2)} m/cell · ${mapW}×${mapH}`;
+  const legRes = document.getElementById('legRes');
+  if(legRes) legRes.textContent = `${(mapRes/100).toFixed(2)} m/cell · ${mapW}×${mapH}`;
 }
 
 function drawRulerX(){
-  const c=document.getElementById('rulerX'); c.width=mapW*SC; c.height=26;
+  const c=document.getElementById('rulerX'); 
+  if(!c) {
+    console.warn('[RULER] rulerX element not found');
+    return;
+  }
+  c.width=mapW*SC; c.height=26;
   if(!mapW)return;
   const g=c.getContext('2d'); g.fillStyle='#0f1824'; g.fillRect(0,0,c.width,26);
   g.font='8px Courier New'; g.textAlign='center';
@@ -996,7 +1027,12 @@ function drawRulerX(){
   }
 }
 function drawRulerY(){
-  const c=document.getElementById('rulerY'); c.width=26; c.height=mapH*SC;
+  const c=document.getElementById('rulerY'); 
+  if(!c) {
+    console.warn('[RULER] rulerY element not found');
+    return;
+  }
+  c.width=26; c.height=mapH*SC;
   if(!mapH)return;
   const g=c.getContext('2d'); g.fillStyle='#0f1824'; g.fillRect(0,0,26,c.height);
   for(let i=0;i<=mapH;i++){
@@ -1008,14 +1044,34 @@ function drawRulerY(){
 }
 
 function renderMap(){
+  if(!mctx) {
+    console.error('[RENDER] ERROR: mctx is null! Cannot render map.');
+    return;
+  }
+  
+  if(!mapCanvas) {
+    console.error('[RENDER] ERROR: mapCanvas is null! Cannot render map.');
+    return;
+  }
+  
+  console.log('[RENDER] renderMap called:', {mapW, mapH, mapPixels: mapPixels ? `Uint8Array(${mapPixels.length})` : 'null', canvasWidth: mapCanvas.width, canvasHeight: mapCanvas.height});
+  
   mctx.clearRect(0,0,mapCanvas.width,mapCanvas.height);
-  if(!mapPixels){ mctx.fillStyle='#0a1520'; mctx.fillRect(0,0,mapCanvas.width,mapCanvas.height); return; }
+  if(!mapPixels){ 
+    console.warn('[RENDER] mapPixels is null, drawing placeholder');
+    mctx.fillStyle='#0a1520'; mctx.fillRect(0,0,mapCanvas.width,mapCanvas.height); 
+    return; 
+  }
 
   // draw cells
+  console.log('[RENDER] Drawing', mapW * mapH, 'cells...');
   for(let r=0;r<mapH;r++) for(let c=0;c<mapW;c++){
-    mctx.fillStyle = mapPixels[r*mapW+c]===0 ? '#0e1e30' : '#bdd0dc';
+    const idx = r*mapW+c;
+    const val = mapPixels[idx];
+    mctx.fillStyle = val===0 ? '#0e1e30' : '#bdd0dc';
     mctx.fillRect(c*SC, r*SC, SC, SC);
   }
+  console.log('[RENDER] Finished drawing cells');
 
   // grid lines
   for(let i=0;i<=mapW;i++){
@@ -1413,7 +1469,7 @@ function toggleOrigin(){
   const btn=document.getElementById('origBtn');
   btn.classList.toggle('on',settingOrig);
   btn.textContent=settingOrig?'⏳ Click on the map to set origin…'
-    :(originPx?'🎯 Origin set — click to move it':'🎯 Click map to set origin');
+    :(originPx?'🎯 Reset Origin':'🎯 Set Origin');
   if(settingOrig){
     showToast('🎯 Click map to place → WASD adjust position • ENTER save • ESC cancel');
   }
@@ -1468,8 +1524,7 @@ function confirmOrigin(){
   
   const btn=document.getElementById('origBtn');
   btn.classList.remove('on');
-  btn.textContent='🎯 Origin set — click to move it';
-  document.getElementById('origInfo').innerHTML=`Origin px(${originPx.x},${originPx.y}) → <b>world(0,0)</b>`;
+  btn.textContent='🎯 Reset Origin';
   document.getElementById('origOrient').style.display='block';
   renderMap();
   showToast('✅ Origin saved at pixel('+originPx.x+','+originPx.y+')');
@@ -1481,7 +1536,7 @@ function cancelOrigin(){
   selectedMarkerPixelY = null;
   const btn=document.getElementById('origBtn');
   btn.classList.remove('on');
-  btn.textContent='🎯 Click map to set origin';
+  btn.textContent=(originPx?'🎯 Reset Origin':'🎯 Set Origin');
   renderMap();
   showToast('❌ Origin setting cancelled');
 }
@@ -1501,13 +1556,14 @@ function connect(){
   document.getElementById('dbgUrl').textContent=wsUrl();
   setBadge('c');
   try{ ws=new WebSocket(wsUrl()); }catch(e){ retry(); return; }
-  ws.onopen=()=>{ retries=0; document.getElementById('dbgRetry').textContent='0'; setBadge('on'); send({type:'list_maps'}); };
+  ws.onopen=()=>{ retries=0; document.getElementById('dbgRetry').textContent='0'; setBadge('on'); send({type:'list_maps'}); send({type:'load_map', name:'actual_map'}); };
   ws.onclose=()=>{ setBadge('off'); retry(); };
   ws.onerror=()=>console.warn('[WS] error');
   ws.onmessage=e=>{
     rxCount++; document.getElementById('dbgRx').textContent=rxCount;
     try{
       const d=JSON.parse(e.data);
+      console.log('[WS] Received:', d.type, d);  // Log all incoming messages
       if(d.type==='odom'){
         odomCount++; document.getElementById('dbgOdom').textContent=odomCount;
         robot.x=d.x; robot.y=d.y; robot.yaw=d.yaw;
@@ -1537,18 +1593,29 @@ function connect(){
       }
       if(d.type==='dis_data') document.getElementById('sDisData').textContent=d.data;
       if(d.type==='map_list') {
+        console.log('[MAP] Received map_list:', d.maps);
         refreshMapLibrary(d.maps);
         showHomeMapLibrary(d.maps);
       }
-      if(d.type==='map_data') loadMapData(d);
+      if(d.type==='map_data') {
+        console.log('[MAP] Received map_data:', {name: d.name, cols: d.cols, rows: d.rows, resolution: d.resolution, pixelsLength: d.pixels ? d.pixels.length : 'undefined'});
+        loadMapData(d);
+      }
+      if(d.type==='map_load_error') {
+        console.error('[MAP] Load error:', d.error);
+        showToast('❌ Map load error: ' + d.error);
+      }
       if(d.type==='map_saved'){ showToast('💾 Map saved: '+d.name); send({type:'list_maps'}); }
       if(d.type==='map_save_error') showToast('❌ Save error: '+d.msg);
       if(d.type==='mission_status') updateMissionPanel(d);
-    }catch(_){}
+    }catch(err){
+      console.error('[WS] Error processing message:', err, 'Raw:', e.data);
+      showToast('❌ Message error: ' + err.message);
+    }
   };
 }
 function retry(){ retries++; document.getElementById('dbgRetry').textContent=retries; setTimeout(connect,Math.min(500*Math.pow(2,Math.min(retries-1,4)),8000)); }
-function send(obj){ if(ws&&ws.readyState===WebSocket.OPEN) try{ws.send(JSON.stringify(obj));}catch(_){} }
+function send(obj){ if(ws&&ws.readyState===WebSocket.OPEN) try{ console.log('[WS] Sending:', obj); ws.send(JSON.stringify(obj));}catch(_){} }
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&(!ws||ws.readyState>1)) connect(); });
 connect();
 
@@ -2387,7 +2454,12 @@ function showPopup(txt){
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
 function showToast(msg, dur=2800){
-  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  const t=document.getElementById('toast'); 
+  if(!t) {
+    console.warn('[TOAST] toast element not found, message:', msg);
+    return;
+  }
+  t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), dur);
 }
 
@@ -2783,15 +2855,44 @@ function useSelectedMap(){
 }
 
 function loadMapData(d){
+  console.log('[LOAD] loadMapData called with:', d);
+  
+  if(!d.cols || !d.rows || !d.pixels) {
+    console.error('[LOAD] ERROR - Missing required map data:', {cols: d.cols, rows: d.rows, pixelsExists: !!d.pixels});
+    showToast('❌ Map data incomplete - missing cols, rows, or pixels');
+    return;
+  }
+  
+  console.log('[LOAD] Setting mapW =', d.cols, ', mapH =', d.rows);
   mapW    = d.cols;
   mapH    = d.rows;
   mapRes  = Math.round(d.resolution * 100);  // m → cm
-  mapPixels = new Uint8Array(d.pixels);
+  
+  console.log('[LOAD] Creating Uint8Array from', d.pixels.length, 'pixels');
+  // Handle both Uint8Array and regular arrays
+  if(d.pixels instanceof Uint8Array) {
+    mapPixels = d.pixels;
+    console.log('[LOAD] pixels is already Uint8Array');
+  } else if(Array.isArray(d.pixels)) {
+    console.log('[LOAD] Converting array to Uint8Array');
+    mapPixels = new Uint8Array(d.pixels);
+  } else {
+    console.error('[LOAD] ERROR - pixels is not array or Uint8Array:', typeof d.pixels);
+    showToast('❌ Map pixels data format invalid');
+    return;
+  }
+  
+  console.log('[LOAD] mapPixels set:', {length: mapPixels.length, first5: Array.from(mapPixels.slice(0, 5))});
+  
   originPx  = null;   // reset origin — user must set it
-  document.getElementById('origBtn').textContent='🎯 Click map to set origin';
-  document.getElementById('origInfo').textContent='Map loaded — set origin by clicking button then map';
-  document.getElementById('dbgMap').textContent=d.name;
+  const origBtn = document.getElementById('origBtn');
+  if(origBtn) origBtn.textContent='🎯 Click map to set origin';
+  const dbgMap = document.getElementById('dbgMap');
+  if(dbgMap) dbgMap.textContent=d.name;
+  
+  console.log('[LOAD] Calling initCanvas()');
   initCanvas();
+  console.log('[LOAD] Successfully loaded:', {name: d.name, width: mapW, height: mapH, resolution: mapRes});
   showToast(`✅ Map "${d.name}" loaded  (${mapW}×${mapH})`);
 }
 

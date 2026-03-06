@@ -221,10 +221,22 @@ def _send_map_list(client: _WSClient):
 
 def _send_map_data(client: _WSClient, name: str):
     """Read PGM + YAML and send pixel array to browser."""
+    print(f"[MAP] load_map request: name='{name}'")
     base = os.path.join(MAPS_DIR, name)
     pgm  = base + ".pgm"
     yml  = base + ".yaml"
+    print(f"[MAP] Looking for: {pgm}")
+    print(f"[MAP] File exists: {os.path.exists(pgm)}")
     try:
+        if not os.path.exists(pgm):
+            print(f"[MAP] Error: File not found: {pgm}")
+            client.send(json.dumps({
+                "type": "map_load_error",
+                "name": name,
+                "error": f"File not found: {pgm}"
+            }))
+            return
+            
         with open(pgm, "rb") as f:
             magic = f.readline().strip()
             dims  = f.readline().decode().split()
@@ -232,6 +244,8 @@ def _send_map_data(client: _WSClient, name: str):
             f.readline()  # maxval
             raw = f.read()
         pixels = list(raw[:w*h])
+        
+        print(f"[MAP] Loaded PGM: {w}×{h}, {len(pixels)} pixels")
 
         resolution = 0.05
         try:
@@ -239,8 +253,11 @@ def _send_map_data(client: _WSClient, name: str):
             with open(yml) as f:
                 y = yaml.safe_load(f)
                 resolution = float(y.get("resolution", 0.05))
-        except: pass
+                print(f"[MAP] Resolution from YAML: {resolution}")
+        except Exception as e:
+            print(f"[MAP] Could not load YAML: {e}, using default {resolution}")
 
+        print(f"[MAP] Sending map_data to client: {name}")
         client.send(json.dumps({
             "type": "map_data",
             "name": name,
@@ -249,8 +266,16 @@ def _send_map_data(client: _WSClient, name: str):
             "resolution": resolution,
             "pixels": pixels
         }))
+        print(f"[MAP] Successfully sent map_data: {name}")
     except Exception as e:
         print(f"[MAP] Load error: {e}")
+        import traceback
+        traceback.print_exc()
+        client.send(json.dumps({
+            "type": "map_load_error",
+            "name": name,
+            "error": str(e)
+        }))
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -321,7 +346,7 @@ class KiwiDashboardNode(Node):
         self.create_subscription(String,   "/kiwi/status",  self._status_cb, 10)
         self.create_timer(0.1, self._publish_cmd)
         self.create_timer(0.2, self._check_mission)
-        self.get_logger().info(f"CooperBot Dashboard v4 started ✓  maps→ {MAPS_DIR}")
+        self.get_logger().info(f"Team India Dashboard v4 started ✓  maps→ {MAPS_DIR}")
 
     def _publish_cmd(self):
         with state_lock: cv = dict(shared_state["cmd_vel"])
