@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# deveoped by coopers   
 """
 ╔══════════════════════════════════════════════════════════════════════════╗
 ║           KIWI BOT DASHBOARD  v4  —  ROS2 Humble                        ║
