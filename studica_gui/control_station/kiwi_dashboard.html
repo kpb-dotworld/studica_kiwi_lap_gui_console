@@ -5,6 +5,19 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Cooper Bot Dashboard v3</title>
 <style>
+/* Dotted adder box for WP/MOVE */
+.adder-box {
+  border: 3px dashed #222;
+  border-radius: 18px;
+  padding: 18px 10px 12px 10px;
+  margin: 12px 10px 0 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  background: rgba(0,0,0,0.03);
+  min-height: 48px;
+}
 
 :root{
   --bg:#0a0e17;--panel:#0f1824;--panel2:#151f2e;--border:#1e2d3d;
@@ -298,17 +311,12 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 
   <div class="wp-sidebar" style="width:270px;min-width:220px;max-width:320px;background:var(--panel2);display:flex;flex-direction:column;gap:0;box-shadow:1px 0 0 var(--border);">
     <div class="sec" style="border:none;border-bottom:1px solid var(--border);">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <div class="sec-title" style="margin:0">Waypoints [P]</div>
-        <div style="display:flex;gap:5px;align-items:center;">
-          <button class="addwp-btn" onclick="selectWaypointMode()">WP</button>
-          <button class="addwp-btn" onclick="selectMoveMode()">MOVE</button>
-          <button class="clr-btn" onclick="clearWP()">✕ Clear</button>
-        </div>
-      </div>
+      <div class="sec-title" style="margin:0 0 8px 0">Waypoints [P]</div>
+      <div id="adderBoxes"></div>
       <div class="wp-list" id="wpList">
-        <div class="wp-empty">No waypoints.<br>Drive robot → press <b>[P]</b> or <b>ADD WP</b></div>
+        <div class="wp-empty">No waypoints.<br>Use the adder below to add a waypoint.</div>
       </div>
+      <button class="clr-btn" onclick="clearWP()" style="margin-top:10px;">✕ Clear</button>
     </div>
     <div class="sec" style="border:none;border-bottom:1px solid var(--border);">
       <button class="run-btn" id="runBtn" onclick="runMission()">▶ RUN WAYPOINTS</button>
@@ -686,6 +694,33 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
      JAVASCRIPT
 ════════════════════════════════════════════════════════════════════════════ -->
 <script>
+// Render adder boxes for WP/MOVE
+function renderAdderBoxes() {
+  const adderDiv = document.getElementById('adderBoxes');
+  adderDiv.innerHTML = '';
+  // Only show one adder at a time (after each add, a new one appears)
+  const adder = document.createElement('div');
+  adder.className = 'adder-box';
+  const wpBtn = document.createElement('button');
+  wpBtn.className = 'addwp-btn';
+  wpBtn.textContent = 'WP';
+  wpBtn.onclick = () => { selectWaypointMode(); };
+  const moveBtn = document.createElement('button');
+  moveBtn.className = 'addwp-btn';
+  moveBtn.textContent = 'MOVE';
+  moveBtn.onclick = () => { selectMoveMode(); };
+  adder.appendChild(wpBtn);
+  adder.appendChild(moveBtn);
+  adderDiv.appendChild(adder);
+}
+
+// Call this after adding a waypoint to show a new adder
+function onWaypointAdded() {
+  renderAdderBoxes();
+}
+
+// Initial render
+document.addEventListener('DOMContentLoaded', renderAdderBoxes);
 // --- Origin orientation by WASD and keyboard arrows ---
 // --- Origin placement: WASD = move marker, Arrow keys = rotate orientation ---
 document.addEventListener('keydown', function(e) {
@@ -723,6 +758,9 @@ let originPx=null, settingOrig=false;
 let originYaw=0;                     // degrees — robot facing direction at origin (0=right,90=up,180=left,270=down)
 let robot={x:0,y:0,yaw:0};
 let waypoints=[];
+// Track current mission progress for arrow display
+let missionCurrentIdx = 0;
+let missionState = 'idle';
 
 // ── MAP CANVAS INIT ──────────────────────────────────────────────────────────
 const mapCanvas = document.getElementById('mapCanvas');
@@ -827,10 +865,15 @@ function renderMap(){
     mctx.restore();
   }
 
-  // Draw dotted line from robot to first waypoint
-  if (waypoints.length > 0) {
+  // Draw dotted line from robot to current waypoint (if not reached/done)
+  if (waypoints.length > 0 && missionState !== 'done' && missionState !== 'reached' && missionState !== 'cancelled' && missionState !== 'error') {
+    // Use missionCurrentIdx if available, else default to 0
+    let idx = 0;
+    if (typeof missionCurrentIdx === 'number' && missionCurrentIdx < waypoints.length) {
+      idx = missionCurrentIdx;
+    }
     const rp = robotToCanvas();
-    const wp1 = wpToCanvas(waypoints[0]);
+    const wp1 = wpToCanvas(waypoints[idx]);
     if (rp && wp1) {
       mctx.save();
       mctx.setLineDash([7, 7]);
@@ -840,7 +883,7 @@ function renderMap(){
       mctx.moveTo(rp.x, rp.y);
       mctx.lineTo(wp1.x, wp1.y);
       mctx.stroke();
-      // Arrowhead at first waypoint
+      // Arrowhead at current waypoint
       const dx = wp1.x - rp.x, dy = wp1.y - rp.y;
       const angle = Math.atan2(dy, dx);
       const len = 18;
@@ -1385,23 +1428,14 @@ setInterval(()=>{
   }
 }, 100);
 
-// Send cmd_vel based on joystick OR WASD when in origin/waypoint modes
+// Send cmd_vel based on joystick, but NOT during origin/waypoint placement
 setInterval(()=>{
-  let sendLinX = jLY, sendLinY = -jLX, sendAngZ = jAZ;
-  
-  // If in waypoint marking or setting origin mode, use WASD instead
-  if(wpMapClickActive || settingOrig){
-    sendLinX = 0;
-    sendLinY = 0;
-    sendAngZ = 0;
-    if(wasdKeys.w) sendLinX += wasdSpeed;
-    if(wasdKeys.s) sendLinX -= wasdSpeed;
-    if(wasdKeys.a) sendLinY += wasdSpeed;
-    if(wasdKeys.d) sendLinY -= wasdSpeed;
-    if(wasdKeys.q) sendAngZ += wasdSpeed * 1.5;
-    if(wasdKeys.e) sendAngZ -= wasdSpeed * 1.5;
+  // If in waypoint marking or setting origin mode, DO NOT send cmd_vel
+  if (wpMapClickActive || settingOrig) {
+    // Only move the marker visually, do not send any movement commands
+    return;
   }
-  
+  let sendLinX = jLY, sendLinY = -jLX, sendAngZ = jAZ;
   send({type:'cmd_vel', linear_x:sendLinX, linear_y:sendLinY, angular_z:sendAngZ});
 }, 100);
 
@@ -1418,6 +1452,7 @@ function markWP(){
   document.body.classList.remove('p-flash'); void document.body.offsetWidth; document.body.classList.add('p-flash');
   setTimeout(()=>document.body.classList.remove('p-flash'),500);
   updateWPList(); renderMap();
+  onWaypointAdded();
 }
 function updateWPList(){
   const el=document.getElementById('wpList');
@@ -2197,6 +2232,11 @@ function updateMissionPanel(d){
   const current = d.current || 0;
   const total   = d.total   || 0;
   const msg     = d.msg     || '';
+  // Track mission state and current index for arrow display
+  missionState = state;
+  missionCurrentIdx = current;
+  // Redraw map to update arrow visibility
+  renderMap();
 
   // state badge
   const badge = document.getElementById('mpState');
@@ -2225,7 +2265,13 @@ function updateMissionPanel(d){
   document.getElementById('stopBtn').style.display = isDone ? 'none' : 'block';
 
   // toast for key events
-  if(state==='done')      showToast('🏁 Mission complete!');
+  if(state==='done') {
+    showToast('🏁 Mission complete!');
+    // Clear waypoints when mission is done
+    waypoints = [];
+    updateWPList();
+    renderMap();
+  }
   if(state==='error')     showToast('❌ Mission error — check status');
   if(state==='cancelled') showToast('⏹ Mission cancelled');
 }

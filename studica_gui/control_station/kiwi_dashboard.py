@@ -12,7 +12,7 @@
 ║    • Waypoint marking [P] + JSON export                                  ║
 ║                                                                          ║
 ║  SETUP:   pip3 install websockets pyyaml                                 ║
-║  RUN:     python3 kiwi_dashboard_v3.py                                   ║
+║  RUN:     python3 kiwi_dashboard_v5.py                                   ║
 ║  BROWSER: http://localhost:8080                                           ║
 ╚══════════════════════════════════════════════════════════════════════════╝
 """
