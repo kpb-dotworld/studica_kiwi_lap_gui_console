@@ -132,8 +132,25 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .wp-num{width:22px;height:22px;border-radius:50%;background:var(--accent2);color:#fff;font-size:1em;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .wp-item.wp-wp { background: #ff980022; border-color: #ff9800; }
 .wp-item.wp-move { background: #2196f322; border-color: #2196f3; }
+.wp-item.wp-action { background: #9c27b022; border-color: #9c27b0; }
 .wp-item.wp-wp .wp-num { background: #ff9800; }
 .wp-item.wp-move .wp-num { background: #2196f3; }
+.wp-item.wp-action .wp-num { background: #9c27b0; }
+
+/* Action button */
+.action-btn{font-size:13px;color:#9c27b0;background:none;border:1.2px solid #9c27b0;cursor:pointer;font-family:inherit;padding:5px 14px;border-radius:4px;transition:all .15s;letter-spacing:.5px;}
+.action-btn:hover{background:rgba(156,39,176,.12);}
+
+/* Action popup */
+.action-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1200;display:none;align-items:center;justify-content:center;}
+.action-overlay.open{display:flex;}
+.action-box{background:var(--panel);border:1px solid #9c27b0;border-radius:8px;padding:20px 24px;width:300px;box-shadow:0 4px 24px rgba(0,0,0,.7);text-align:center;}
+.action-title{font-size:12px;color:#9c27b0;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;font-weight:700;}
+.action-list{display:flex;flex-direction:column;gap:8px;}
+.action-item-btn{padding:12px 16px;font-family:inherit;font-size:12px;cursor:pointer;border-radius:4px;border:1px solid #9c27b0;background:rgba(156,39,176,.1);color:#ce93d8;font-weight:600;letter-spacing:.5px;transition:all .15s;text-align:left;}
+.action-item-btn:hover{background:rgba(156,39,176,.25);color:#fff;}
+.action-close-btn{margin-top:12px;padding:7px;background:transparent;border:1px solid var(--border);color:var(--muted2);font-family:inherit;font-size:11px;cursor:pointer;border-radius:3px;width:100%;}
+.action-close-btn:hover{border-color:var(--red);color:var(--red);}
 .wp-body{flex:1;}.wp-xy{color:var(--accent);font-size:1em;}.wp-yaw{font-size:1em;color:var(--green);}
 .wp-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1em;padding:2px 3px;transition:color .15s;}
 .wp-del:hover{color:var(--red);}
@@ -164,6 +181,19 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .clr-btn:hover{border-color:var(--red);background:rgba(255,68,85,.1);}
 .addwp-btn{font-size:13px;color:var(--accent);background:none;border:1.2px solid var(--accent);cursor:pointer;font-family:inherit;padding:5px 14px;border-radius:4px;transition:all .15s;letter-spacing:.5px;}
 .addwp-btn:hover{background:rgba(0,212,255,.12);}
+/* Action button */
+.action-btn{font-size:13px;color:#9c27b0;background:none;border:1.2px solid #9c27b0;cursor:pointer;font-family:inherit;padding:5px 14px;border-radius:4px;transition:all .15s;letter-spacing:.5px;}
+.action-btn:hover{background:rgba(156,39,176,.12);}
+/* Action popup */
+.action-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1200;display:none;align-items:center;justify-content:center;}
+.action-overlay.open{display:flex;}
+.action-box{background:var(--panel);border:1px solid #9c27b0;border-radius:8px;padding:20px 24px;width:300px;box-shadow:0 4px 24px rgba(0,0,0,.7);text-align:center;}
+.action-title{font-size:12px;color:#9c27b0;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;font-weight:700;}
+.action-list{display:flex;flex-direction:column;gap:8px;}
+.action-item-btn{padding:12px 16px;font-family:inherit;font-size:12px;cursor:pointer;border-radius:4px;border:1px solid #9c27b0;background:rgba(156,39,176,.1);color:#ce93d8;font-weight:600;letter-spacing:.5px;transition:all .15s;text-align:left;}
+.action-item-btn:hover{background:rgba(156,39,176,.25);}
+.action-close-btn{margin-top:12px;padding:8px 16px;font-family:inherit;font-size:11px;cursor:pointer;border-radius:4px;border:1px solid #555;background:rgba(85,85,85,.1);color:#aaa;letter-spacing:.5px;transition:all .15s;}
+.action-close-btn:hover{background:rgba(85,85,85,.2);}
 /* WAYPOINT MODE CHOICE popup */
 .wpmode-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1200;display:none;align-items:center;justify-content:center;}
 .wpmode-overlay.open{display:flex;}
@@ -382,6 +412,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
     </script>
     <div class="sec" style="border:none;border-bottom:1px solid var(--border);display:flex;flex-direction:column;min-height:0;">
       <div class="sec-title" style="margin:0;margin-bottom:8px;">WAYPOINTS [P]</div>
+      <button class="action-btn" onclick="openActionPopup()" style="width:100%;margin-bottom:6px;">⚡ Action</button>
       <button class="addwp-btn" onclick="selectWaypointMode()" style="width:100%;margin-bottom:8px;">WP</button>
       <div style="display:flex;gap:4px;align-items:center;justify-content:flex-end;margin-bottom:8px;">
         <button class="clr-btn" onclick="clearWP()">✕ Clear</button>
@@ -391,8 +422,8 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
         // Add a waypoint at (0,0,0) with conditional error logic
         const targetX = 0.0;
         let wpX = targetX;
-        // Get previous waypoint X if exists
-        const prevWpX = waypoints.length > 0 ? waypoints[waypoints.length - 1].x_m : null;
+        // Get previous spatial waypoint X if exists (skip ACTION nodes)
+        const _lsw = lastSpatialWP(); const prevWpX = _lsw ? _lsw.x_m : null;
         // If prevX < newX OR prevX < odom x, subtract error; otherwise add error
         if ((prevWpX !== null && (prevWpX < targetX || prevWpX < robot.x)) || (prevWpX === null && targetX < robot.x)) {
           wpX = targetX - globalErrorValue;
@@ -982,6 +1013,17 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
   </div>
 </div>
 
+<!-- ACTION POPUP -->
+<div class="action-overlay" id="actionOverlay">
+  <div class="action-box">
+    <div class="action-title">⚡ Add Action to Mission</div>
+    <div class="action-list">
+      <button class="action-item-btn" onclick="addAction('detect_color')">🔍 Detect Colour</button>
+    </div>
+    <button class="action-close-btn" onclick="closeActionPopup()">✕ Cancel</button>
+  </div>
+</div>
+
 <!-- ═══════════════════════════════════════════════════════════════════════════
      JAVASCRIPT
 ════════════════════════════════════════════════════════════════════════════ -->
@@ -1195,8 +1237,13 @@ function renderMap(){
     if (typeof missionCurrentIdx === 'number' && missionCurrentIdx < waypoints.length) {
       idx = missionCurrentIdx;
     }
+    // Find next spatial waypoint (skip ACTION nodes)
+    let nextSpatialIdx = idx;
+    while (nextSpatialIdx < waypoints.length && waypoints[nextSpatialIdx].type === 'ACTION') {
+      nextSpatialIdx++;
+    }
     const rp = robotToCanvas();
-    const wp1 = wpToCanvas(waypoints[idx]);
+    const wp1 = (nextSpatialIdx < waypoints.length) ? wpToCanvas(waypoints[nextSpatialIdx]) : null;
     if (rp && wp1) {
       mctx.save();
       mctx.setLineDash([7, 7]);
@@ -1223,15 +1270,17 @@ function renderMap(){
       mctx.restore();
     }
   }
-  // Dotted lines between waypoints
-  if (waypoints.length > 1) {
+  // Dotted lines between waypoints (skip ACTION nodes)
+  {
+    const spatialWPs = waypoints.filter(w => w.type !== 'ACTION');
+    if (spatialWPs.length > 1) {
     mctx.save();
     mctx.setLineDash([7, 7]);
     mctx.strokeStyle = '#ff6b35';
     mctx.lineWidth = 2;
-    for (let i = 0; i < waypoints.length - 1; i++) {
-      const p1 = wpToCanvas(waypoints[i]);
-      const p2 = wpToCanvas(waypoints[i+1]);
+    for (let i = 0; i < spatialWPs.length - 1; i++) {
+      const p1 = wpToCanvas(spatialWPs[i]);
+      const p2 = wpToCanvas(spatialWPs[i+1]);
       if (p1 && p2) {
         mctx.beginPath();
         mctx.moveTo(p1.x, p1.y);
@@ -1255,20 +1304,24 @@ function renderMap(){
     }
     mctx.setLineDash([]);
     mctx.restore();
+    }
   }
   // waypoints: draw robot model at each waypoint with reduced opacity and sequence number
+  let mapWpNum = 0;
   waypoints.forEach((wp,i)=>{
+    if(wp.type === 'ACTION') return; // skip ACTION nodes on map
+    mapWpNum++;
     const p=wpToCanvas(wp); if(!p) return;
     // Draw robot model - screen heading = originYaw_rad - wp.yaw_rad (yaw CW positive)
     const originYaw_rad = originYaw * Math.PI / 180;
     const screenYaw = originYaw_rad - wp.yaw_rad;
     mctx.save();
-    mctx.globalAlpha = 0.5;
+    mctx.globalAlpha = 0.2;
     drawTriangle(mctx, p.x, p.y, screenYaw, SC*.7, '#ff6b35');
     mctx.globalAlpha = 1.0;
     mctx.restore();
     // Draw sequence number in a circle
-    const seqNum = i + 1;
+    const seqNum = mapWpNum;
     mctx.save();
     mctx.beginPath();
     mctx.arc(p.x, p.y, 12, 0, Math.PI * 2);
@@ -1804,8 +1857,8 @@ setInterval(()=>{
 document.addEventListener('keydown',e=>{ if((e.key==='p'||e.key==='P')&&!e.target.matches('input,textarea')) markWP(); });
 function markWP(){
   let wpX = robot.x;
-  // Get previous waypoint X if exists
-  const prevWpX = waypoints.length > 0 ? waypoints[waypoints.length - 1].x_m : null;
+  // Get previous spatial waypoint X if exists (skip ACTION nodes)
+  const _lsw = lastSpatialWP(); const prevWpX = _lsw ? _lsw.x_m : null;
   // If prevX < newX OR prevX < odom x, subtract error; otherwise add error
   if ((prevWpX !== null && (prevWpX < robot.x || prevWpX < robot.x)) || (prevWpX === null && robot.x < robot.x)) {
     wpX = wpX - globalErrorValue;
@@ -1828,11 +1881,23 @@ function markWP(){
 function updateWPList(){
   const el=document.getElementById('wpList');
   if(!waypoints.length){ el.innerHTML='<div class="wp-empty">No waypoints.<br>Drive robot → press <b>[P]</b></div>'; return; }
+  let wpNum = 0;
   el.innerHTML = waypoints.map((wp, i) => {
+    // Action items render differently
+    if(wp.type === 'ACTION'){
+      const actionLabels = {detect_color: '🔍 Detect Colour'};
+      const label = actionLabels[wp.node] || wp.node;
+      return `<div class="wp-item wp-action" draggable="true" data-idx="${i}" ondragstart="onWpDragStart(event)" ondragover="onWpDragOver(event)" ondrop="onWpDrop(event)" ondragend="onWpDragEnd(event)">
+        <div class="wp-num" style="background:#9c27b0; color:#fff;">⚡</div>
+        <div class="wp-body"><div class="wp-xy" style="color:#ce93d8;">${label}</div></div>
+        <button class="wp-del" onclick="delWP(${i})">✕</button>
+      </div>`;
+    }
+    wpNum++;
     let circleColor = '#4caf50'; // Default green for WP
     if (wp.createdFrom === 'MOVE') circleColor = '#ff9800'; // Orange for MOVE
     return `<div class="wp-item wp-${wp.type && wp.type.toLowerCase ? wp.type.toLowerCase() : 'wp'}" draggable="true" data-idx="${i}" ondragstart="onWpDragStart(event)" ondragover="onWpDragOver(event)" ondrop="onWpDrop(event)" ondragend="onWpDragEnd(event)">
-      <div class="wp-num" onclick="editWpNum(${i})" style="cursor:pointer; background:${circleColor}; color:#fff;" title="Click to edit order">${i + 1}</div>
+      <div class="wp-num" onclick="editWpNum(${i})" style="cursor:pointer; background:${circleColor}; color:#fff;" title="Click to edit order">${wpNum}</div>
       <div class="wp-body"><div class="wp-xy">x:${wp.x_m} y:${wp.y_m} m</div><div class="wp-yaw">yaw:${wp.yaw_deg}°</div></div>
       <button class="wp-del" onclick="delWP(${i})">✕</button>
     </div>`;
@@ -1903,6 +1968,33 @@ function editWpNum(idx) {
 }
 function delWP(i){ waypoints.splice(i,1); waypoints.forEach((w,j)=>w.id=j+1); updateWPList(); renderMap(); }
 function clearWP(){ if(!waypoints.length)return; if(confirm('Clear all waypoints?')){ waypoints=[]; updateWPList(); renderMap(); } }
+
+// ── ACTION POPUP ──────────────────────────────────────────────────────────────
+function openActionPopup(){
+  document.getElementById('actionOverlay').classList.add('open');
+}
+function closeActionPopup(){
+  document.getElementById('actionOverlay').classList.remove('open');
+}
+function addAction(node){
+  waypoints.push({
+    id: waypoints.length + 1,
+    type: 'ACTION',
+    node: node
+  });
+  closeActionPopup();
+  updateWPList();
+  renderMap();
+  showToast('⚡ Action added: ' + node);
+}
+
+// Helper: find the last real spatial waypoint (skips ACTION nodes)
+function lastSpatialWP(){
+  for(let i = waypoints.length - 1; i >= 0; i--){
+    if(waypoints[i].type !== 'ACTION') return waypoints[i];
+  }
+  return null;
+}
 
 // ── MOVE COMMAND ───────────────────────────────────────────────────────────────
 let moveDir = null;  // 'forward', 'backward', 'cw', 'ccw'
@@ -1982,16 +2074,28 @@ function sendDirectMove(){
   // Close modal first
   closeMoveModal();
   
-  // Send single move command directly to robot
+  // Send using unified tree format
   const payload = {
-    type: 'run_waypoints',
-    waypoints: [waypoint]
+    type: 'run_mission',
+    tree: {
+      type: 'sequence',
+      children: [
+        {
+          node: 'goto',
+          x: waypoint.x,
+          y: waypoint.y,
+          yaw: waypoint.yaw
+        }
+      ]
+    }
   };
   send(payload);
   
   // Update UI to show running status
-  document.getElementById('runBtn').disabled = true;
-  document.getElementById('stopBtn').style.display = 'block';
+  _missionRunning = true;
+  document.getElementById('runBtn').textContent = '⏹ CANCEL MISSION';
+  document.getElementById('runBtn').style.background = '#f44336';
+  document.getElementById('stopBtn').style.display = 'none';
   updateMissionPanel({state:'running', current:0, total:1, msg:'Executing direct move command…'});
   
   cancelMoveCommand();
@@ -2006,8 +2110,8 @@ function addMoveAsWaypoint(){
   const distance = parseFloat(document.getElementById('moveModalDist').value);
   if(isNaN(distance) || distance <= 0) { showToast('❌ Invalid distance'); return; }
   
-  // Get reference from previous waypoint or current robot position
-  const refWp = waypoints.length ? waypoints[waypoints.length-1] : null;
+  // Get reference from previous spatial waypoint or current robot position (skip ACTION nodes)
+  const refWp = lastSpatialWP();
   const baseX = refWp ? refWp.x_m : robot.x;
   const baseY = refWp ? refWp.y_m : robot.y;
   const baseYaw = refWp ? (refWp.yaw_rad) : robot.yaw;
@@ -2041,8 +2145,8 @@ function addMoveAsWaypoint(){
   }
   
   // Apply global error value to finalX with conditional logic
-  // Get previous waypoint X if exists
-  const prevWpX = waypoints.length > 0 ? waypoints[waypoints.length - 1].x_m : null;
+  // Get previous spatial waypoint X if exists (skip ACTION nodes)
+  const prevWpX = (lastSpatialWP() || {}).x_m ?? null;
   // If prevX < newX OR prevX < odom x, subtract error; otherwise add error
   if ((prevWpX !== null && (prevWpX < finalX || prevWpX < robot.x)) || (prevWpX === null && finalX < robot.x)) {
     finalX = finalX - globalErrorValue;
@@ -2090,8 +2194,8 @@ function executeMoveCommand(){
     // Normalize yaw to [-π, π]
     newYaw = Math.atan2(Math.sin(newYaw), Math.cos(newYaw));
     let wpX = robot.x;
-    // Get previous waypoint X if exists
-    const prevWpX = waypoints.length > 0 ? waypoints[waypoints.length - 1].x_m : null;
+    // Get previous spatial waypoint X if exists (skip ACTION nodes)
+    const _lsw = lastSpatialWP(); const prevWpX = _lsw ? _lsw.x_m : null;
     // If prevX < newX OR prevX < odom x, subtract error; otherwise add error
     if ((prevWpX !== null && (prevWpX < robot.x || prevWpX < robot.x)) || (prevWpX === null && robot.x < robot.x)) {
       wpX = wpX - globalErrorValue;
@@ -2124,8 +2228,8 @@ function executeMoveCommand(){
   let newX = robot.x + dx;
   const newY = robot.y + dy;
   
-  // Get previous waypoint X if exists
-  const prevWpX = waypoints.length > 0 ? waypoints[waypoints.length - 1].x_m : null;
+  // Get previous spatial waypoint X if exists (skip ACTION nodes)
+  const _lsw = lastSpatialWP(); const prevWpX = _lsw ? _lsw.x_m : null;
   // If prevX < newX OR prevX < odom x, subtract error; otherwise add error
   if ((prevWpX !== null && (prevWpX < newX || prevWpX < robot.x)) || (prevWpX === null && newX < robot.x)) {
     newX = newX - globalErrorValue;
@@ -2183,11 +2287,11 @@ function selectMoveMode(){
   document.getElementById('awY').value = '0.00';
   document.getElementById('awYaw').value = '0';
   
-  // Show last waypoint as reference
-  const lastWp = waypoints.length ? waypoints[waypoints.length-1] : null;
+  // Show last spatial waypoint as reference (skip ACTION nodes)
+  const lastWp = lastSpatialWP();
   const refX = lastWp ? lastWp.x_m : robot.x;
   const refY = lastWp ? lastWp.y_m : robot.y;
-  const refYaw = lastWp ? (refWp.yaw_rad) : robot.yaw;
+  const refYaw = lastWp ? (lastWp.yaw_rad) : robot.yaw;
   
   document.getElementById('awCurX').textContent = refX.toFixed(3);
   document.getElementById('awCurY').textContent = refY.toFixed(3);
@@ -2330,6 +2434,7 @@ mapCanvas.addEventListener('dblclick', e=>{
   // Check if double-click is near any waypoint
   for(let i = 0; i < waypoints.length; i++){
     const wp = waypoints[i];
+    if(wp.type === 'ACTION') continue; // skip ACTION nodes
     const p = wpToCanvas(wp);
     console.log('[DBLCLICK] WP', i, 'canvas pos:', p ? `(${p.x.toFixed(1)},${p.y.toFixed(1)})` : 'null', 'odom:', wp.x_m.toFixed(2), wp.y_m.toFixed(2));
     if(!p) continue;
@@ -2563,26 +2668,31 @@ function sendOriginAsMove(){
     return;
   }
   
-  // Create waypoint with absolute coordinates
-  const waypoint = {
-    x: x,
-    y: y,
-    yaw: Math.round(yaw)
-  };
-  
   // Close modal
   closeOriginPopup();
   
-  // Send single move command to robot
+  // Send using unified tree format
   const payload = {
-    type: 'run_waypoints',
-    waypoints: [waypoint]
+    type: 'run_mission',
+    tree: {
+      type: 'sequence',
+      children: [
+        {
+          node: 'goto',
+          x: x,
+          y: y,
+          yaw: Math.round(yaw)
+        }
+      ]
+    }
   };
   send(payload);
   
   // Update UI to show running status
-  document.getElementById('runBtn').disabled = true;
-  document.getElementById('stopBtn').style.display = 'block';
+  _missionRunning = true;
+  document.getElementById('runBtn').textContent = '⏹ CANCEL MISSION';
+  document.getElementById('runBtn').style.background = '#f44336';
+  document.getElementById('stopBtn').style.display = 'none';
   updateMissionPanel({state:'running', current:0, total:1, msg:'Executing GO TO command…'});
   
   showToast('▶ Moving to (' + x.toFixed(2) + ', ' + y.toFixed(2) + ', ' + yaw.toFixed(1) + '°)');
@@ -2653,8 +2763,8 @@ function confirmAddWP(){
     const dy = parseFloat(document.getElementById('awY').value) || 0;
     const dyaw = parseFloat(document.getElementById('awYaw').value) || 0;
     
-    // Use last waypoint or current robot position if no waypoints yet
-    const refWp = waypoints.length ? waypoints[waypoints.length-1] : null;
+    // Use last spatial waypoint or current robot position (skip ACTION nodes)
+    const refWp = lastSpatialWP();
     const baseX = refWp ? refWp.x_m : robot.x;
     const baseY = refWp ? refWp.y_m : robot.y;
     const baseYaw = refWp ? (refWp.yaw_rad) : robot.yaw;
@@ -2671,8 +2781,8 @@ function confirmAddWP(){
   }
   
   // Apply global error value to finalX with conditional logic
-  // Get previous waypoint X if exists
-  const prevWpX = waypoints.length > 0 ? waypoints[waypoints.length - 1].x_m : null;
+  // Get previous spatial waypoint X if exists (skip ACTION nodes)
+  const prevWpX = (lastSpatialWP() || {}).x_m ?? null;
   // If prevX < newX OR prevX < odom x, subtract error; otherwise add error
   if ((prevWpX !== null && (prevWpX < finalX || prevWpX < robot.x)) || (prevWpX === null && finalX < robot.x)) {
     finalX = finalX - globalErrorValue;
@@ -2763,6 +2873,9 @@ function saveWaypoints() {
   
   // Convert waypoints to map pixel coordinates
   const waypointsInMapPixels = waypoints.map(w => {
+    if(w.type === 'ACTION'){
+      return { id: w.id, type: 'ACTION', node: w.node };
+    }
     const mapPx = odomToMapPixel(w.x_m, w.y_m);
     const mapYaw = odomYawToMapYaw(w.yaw_deg);
     return {
@@ -2925,6 +3038,11 @@ function applyLoadedWaypoints(data) {
   
   // Load waypoints - convert from map pixel coordinates to odom coordinates
   data.waypoints.forEach(w => {
+    // ACTION nodes have no spatial data
+    if(w.type === 'ACTION'){
+      waypoints.push({ id: w.id, type: 'ACTION', node: w.node });
+      return;
+    }
     // Check if this is new format (x_px, y_px) or old format (x_m, y_m)
     let ox_m, oy_m, odom_yaw_deg;
     
@@ -3427,19 +3545,48 @@ function loadMapData(d){
 }
 
 // ── MISSION CONTROL ───────────────────────────────────────────────────────────
+let _missionRunning = false;
 function runMission(){
+  // If mission is running, cancel it
+  if(_missionRunning){
+    send({type:'cancel_mission'});
+    _missionRunning = false;
+    const rb = document.getElementById('runBtn');
+    rb.textContent = '▶ RUN WAYPOINTS';
+    rb.style.background = '';
+    rb.style.borderColor = '';
+    rb.style.color = '';
+    rb.disabled = false;
+    updateMissionPanel({state:'cancelled', msg:'Cancel signal sent…'});
+    return;
+  }
   if(!waypoints.length){ alert('No waypoints marked.\nDrive robot and press [P] to mark waypoints first.'); return; }
-  if(!confirm(`Send ${waypoints.length} waypoint(s) to robot and start mission?`)) return;
+
+  // Build behavior tree from waypoints list
+  const children = waypoints.map(w => {
+    if(w.type === 'ACTION'){
+      return {node: w.node};
+    }
+    return {node: 'goto', x: w.x_m, y: w.y_m, yaw: w.yaw_deg};
+  });
 
   const payload = {
-    type: 'run_waypoints',
-    waypoints: waypoints.map(w=>({x:w.x_m, y:w.y_m, yaw:w.yaw_deg}))
+    type: 'run_mission',
+    tree: {
+      type: 'sequence',
+      children: children
+    }
   };
   send(payload);
 
   // optimistic UI update
-  document.getElementById('runBtn').disabled = true;
-  document.getElementById('stopBtn').style.display = 'block';
+  _missionRunning = true;
+  const runb = document.getElementById('runBtn');
+  runb.textContent = '⏹ CANCEL MISSION';
+  runb.style.background = '#f44336';
+  runb.style.borderColor = '#f44336';
+  runb.style.color = '#fff';
+  document.getElementById('stopBtn').style.display = 'none';
   updateMissionPanel({state:'running', current:0, total:waypoints.length, msg:'Sending mission to robot…'});
 }
 
@@ -3483,8 +3630,16 @@ function updateMissionPanel(d){
 
   // button visibility
   const isDone = state==='done'||state==='cancelled'||state==='error'||state==='idle';
-  document.getElementById('runBtn').disabled      = !isDone;
-  document.getElementById('stopBtn').style.display = isDone ? 'none' : 'block';
+  if(isDone){
+    _missionRunning = false;
+    const rb = document.getElementById('runBtn');
+    rb.textContent = '▶ RUN WAYPOINTS';
+    rb.style.background = '';
+    rb.style.borderColor = '';
+    rb.style.color = '';
+    rb.disabled = false;
+  }
+  document.getElementById('stopBtn').style.display = 'none';
 
   // toast for key events
   if(state==='done') {

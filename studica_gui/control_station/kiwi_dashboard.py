@@ -128,7 +128,11 @@ def _handle_ws(client: _WSClient):
                     elif t == "run_waypoints":
                         wps = msg.get("waypoints", [])
                         with state_lock:
-                            shared_state["pending_mission"] = wps
+                            shared_state["pending_mission"] = {"waypoints": wps}
+                    elif t == "run_mission":
+                        tree = msg.get("tree", {})
+                        with state_lock:
+                            shared_state["pending_mission"] = {"tree": tree}
                     elif t == "cancel_mission":
                         with state_lock:
                             shared_state["cancel_mission"] = True
@@ -144,10 +148,6 @@ def _handle_ws(client: _WSClient):
                         _send_waypoints_list(client)
                     elif t == "load_waypoints":
                         _send_waypoints_data(client, msg.get("name",""))
-                    elif t == "run_waypoints":
-                        _run_waypoints_from_ws(msg)
-                    elif t == "cancel_mission":
-                        _cancel_mission()
                 except Exception as ex:
                     print(f"[WS] parse error: {ex}")
     except: pass
@@ -472,9 +472,9 @@ class KiwiDashboardNode(Node):
             if cancel:              shared_state["cancel_mission"]  = False
         if mission is not None:
             out      = String()
-            out.data = json.dumps({"waypoints": mission})
+            out.data = json.dumps(mission)
             self._wp_pub.publish(out)
-            self.get_logger().info(f"[MISSION] Published {len(mission)} wp → /kiwi/waypoints")
+            self.get_logger().info(f"[MISSION] Published mission → /kiwi/waypoints")
         if cancel:
             out      = String()
             out.data = "cancel"
