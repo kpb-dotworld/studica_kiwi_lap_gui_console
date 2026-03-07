@@ -348,7 +348,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
   <div class="logo">Team India Dashboard</div>
   <div class="hdr-right">
     <button class="hdr-btn" onclick="openEditor()">🗺 Map Editor</button>
-    <button class="hdr-btn" style="margin-left:8px;" onclick="loadM1Map()">M1</button>
+    <button class="hdr-btn" style="margin-left:8px;" onclick="clearCache()">🗑 Clear</button>
     <div id="homeMapLibrary" style="margin-left:18px;"></div>
     <div class="ws-badge off" id="wsBadge">● OFFLINE</div>
   </div>
@@ -406,7 +406,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
     <div class="sec" style="border:none;border-bottom:1px solid var(--border);display:flex;flex-direction:column;min-height:0;">
       <div class="sec-title" style="margin:0;margin-bottom:8px;">WAYPOINTS [P]</div>
       <button class="action-btn" onclick="openActionPopup()" style="width:100%;margin-bottom:6px;">⚡ Action</button>
-      <button class="addwp-btn" onclick="selectWaypointMode()" style="width:100%;margin-bottom:8px;">WP</button>
+      <button class="addwp-btn" onclick="handleQKeyPress()" style="width:100%;margin-bottom:8px;">WP</button>
       <div style="display:flex;gap:4px;align-items:center;justify-content:flex-end;margin-bottom:8px;">
         <button class="clr-btn" onclick="clearWP()">✕ Clear</button>
       </div>
@@ -646,6 +646,15 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
         <div class="mp-row">
           <span class="mp-label">PROG</span>
           <div class="mp-bar-wrap"><div class="mp-bar" id="mpBar"></div></div>
+        </div>
+      </div>
+
+      <div class="mission-panel" id="cameraPanel" style="margin-top:10px;">
+        <div class="mp-row">
+          <span class="mp-label">CAMERA</span>
+        </div>
+        <div style="padding:8px;">
+          <textarea id="cameraOutput" readonly style="width:100%;height:70px;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:4px;color:rgb(186, 194, 186);font-family:monospace;font-size:20px;padding:8px;resize:none;overflow:hidden;text-align:center;line-height:1.6;word-wrap:break-word;"></textarea>
         </div>
       </div>
     </div>
@@ -1042,12 +1051,26 @@ document.addEventListener('keydown', function(e) {
       e.preventDefault();
     }
   }
-  // Q key: open waypoint mode (same as WP button)
-  if ((e.key === 'q' || e.key === 'Q') && !e.target.matches('input,textarea')) {
-    selectWaypointMode();
+  // Q key: open waypoint mode (same as WP button) - double-press required
+  if ((e.key === 'w' || e.key === 'W') && !e.target.matches('input,textarea')) {
+    handleQKeyPress();
     e.preventDefault();
   }
 });
+// Clear all cache and reload page
+function clearCache() {
+  localStorage.clear();
+  sessionStorage.clear();
+  // Clear IndexedDB if needed
+  if(window.indexedDB) {
+    indexedDB.databases().then(dbs => {
+      dbs.forEach(db => indexedDB.deleteDatabase(db.name));
+    });
+  }
+  // Reload page
+  window.location.reload(true);
+}
+
 // Load the map named 'actual_map' when M1 is pressed
 function loadM1Map() {
   send({type:'load_map', name:'actual_map'});
@@ -1739,6 +1762,12 @@ function connect(){
       if(d.type==='map_saved'){ showToast('💾 Map saved: '+d.name); send({type:'list_maps'}); }
       if(d.type==='map_save_error') showToast('❌ Save error: '+d.msg);
       if(d.type==='mission_status') updateMissionPanel(d);
+      if(d.type==='camera_colour') {
+        const cameraBox = document.getElementById('cameraOutput');
+        if(cameraBox) {
+          cameraBox.value = d.data;
+        }
+      }
       // Waypoints handlers
       if(d.type==='waypoints_list') {
         console.log('[WP] Received waypoints_list:', d.waypoints);
@@ -1871,8 +1900,11 @@ setInterval(()=>{
   send({type:'cmd_vel', linear_x:sendLinX, linear_y:sendLinY, angular_z:sendAngZ});
 }, 100);
 
-document.addEventListener('keydown',e=>{ if((e.key==='p'||e.key==='P')&&!e.target.matches('input,textarea')) markWP(); });
-function markWP(){
+// Double-press tracking for 'P' key / CURR POSE button
+let pPressCount = 0;
+let pPressTimeout = null;
+
+function executePressFunc() {
   let wpX = robot.x;
   // Get previous spatial waypoint X if exists (skip ACTION nodes)
   const _lsw = lastSpatialWP(); const prevWpX = _lsw ? _lsw.x_m : null;
@@ -1895,6 +1927,56 @@ function markWP(){
   setTimeout(()=>document.body.classList.remove('p-flash'),500);
   updateWPList(); renderMap();
 }
+
+function markWP() {
+  pPressCount++;
+  
+  // Clear existing timeout
+  if (pPressTimeout) clearTimeout(pPressTimeout);
+  
+  if (pPressCount === 1) {
+    // First press: show toast indicator
+    showToast('Press again to mark waypoint');
+    // Reset counter after 500ms if second press doesn't happen
+    pPressTimeout = setTimeout(() => {
+      pPressCount = 0;
+      pPressTimeout = null;
+    }, 500);
+  } else if (pPressCount === 2) {
+    // Second press: execute the function
+    pPressCount = 0;
+    pPressTimeout = null;
+    executePressFunc();
+  }
+}
+
+// Double-press tracking for 'Q' key
+let qPressCount = 0;
+let qPressTimeout = null;
+
+function handleQKeyPress() {
+  qPressCount++;
+  
+  // Clear existing timeout
+  if (qPressTimeout) clearTimeout(qPressTimeout);
+  
+  if (qPressCount === 1) {
+    // First press: show toast indicator
+    showToast('Press again to open Waypoint Mode');
+    // Reset counter after 500ms if second press doesn't happen
+    qPressTimeout = setTimeout(() => {
+      qPressCount = 0;
+      qPressTimeout = null;
+    }, 500);
+  } else if (qPressCount === 2) {
+    // Second press: execute the function
+    qPressCount = 0;
+    qPressTimeout = null;
+    selectWaypointMode();
+  }
+}
+
+document.addEventListener('keydown',e=>{ if((e.key==='p'||e.key==='P')&&!e.target.matches('input,textarea')) markWP(); });
 function updateWPList(){
   const el=document.getElementById('wpList');
   if(!waypoints.length){ el.innerHTML='<div class="wp-empty">No waypoints.<br>Drive robot → press <b>[P]</b></div>'; return; }
@@ -2015,7 +2097,7 @@ function editWpNum(idx) {
   input.select();
 }
 function delWP(i){ waypoints.splice(i,1); waypoints.forEach((w,j)=>w.id=j+1); updateWPList(); renderMap(); }
-function clearWP(){ if(!waypoints.length)return; if(confirm('Clear all waypoints?')){ waypoints=[]; updateWPList(); renderMap(); } }
+function clearWP(){ if(!waypoints.length)return; waypoints=[]; updateWPList(); renderMap(); }
 
 // ── ACTION POPUP ──────────────────────────────────────────────────────────────
 function openActionPopup(){
@@ -2584,44 +2666,6 @@ document.addEventListener('keydown', e=>{
       btn.textContent='🎯 Origin set — click to move it';
       renderMap();
     }
-    e.preventDefault();
-    return;
-  }
-  // WASD movement - move robot UP/DOWN/LEFT/RIGHT on screen irrespective of origin yaw
-  const moveStep = 0.2; // me+te-rs per key press
-  const theta = originYaw * Math.PI / 180;
-  const cosT = Math.cos(-+theta);
-  const sinT = Math.sin(theta);
-  
-  if(e.key === 'w' || e.key === 'W') { 
-    // Move UP on screen (inverse of originYaw rotation)
-    robot.x += moveStep * sinT;
-    robot.y -= moveStep * cosT;
-    renderMap();
-    e.preventDefault();
-    return;
-  }
-  else if(e.key === 'a' || e.key === 'A') { 
-    // Move LEFT on screen
-    robot.x -= moveStep * cosT;
-    robot.y -= moveStep * sinT;
-    renderMap();
-    e.preventDefault();
-    return;
-  }
-  else if(e.key === 's' || e.key === 'S') { 
-    // Move DOWN on screen
-    robot.x -= moveStep * sinT;
-    robot.y += moveStep * cosT;
-    renderMap();
-    e.preventDefault();
-    return;
-  }
-  else if(e.key === 'd' || e.key === 'D') { 
-    // Move RIGHT on screen
-    robot.x += moveStep * cosT;
-    robot.y += moveStep * sinT;
-    renderMap();
     e.preventDefault();
     return;
   }
@@ -3491,7 +3535,6 @@ function editorFillBorder(){
 }
 function editorClearAll(){
   if(!eGrid) return;
-  if(!confirm('Clear all walls?')) return;
   eGrid.fill(0); eAnchor=null; closeDirPopup(); drawEditor();
 }
 
@@ -3642,7 +3685,6 @@ function runMission(){
 }
 
 function cancelMission(){
-  if(!confirm('Stop the mission? Robot will stop after current waypoint.')) return;
   send({type:'cancel_mission'});
   updateMissionPanel({state:'cancelled', msg:'Cancel signal sent…'});
 }
@@ -3701,7 +3743,20 @@ function updateMissionPanel(d){
     renderMap();
   }
   if(state==='error')     showToast('❌ Mission error — check status');
-  if(state==='cancelled') showToast('⏹ Mission cancelled');
+  if(state==='cancelled') {
+    showToast('⏹ Mission cancelled');
+    // Clear waypoints when mission is cancelled
+    waypoints = [];
+    updateWPList();
+    renderMap();
+  }
+  if(state==='success') {
+    showToast('✅ Mission successful!');
+    // Clear waypoints when mission is successful
+    waypoints = [];
+    updateWPList();
+    renderMap();
+  }
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
