@@ -130,12 +130,6 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .wp-list::-webkit-scrollbar{width:3px;}.wp-list::-webkit-scrollbar-thumb{background:var(--border);}
 .wp-item{display:flex;align-items:center;gap:10px;padding:8px 12px;margin-bottom:6px;background:var(--panel2);border:1px solid var(--border);border-radius:4px;font-size:1em;}
 .wp-num{width:22px;height:22px;border-radius:50%;background:var(--accent2);color:#fff;font-size:1em;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.wp-item.wp-wp { background: #ff980022; border-color: #ff9800; }
-.wp-item.wp-move { background: #2196f322; border-color: #2196f3; }
-.wp-item.wp-action { background: #9c27b022; border-color: #9c27b0; }
-.wp-item.wp-wp .wp-num { background: #ff9800; }
-.wp-item.wp-move .wp-num { background: #2196f3; }
-.wp-item.wp-action .wp-num { background: #9c27b0; }
 
 /* Action button */
 .action-btn{font-size:13px;color:#9c27b0;background:none;border:1.2px solid #9c27b0;cursor:pointer;font-family:inherit;padding:5px 14px;border-radius:4px;transition:all .15s;letter-spacing:.5px;}
@@ -356,7 +350,6 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
     <button class="hdr-btn" onclick="openEditor()">🗺 Map Editor</button>
     <button class="hdr-btn" style="margin-left:8px;" onclick="loadM1Map()">M1</button>
     <div id="homeMapLibrary" style="margin-left:18px;"></div>
-    <div class="p-tip">Press <b>[P]</b> to mark waypoint</div>
     <div class="ws-badge off" id="wsBadge">● OFFLINE</div>
   </div>
 </header>
@@ -379,7 +372,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 
       <!-- orientation selector — shown after origin is set -->
       <div class="orig-orient" id="origOrient" style="display:none">
-        <!-- Orientation selector removed: use WASD or arrow keys to set direction -->
+        <!-- Orientation selector removed: use IJKL or arrow keys to set direction -->
       </div>
     </div>
 
@@ -578,9 +571,9 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
       function resetVisualizeBtn() {
         const btn = document.getElementById('visualizeBtn');
         btn.textContent = '👁️ Visualize';
-        btn.style.background = '';
-        btn.style.borderColor = '';
-        btn.style.color = '';
+        btn.style.background = 'rgba(0,212,255,.12)';
+        btn.style.borderColor = 'var(--accent)';
+        btn.style.color = 'var(--accent)';
       }
       </script>
     </div>
@@ -672,6 +665,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
         <button class="move-cmd-btn" id="moveBtn_cw" onclick="startRotateCommand('cw')">↻ CW</button>
         <button class="move-cmd-btn" id="moveBtn_ccw" onclick="startRotateCommand('ccw')">↺ CCW</button>
         <button class="move-cmd-btn" onclick="openOriginPopup()" style="grid-column:1/-1;">📍 GO TO</button>
+        <button class="move-cmd-btn" onclick="markWP()" style="grid-column:1/-1;">📌 CURR POSE</button>
       </div>
     </div>
 
@@ -1028,8 +1022,8 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
      JAVASCRIPT
 ════════════════════════════════════════════════════════════════════════════ -->
 <script>
-// --- Origin orientation by WASD and keyboard arrows ---
-// --- Origin placement: WASD = move marker, Arrow keys = rotate orientation ---
+// --- Origin orientation by IJKL and keyboard arrows ---
+// --- Origin placement: IJKL = move marker, Arrow keys = rotate orientation ---
 document.addEventListener('keydown', function(e) {
   if (settingOrig) {
     // Arrow keys: rotate orientation by ±45°
@@ -1043,10 +1037,15 @@ document.addEventListener('keydown', function(e) {
       renderMap();
       e.preventDefault();
     }
-    // WASD: move marker (handled by interval, but prevent default to avoid scrolling)
-    else if (["w","a","s","d","W","A","S","D"].includes(e.key)) {
+    // IJKL: move marker (handled by interval, but prevent default to avoid scrolling)
+    else if (["i","j","k","l","I","J","K","L"].includes(e.key)) {
       e.preventDefault();
     }
+  }
+  // Q key: open waypoint mode (same as WP button)
+  if ((e.key === 'q' || e.key === 'Q') && !e.target.matches('input,textarea')) {
+    selectWaypointMode();
+    e.preventDefault();
   }
 });
 // Load the map named 'actual_map' when M1 is pressed
@@ -1245,9 +1244,10 @@ function renderMap(){
     const rp = robotToCanvas();
     const wp1 = (nextSpatialIdx < waypoints.length) ? wpToCanvas(waypoints[nextSpatialIdx]) : null;
     if (rp && wp1) {
+      const isHighlighted = (highlightedWpIdx === nextSpatialIdx);
       mctx.save();
       mctx.setLineDash([7, 7]);
-      mctx.strokeStyle = '#ff6b35';
+      mctx.strokeStyle = isHighlighted ? '#FFD700' : '#ff6b35';
       mctx.lineWidth = 2;
       mctx.beginPath();
       mctx.moveTo(rp.x, rp.y);
@@ -1264,7 +1264,7 @@ function renderMap(){
       mctx.lineTo(wp1.x - len * Math.cos(angle + Math.PI/7), wp1.y - len * Math.sin(angle + Math.PI/7));
       mctx.lineTo(wp1.x, wp1.y);
       mctx.closePath();
-      mctx.fillStyle = '#ff6b35';
+      mctx.fillStyle = isHighlighted ? '#000000' : '#ff6b35';
       mctx.fill();
       mctx.setLineDash([]);
       mctx.restore();
@@ -1276,12 +1276,19 @@ function renderMap(){
     if (spatialWPs.length > 1) {
     mctx.save();
     mctx.setLineDash([7, 7]);
-    mctx.strokeStyle = '#ff6b35';
     mctx.lineWidth = 2;
     for (let i = 0; i < spatialWPs.length - 1; i++) {
       const p1 = wpToCanvas(spatialWPs[i]);
       const p2 = wpToCanvas(spatialWPs[i+1]);
       if (p1 && p2) {
+        // Find original waypoint indices for highlight check
+        const wpIdx1 = waypoints.indexOf(spatialWPs[i]);
+        const wpIdx2 = waypoints.indexOf(spatialWPs[i+1]);
+        const isHighlighted = (highlightedWpIdx === wpIdx1 || highlightedWpIdx === wpIdx2);
+        
+        // Use yellow for highlighted arrows, orange for normal
+        mctx.strokeStyle = isHighlighted ? '#FFD700' : '#ff6b35';
+        
         mctx.beginPath();
         mctx.moveTo(p1.x, p1.y);
         mctx.lineTo(p2.x, p2.y);
@@ -1297,7 +1304,7 @@ function renderMap(){
         mctx.lineTo(p2.x - len * Math.cos(angle + Math.PI/7), p2.y - len * Math.sin(angle + Math.PI/7));
         mctx.lineTo(p2.x, p2.y);
         mctx.closePath();
-        mctx.fillStyle = '#ff6b35';
+        mctx.fillStyle = isHighlighted ? '#000000' : '#ff6b35';
         mctx.fill();
         mctx.setLineDash([7, 7]);
       }
@@ -1325,13 +1332,20 @@ function renderMap(){
     mctx.save();
     mctx.beginPath();
     mctx.arc(p.x, p.y, 12, 0, Math.PI * 2);
-    mctx.fillStyle = 'rgba(255,107,53,0.9)';
-    mctx.fill();
-    mctx.strokeStyle = '#fff';
+    if(highlightedWpIdx === i) {
+      mctx.fillStyle = '#FFD700'; // Inverted: gold background
+      mctx.fill();
+      mctx.strokeStyle = '#000'; // Inverted: black stroke
+    } else {
+      mctx.fillStyle = 'rgba(255,107,53,0.9)'; // Normal: orange background
+      mctx.fill();
+      mctx.strokeStyle = '#fff'; // Normal: white stroke
+    }
     mctx.lineWidth = 1.5;
     mctx.stroke();
-    mctx.font = 'bold 11px Arial';
-    mctx.fillStyle = '#fff';
+    // Make font bolder if highlighted
+    mctx.font = highlightedWpIdx === i ? 'bold 13px Arial' : 'bold 11px Arial';
+    mctx.fillStyle = highlightedWpIdx === i ? '#000' : '#fff'; // Inverted text color when highlighted
     mctx.textAlign = 'center';
     mctx.textBaseline = 'middle';
     mctx.fillText(seqNum.toString(), p.x, p.y);
@@ -1585,7 +1599,7 @@ function toggleOrigin(){
   btn.textContent=settingOrig?'⏳ Click on the map to set origin…'
     :(originPx?'🎯 Reset Origin':'🎯 Set Origin');
   if(settingOrig){
-    showToast('🎯 Click map to place → WASD adjust position • ENTER save • ESC cancel');
+    showToast('🎯 Click map to place → IJKL adjust position • ENTER save • ESC cancel');
   }
 }
 mapCanvas.addEventListener('click',e=>{
@@ -1597,7 +1611,7 @@ mapCanvas.addEventListener('click',e=>{
   // Set the origin marker at clicked position
   selectedMarkerPixelX = mx;
   selectedMarkerPixelY = my;
-  showToast('✅ Position set! WASD to adjust • ENTER save • ESC cancel');
+  showToast('✅ Position set! IJKL to adjust • ENTER save • ESC cancel');
   renderMap();
 });
 
@@ -1642,6 +1656,9 @@ function confirmOrigin(){
   document.getElementById('origOrient').style.display='block';
   renderMap();
   showToast('✅ Origin saved at pixel('+originPx.x+','+originPx.y+')');
+  
+  // Automatically open waypoint mode after origin is set
+  selectWaypointMode();
 }
 
 function cancelOrigin(){
@@ -1753,7 +1770,7 @@ connect();
 
 // ── JOYSTICK ──────────────────────────────────────────────────────────────────
 const joyPad=document.getElementById('joyPad'), joyKnob=document.getElementById('joyKnob');
-let joyActive=false, jLX=0, jLY=0, jAZ=0, maxSpd=0.3;
+let joyActive=false, jLX=0, jLY=0, jAZ=0, maxSpd=0.6;
 function setKnob(dx,dy){
   const R=joyPad.offsetWidth/2-20, dist=Math.sqrt(dx*dx+dy*dy);
   const cl=Math.min(dist,R), ang=Math.atan2(dy,dx);
@@ -1775,9 +1792,9 @@ function updateCV(){
   document.getElementById('cvLy').textContent=(-jLX).toFixed(2);
   document.getElementById('cvAz').textContent=jAZ.toFixed(2);
 }
-// ── WASD CONTROL FOR WAYPOINT & ORIGIN MODES ──────────────────────────────────
-let wasdKeys = {w:false, a:false, s:false, d:false, q:false, e:false};
-let wasdSpeed = 0.3;  // m/s for movement
+// ── IJKL CONTROL FOR WAYPOINT & ORIGIN MODES ──────────────────────────────────
+let ijklKeys = {i:false, j:false, k:false, l:false, q:false, e:false};
+let ijklSpeed = 0.3;  // m/s for movement
 let selectedMarkerX = null;  // temp marker position during adjustment (odom coords for waypoint)
 let selectedMarkerY = null;
 let selectedMarkerYaw = 0;
@@ -1786,34 +1803,34 @@ let selectedMarkerPixelY = null;
 
 window.addEventListener('keydown', e=>{
   const key = e.key.toLowerCase();
-  if(key==='w') wasdKeys.w=true;
-  if(key==='a') wasdKeys.a=true;
-  if(key==='s') wasdKeys.s=true;
-  if(key==='d') wasdKeys.d=true;
-  if(key==='q') wasdKeys.q=true;
-  if(key==='e') wasdKeys.e=true;
+  if(key==='i') ijklKeys.i=true;
+  if(key==='j') ijklKeys.j=true;
+  if(key==='k') ijklKeys.k=true;
+  if(key==='l') ijklKeys.l=true;
+  if(key==='q') ijklKeys.q=true;
+  if(key==='e') ijklKeys.e=true;
 });
 
 window.addEventListener('keyup', e=>{
   const key = e.key.toLowerCase();
-  if(key==='w') wasdKeys.w=false;
-  if(key==='a') wasdKeys.a=false;
-  if(key==='s') wasdKeys.s=false;
-  if(key==='d') wasdKeys.d=false;
-  if(key==='q') wasdKeys.q=false;
-  if(key==='e') wasdKeys.e=false;
+  if(key==='i') ijklKeys.i=false;
+  if(key==='j') ijklKeys.j=false;
+  if(key==='k') ijklKeys.k=false;
+  if(key==='l') ijklKeys.l=false;
+  if(key==='q') ijklKeys.q=false;
+  if(key==='e') ijklKeys.e=false;
 });
 
-// Update marker position with WASD during origin/waypoint modes
+// Update marker position with IJKL during origin/waypoint modes
 setInterval(()=>{
   // Adjust marker position if one is selected in waypoint mode
   if(wpMapClickActive && wpSelectedX !== null){
     let moveX = 0, moveY = 0;
     
-    if(wasdKeys.w) moveX += wasdSpeed * 0.1;  // scaled for 100ms interval
-    if(wasdKeys.s) moveX -= wasdSpeed * 0.1;
-    if(wasdKeys.a) moveY += wasdSpeed * 0.1;
-    if(wasdKeys.d) moveY -= wasdSpeed * 0.1;
+    if(ijklKeys.i) moveX += ijklSpeed * 0.1;  // scaled for 100ms interval
+    if(ijklKeys.k) moveX -= ijklSpeed * 0.1;
+    if(ijklKeys.j) moveY += ijklSpeed * 0.1;
+    if(ijklKeys.l) moveY -= ijklSpeed * 0.1;
     
     if(moveX !== 0 || moveY !== 0){
       wpSelectedX += moveX;
@@ -1827,13 +1844,13 @@ setInterval(()=>{
   if(settingOrig && selectedMarkerPixelX !== null){
     let moveX = 0, moveY = 0;
     
-    // Convert WASD to pixel movement (scale based on SC)
-    const pixelSpeed = wasdSpeed * 10 / SC;  // adjust for canvas scale
+    // Convert IJKL to pixel movement (scale based on SC)
+    const pixelSpeed = ijklSpeed * 10 / SC;  // adjust for canvas scale
     
-    if(wasdKeys.w) moveY -= pixelSpeed;
-    if(wasdKeys.s) moveY += pixelSpeed;
-    if(wasdKeys.a) moveX -= pixelSpeed;
-    if(wasdKeys.d) moveX += pixelSpeed;
+    if(ijklKeys.i) moveY -= pixelSpeed;
+    if(ijklKeys.k) moveY += pixelSpeed;
+    if(ijklKeys.j) moveX -= pixelSpeed;
+    if(ijklKeys.l) moveX += pixelSpeed;
     
     if(moveX !== 0 || moveY !== 0){
       selectedMarkerPixelX = Math.max(0, Math.min(mapW-1, selectedMarkerPixelX + moveX));
@@ -1887,21 +1904,52 @@ function updateWPList(){
     if(wp.type === 'ACTION'){
       const actionLabels = {detect_color: '🔍 Detect Colour'};
       const label = actionLabels[wp.node] || wp.node;
-      return `<div class="wp-item wp-action" draggable="true" data-idx="${i}" ondragstart="onWpDragStart(event)" ondragover="onWpDragOver(event)" ondrop="onWpDrop(event)" ondragend="onWpDragEnd(event)">
+      return `<div class="wp-item wp-action" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragover="onWpDragOver(event)" ondrop="onWpDrop(event)" ondragend="onWpDragEnd(event)">
         <div class="wp-num" style="background:#9c27b0; color:#fff;">⚡</div>
         <div class="wp-body"><div class="wp-xy" style="color:#ce93d8;">${label}</div></div>
         <button class="wp-del" onclick="delWP(${i})">✕</button>
       </div>`;
     }
     wpNum++;
-    let circleColor = '#4caf50'; // Default green for WP
-    if (wp.createdFrom === 'MOVE') circleColor = '#ff9800'; // Orange for MOVE
-    return `<div class="wp-item wp-${wp.type && wp.type.toLowerCase ? wp.type.toLowerCase() : 'wp'}" draggable="true" data-idx="${i}" ondragstart="onWpDragStart(event)" ondragover="onWpDragOver(event)" ondrop="onWpDrop(event)" ondragend="onWpDragEnd(event)">
-      <div class="wp-num" onclick="editWpNum(${i})" style="cursor:pointer; background:${circleColor}; color:#fff;" title="Click to edit order">${wpNum}</div>
+    // Determine circle color based on creation source
+    let circleColor = '#81C784'; // Default light green for 'wp'
+    if (wp.createdFrom === 'MOVE') circleColor = '#FDD835'; // Light yellow for MOVE panel
+    if (wp.createdFrom === 'P') circleColor = '#FFB74D'; // Light orange for P keypress mark
+    return `<div class="wp-item wp-${wp.type && wp.type.toLowerCase ? wp.type.toLowerCase() : 'wp'}" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragover="onWpDragOver(event)" ondrop="onWpDrop(event)" ondragend="onWpDragEnd(event)">
+      <div class="wp-num" style="background:${circleColor}; color:#fff;">${wpNum}</div>
       <div class="wp-body"><div class="wp-xy">x:${wp.x_m} y:${wp.y_m} m</div><div class="wp-yaw">yaw:${wp.yaw_deg}°</div></div>
       <button class="wp-del" onclick="delWP(${i})">✕</button>
     </div>`;
   }).join('');
+}
+
+// Highlight waypoint on double-click
+function highlightWaypoint(idx) {
+  // Clear any existing timeout
+  if(highlightTimeout !== null) {
+    clearTimeout(highlightTimeout);
+    highlightTimeout = null;
+  }
+  
+  if(waypoints[idx].type === 'ACTION') {
+    highlightedWpIdx = null; // Don't highlight ACTION nodes
+    highlightStartTime = null;
+  } else {
+    highlightedWpIdx = highlightedWpIdx === idx ? null : idx; // Toggle highlight
+    if(highlightedWpIdx !== null) {
+      highlightStartTime = Date.now();
+      // Auto-clear highlight after 3 seconds
+      highlightTimeout = setTimeout(() => {
+        highlightedWpIdx = null;
+        highlightStartTime = null;
+        highlightTimeout = null;
+        renderMap();
+      }, 1000);
+    } else {
+      highlightStartTime = null;
+    }
+  }
+  renderMap();
 }
 
 // Drag-and-drop handlers for waypoint reordering
@@ -2257,6 +2305,9 @@ function executeMoveCommand(){
 let wpModeSelection = null;  // 'waypoint' or 'move'
 let wpMapClickActive = false;
 let wpOrientation = 0;       // in radians for waypoint mode
+let highlightedWpIdx = null; // Index of waypoint to highlight on map
+let highlightStartTime = null; // Timestamp when highlight was started
+let highlightTimeout = null; // Timeout ID for auto-clear
 
 function openAddWP(){
   document.getElementById('wpmodeOverlay').classList.add('open');
