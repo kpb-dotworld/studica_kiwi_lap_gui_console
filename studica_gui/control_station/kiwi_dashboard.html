@@ -1883,8 +1883,8 @@ setInterval(()=>{
     
     if(ijklKeys.i) moveX += ijklSpeed * 0.1;  // scaled for 100ms interval
     if(ijklKeys.k) moveX -= ijklSpeed * 0.1;
-    if(ijklKeys.j) moveY += ijklSpeed * 0.1;
-    if(ijklKeys.l) moveY -= ijklSpeed * 0.1;
+    if(ijklKeys.j) moveY -= ijklSpeed * 0.1;
+    if(ijklKeys.l) moveY += ijklSpeed * 0.1;
     
     if(moveX !== 0 || moveY !== 0){
       wpSelectedX += moveX;
