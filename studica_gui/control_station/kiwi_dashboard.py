@@ -431,7 +431,8 @@ class KiwiDashboardNode(Node):
         self.create_subscription(Odometry, "/odom",         self._odom_cb,   10)
         self.create_subscription(Twist,    "/cmd_vel",      self._cmd_vel_cb, 10)
         self.create_subscription(String,   "/dis_data",     self._dis_cb,    10)
-        self.create_subscription(String,   "/camera/colour", self._camera_cb, 10)
+        self.create_subscription(String,   "/camera/colour", self._camera_colour_cb, 10)
+        self.create_subscription(String,   "/camera/qr",     self._camera_qr_cb,     10)
         self.create_subscription(String,   "/kiwi/status",  self._status_cb, 10)
         self.create_timer(0.1, self._publish_cmd)
         self.create_timer(0.2, self._check_mission)
@@ -465,8 +466,11 @@ class KiwiDashboardNode(Node):
     def _dis_cb(self, msg: String):
         _broadcast({"type":"dis_data","data":msg.data})
 
-    def _camera_cb(self, msg: String):
+    def _camera_colour_cb(self, msg: String):
         _broadcast({"type":"camera_colour","data":msg.data})
+
+    def _camera_qr_cb(self, msg: String):
+        _broadcast({"type":"camera_qr","data":msg.data})
 
     def _check_mission(self):
         with state_lock:

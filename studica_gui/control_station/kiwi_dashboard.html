@@ -654,7 +654,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
           <span class="mp-label">CAMERA</span>
         </div>
         <div style="padding:8px;">
-          <textarea id="cameraOutput" readonly style="width:100%;height:70px;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:4px;color:rgb(186, 194, 186);font-family:monospace;font-size:20px;padding:8px;resize:none;overflow:hidden;text-align:center;line-height:1.6;word-wrap:break-word;"></textarea>
+          <textarea id="cameraOutput" readonly style="width:100%;height:100px;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:4px;color:rgb(186, 194, 186);font-family:monospace;font-size:14px;padding:8px;resize:none;overflow:auto;text-align:left;line-height:1.4;word-wrap:break-word;"></textarea>
         </div>
       </div>
     </div>
@@ -1090,6 +1090,11 @@ let waypoints=[];
 // Track current mission progress for arrow display
 let missionCurrentIdx = 0;
 let missionState = 'idle';
+
+// Camera data storage
+let lastCameraColour = null;
+let lastCameraQR = null;
+let lastCameraSource = null;  // 'colour' or 'qr' or null
 
 // ── MAP CANVAS INIT ──────────────────────────────────────────────────────────
 const mapCanvas = document.getElementById('mapCanvas');
@@ -1762,10 +1767,24 @@ function connect(){
       if(d.type==='map_saved'){ showToast('💾 Map saved: '+d.name); send({type:'list_maps'}); }
       if(d.type==='map_save_error') showToast('❌ Save error: '+d.msg);
       if(d.type==='mission_status') updateMissionPanel(d);
-      if(d.type==='camera_colour') {
+      if(d.type==='camera_colour' || d.type==='camera_qr') {
         const cameraBox = document.getElementById('cameraOutput');
         if(cameraBox) {
-          cameraBox.value = d.data;
+          if(d.type==='camera_colour') {
+            lastCameraColour = d.data;
+            lastCameraSource = 'colour';
+          } else if(d.type==='camera_qr') {
+            lastCameraQR = d.data;
+            lastCameraSource = 'qr';
+          }
+          // Display heading and data based on source
+          if(lastCameraSource === 'colour') {
+            cameraBox.value = `colour\n${lastCameraColour}`;
+          } else if(lastCameraSource === 'qr') {
+            cameraBox.value = `qr\n${lastCameraQR}`;
+          } else {
+            cameraBox.value = 'none';
+          }
         }
       }
       // Waypoints handlers
