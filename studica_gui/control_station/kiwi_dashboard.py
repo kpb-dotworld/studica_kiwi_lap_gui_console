@@ -22,7 +22,7 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 
 import threading
 import json
@@ -47,7 +47,8 @@ os.makedirs(WAYPOINTS_DIR, exist_ok=True)
 state_lock   = threading.Lock()
 shared_state = {"cmd_vel": {"linear_x": 0.0, "linear_y": 0.0, "angular_z": 0.0},
                 "pending_mission": None,
-                "cancel_mission":  False}
+                "cancel_mission":  False,
+                "reset_odom":      False}
 
 ws_clients_lock = threading.Lock()
 ws_clients: Set = set()
@@ -136,6 +137,9 @@ def _handle_ws(client: _WSClient):
                     elif t == "cancel_mission":
                         with state_lock:
                             shared_state["cancel_mission"] = True
+                    elif t == "reset_odom":
+                        with state_lock:
+                            shared_state["reset_odom"] = True
                     elif t == "save_map":
                         _save_map_from_ws(msg)
                     elif t == "list_maps":
@@ -428,6 +432,7 @@ class KiwiDashboardNode(Node):
         self._cmd_pub  = self.create_publisher(Twist,  "/cmd_vel",        10)
         self._wp_pub   = self.create_publisher(String, "/kiwi/waypoints", 10)
         self._can_pub  = self.create_publisher(String, "/kiwi/cancel",    10)
+        self._odom_reset_pub = self.create_publisher(Bool, "/odom/reset",  10)
         self.create_subscription(Odometry, "/odom",         self._odom_cb,   10)
         self.create_subscription(Twist,    "/cmd_vel",      self._cmd_vel_cb, 10)
         self.create_subscription(String,   "/dis_data",     self._dis_cb,    10)
@@ -476,8 +481,10 @@ class KiwiDashboardNode(Node):
         with state_lock:
             mission = shared_state.get("pending_mission")
             cancel  = shared_state.get("cancel_mission", False)
+            reset_odom = shared_state.get("reset_odom", False)
             if mission is not None: shared_state["pending_mission"] = None
             if cancel:              shared_state["cancel_mission"]  = False
+            if reset_odom:          shared_state["reset_odom"]      = False
         if mission is not None:
             out      = String()
             out.data = json.dumps(mission)
@@ -488,6 +495,11 @@ class KiwiDashboardNode(Node):
             out.data = "cancel"
             self._can_pub.publish(out)
             self.get_logger().info("[MISSION] Cancel → /kiwi/cancel")
+        if reset_odom:
+            out      = Bool()
+            out.data = True
+            self._odom_reset_pub.publish(out)
+            self.get_logger().info("[ODOM] Reset signal published → /odom/reset")
 
     def _status_cb(self, msg: String):
         try:
