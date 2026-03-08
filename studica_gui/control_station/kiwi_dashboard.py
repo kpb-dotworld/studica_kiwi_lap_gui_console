@@ -22,7 +22,7 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 
 import threading
 import json
@@ -46,8 +46,10 @@ os.makedirs(WAYPOINTS_DIR, exist_ok=True)
 
 state_lock   = threading.Lock()
 shared_state = {"cmd_vel": {"linear_x": 0.0, "linear_y": 0.0, "angular_z": 0.0},
+                "cmd_vel_active": False,
                 "pending_mission": None,
-                "cancel_mission":  False}
+                "cancel_mission":  False,
+                "pending_reset_odom": False}
 
 ws_clients_lock = threading.Lock()
 ws_clients: Set = set()
@@ -125,6 +127,7 @@ def _handle_ws(client: _WSClient):
                                 "linear_y":  float(msg.get("linear_y",  0.0)),
                                 "angular_z": float(msg.get("angular_z", 0.0)),
                             }
+                            shared_state["cmd_vel_active"] = True
                     elif t == "run_waypoints":
                         wps = msg.get("waypoints", [])
                         with state_lock:
@@ -136,6 +139,9 @@ def _handle_ws(client: _WSClient):
                     elif t == "cancel_mission":
                         with state_lock:
                             shared_state["cancel_mission"] = True
+                    elif t == "reset_odom":
+                        with state_lock:
+                            shared_state["pending_reset_odom"] = True
                     elif t == "save_map":
                         _save_map_from_ws(msg)
                     elif t == "list_maps":
@@ -428,6 +434,7 @@ class KiwiDashboardNode(Node):
         self._cmd_pub  = self.create_publisher(Twist,  "/cmd_vel",        10)
         self._wp_pub   = self.create_publisher(String, "/kiwi/waypoints", 10)
         self._can_pub  = self.create_publisher(String, "/kiwi/cancel",    10)
+        self._reset_pub = self.create_publisher(Bool,  "/odom/reset",     10)
         self.create_subscription(Odometry, "/odom",         self._odom_cb,   10)
         self.create_subscription(Twist,    "/cmd_vel",      self._cmd_vel_cb, 10)
         self.create_subscription(String,   "/dis_data",     self._dis_cb,    10)
@@ -436,10 +443,15 @@ class KiwiDashboardNode(Node):
         self.create_subscription(String,   "/kiwi/status",  self._status_cb, 10)
         self.create_timer(0.1, self._publish_cmd)
         self.create_timer(0.2, self._check_mission)
+        self.create_timer(0.1, self._check_reset_odom)
         self.get_logger().info(f"Team India Dashboard v4 started ✓  maps→ {MAPS_DIR}")
 
     def _publish_cmd(self):
-        with state_lock: cv = dict(shared_state["cmd_vel"])
+        with state_lock:
+            if not shared_state["cmd_vel_active"]:
+                return
+            cv = dict(shared_state["cmd_vel"])
+            shared_state["cmd_vel_active"] = False
         t = Twist()
         t.linear.x  = cv["linear_x"]
         t.linear.y  = cv["linear_y"]
@@ -488,6 +500,17 @@ class KiwiDashboardNode(Node):
             out.data = "cancel"
             self._can_pub.publish(out)
             self.get_logger().info("[MISSION] Cancel → /kiwi/cancel")
+
+    def _check_reset_odom(self):
+        with state_lock:
+            reset = shared_state.get("pending_reset_odom", False)
+            if reset:
+                shared_state["pending_reset_odom"] = False
+        if reset:
+            msg = Bool()
+            msg.data = True
+            self._reset_pub.publish(msg)
+            self.get_logger().info("[ODOM] Reset signal published → /odom/reset")
 
     def _status_cb(self, msg: String):
         try:
