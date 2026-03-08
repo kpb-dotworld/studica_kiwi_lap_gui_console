@@ -1995,49 +1995,6 @@ function handleQKeyPress() {
   }
 }
 
-// Double-press tracking for 'd' key in WP edit mode
-let dPressCount = 0;
-let dPressTimeout = null;
-
-function handleDKeyPress() {
-  console.log('[D-KEY] handleDKeyPress called', {wpEditMode, wpEditIndex, dPressCount, waypoints_count: waypoints.length});
-  
-  // Only work in edit mode
-  if (!wpEditMode || wpEditIndex < 0 || wpEditIndex >= waypoints.length) {
-    console.log('[D-KEY] Not in valid edit mode, resetting');
-    dPressCount = 0;
-    if (dPressTimeout) clearTimeout(dPressTimeout);
-    return;
-  }
-  
-  dPressCount++;
-  console.log('[D-KEY] Incremented count to', dPressCount);
-  
-  // Clear existing timeout
-  if (dPressTimeout) clearTimeout(dPressTimeout);
-  
-  if (dPressCount === 1) {
-    // First press: show toast indicator
-    console.log('[D-KEY] First press - showing toast');
-    showToast('Press D again to delete WP ' + (wpEditIndex + 1));
-    // Reset counter after 500ms if second press doesn't happen
-    dPressTimeout = setTimeout(() => {
-      console.log('[D-KEY] Timeout - resetting counter');
-      dPressCount = 0;
-      dPressTimeout = null;
-    }, 500);
-  } else if (dPressCount === 2) {
-    // Second press: delete the waypoint
-    console.log('[D-KEY] Second press - DELETING WP', wpEditIndex);
-    dPressCount = 0;
-    dPressTimeout = null;
-    const wpNum = wpEditIndex + 1;
-    delWP(wpEditIndex);
-    closeAddWP();  // Exit edit mode
-    showToast('✕ Waypoint ' + wpNum + ' deleted');
-  }
-}
-
 document.addEventListener('keydown',e=>{ if((e.key==='p'||e.key==='P')&&!e.target.matches('input,textarea')) markWP(); });
 function updateWPList(){
   const el=document.getElementById('wpList');
@@ -2696,10 +2653,6 @@ document.addEventListener('keydown', e=>{
       } else {
         closeAddWP();   // Cancel with Escape
       }
-    }
-    else if(e.key === 'd' || e.key === 'D') {
-      console.log('[KEY-HANDLER] D key pressed - calling handleDKeyPress');
-      handleDKeyPress();
     }
     return;
   }
