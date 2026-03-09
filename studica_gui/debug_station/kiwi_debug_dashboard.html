@@ -1,0 +1,3462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TEAM INDIA Debug Station</title>
+<script>
+// ========== INLINE ROSLIB — no CDN needed, works fully offline ==========
+// Minimal but functional ROSLIB implementation using native WebSocket
+window.ROSLIB = (function() {
+
+  function Ros(options) {
+    this._callbacks = {};
+    this._socket = null;
+    this._topicCallbacks = {};
+    this._msgId = 0;
+    if (options && options.url) {
+      this.connect(options.url);
+    }
+  }
+
+  Ros.prototype.on = function(event, cb) {
+    if (!this._callbacks[event]) this._callbacks[event] = [];
+    this._callbacks[event].push(cb);
+  };
+
+  Ros.prototype._emit = function(event, data) {
+    var cbs = this._callbacks[event] || [];
+    for (var i = 0; i < cbs.length; i++) cbs[i](data);
+  };
+
+  Ros.prototype.connect = function(url) {
+    var self = this;
+    try {
+      self._socket = new WebSocket(url);
+    } catch(e) {
+      setTimeout(function() { self._emit('error', e.message); }, 10);
+      return;
+    }
+
+    self._socket.onopen = function() {
+      self._emit('connection');
+    };
+
+    self._socket.onerror = function(e) {
+      self._emit('error', 'WebSocket error');
+    };
+
+    self._socket.onclose = function() {
+      self._emit('close');
+    };
+
+    self._socket.onmessage = function(evt) {
+      try {
+        var msg = JSON.parse(evt.data);
+        // Support both rosbridge format (op:'publish') and kiwi_bridge format (topic directly)
+        var topic = msg.topic;
+        var payload = msg.msg;
+        if (topic && payload && self._topicCallbacks[topic]) {
+          var handlers = self._topicCallbacks[topic];
+          for (var i = 0; i < handlers.length; i++) handlers[i](payload);
+        }
+      } catch(e) {}
+    };
+  };
+
+  Ros.prototype.close = function() {
+    if (this._socket) this._socket.close();
+  };
+
+  Ros.prototype.getTopics = function(cb) {
+    // stub — would require service call
+    if (cb) cb({ topics: [] });
+  };
+
+  Ros.prototype._send = function(obj) {
+    if (this._socket && this._socket.readyState === WebSocket.OPEN) {
+      this._socket.send(JSON.stringify(obj));
+    }
+  };
+
+  // ---- Topic ----
+  function Topic(options) {
+    this._ros = options.ros;
+    this._name = options.name;
+    this._type = options.messageType;
+  }
+
+  Topic.prototype.subscribe = function(cb) {
+    var ros = this._ros;
+    var name = this._name;
+    if (!ros._topicCallbacks[name]) ros._topicCallbacks[name] = [];
+    ros._topicCallbacks[name].push(cb);
+    ros._send({ op: 'subscribe', topic: name, type: this._type });
+  };
+
+  Topic.prototype.unsubscribe = function() {
+    var ros = this._ros;
+    var name = this._name;
+    delete ros._topicCallbacks[name];
+    ros._send({ op: 'unsubscribe', topic: name });
+  };
+
+  Topic.prototype.publish = function(msg) {
+    this._ros._send({ op: 'publish', topic: this._name, msg: msg });
+  };
+
+  return { Ros: Ros, Topic: Topic };
+})();
+</script>
+<style>
+:root {
+  --bg: #060b14;
+  --panel: #0b1320;
+  --panel2: #101a2b;
+  --border: #1a2d45;
+  --accent: #00e5ff;
+  --accent2: #ff6b35;
+  --green: #39ff88;
+  --red: #ff3355;
+  --yellow: #ffd600;
+  --purple: #c084fc;
+  --pink: #ff6eb4;
+  --orange: #ff9f1c;
+  --teal: #00ffd5;
+  --text: #e8f4ff;
+  --muted: #4a6a85;
+  --muted2: #6b8fa8;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 11px;
+  line-height: 1.4;
+  overflow: hidden;
+  background-image:
+    radial-gradient(ellipse at 20% 0%, rgba(0,229,255,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 0%, rgba(192,132,252,0.04) 0%, transparent 60%);
+}
+
+.header {
+  background: linear-gradient(135deg, #0b1525 0%, #0f1e35 50%, #0b1525 100%);
+  border-bottom: 3px solid #ff9933;
+  padding: 8px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(255,153,51,0.04), rgba(255,255,255,0.02), rgba(19,136,8,0.04));
+  pointer-events: none;
+}
+
+.header h1 {
+  font-size: 20px;
+  letter-spacing: 3px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header h1 .word-team {
+  background: linear-gradient(180deg, #ff9933 0%, #ff9933 33%, #ffffff 33%, #ffffff 66%, #138808 66%, #138808 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 8px rgba(255,153,51,0.5));
+}
+
+.header h1 .word-india {
+  background: linear-gradient(180deg, #ff9933 0%, #ff9933 33%, #ffffff 33%, #ffffff 66%, #138808 66%, #138808 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 8px rgba(19,136,8,0.5));
+  text-shadow: none;
+}
+
+.header h1 .word-debug {
+  background: linear-gradient(180deg, #ff9933 0%, #ff9933 33%, #ffffff 33%, #ffffff 66%, #138808 66%, #138808 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 8px rgba(255,153,51,0.4));
+}
+
+.header h1 .word-station {
+  background: linear-gradient(180deg, #ff9933 0%, #ff9933 33%, #ffffff 33%, #ffffff 66%, #138808 66%, #138808 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Indian flag SVG in header */
+.india-flag {
+  width: 40px;
+  height: 26px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 10px rgba(255,153,51,0.3);
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+.header .subtitle {
+  color: var(--muted2);
+  font-size: 11px;
+  margin-top: 5px;
+  letter-spacing: 1px;
+}
+.header .subtitle span { color: var(--teal); }
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+}
+
+.status-badge {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid;
+  letter-spacing: 1px;
+  font-weight: 700;
+  font-size: 11px;
+}
+.status-badge.connected    { color: var(--green);  border-color: var(--green);  background: rgba(57,255,136,0.08); box-shadow: 0 0 10px rgba(57,255,136,0.2); }
+.status-badge.disconnected { color: var(--red);    border-color: var(--red);    background: rgba(255,51,85,0.08); }
+.status-badge.connecting   { color: var(--yellow); border-color: var(--yellow); background: rgba(255,214,0,0.08); }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+.container {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr 1fr;
+  grid-template-rows: 1fr;
+  gap: 10px;
+  padding: 10px;
+  height: calc(100vh - 58px);
+  overflow: hidden;
+  align-items: stretch;
+}
+
+.section {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+  overflow: hidden;
+}
+
+.section-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 800;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.section-title.cyan   { color: var(--accent);  text-shadow: 0 0 8px rgba(0,229,255,0.4); border-bottom-color: rgba(0,229,255,0.2); }
+.section-title.purple { color: var(--purple);  text-shadow: 0 0 8px rgba(192,132,252,0.4); border-bottom-color: rgba(192,132,252,0.2); }
+.section-title.orange { color: var(--orange);  text-shadow: 0 0 8px rgba(255,159,28,0.4); border-bottom-color: rgba(255,159,28,0.2); }
+.section-title.teal   { color: var(--teal);    text-shadow: 0 0 8px rgba(0,255,213,0.4); border-bottom-color: rgba(0,255,213,0.2); }
+.section-title.pink   { color: var(--pink);    text-shadow: 0 0 8px rgba(255,110,180,0.4); border-bottom-color: rgba(255,110,180,0.2); }
+.section-title.green  { color: var(--green);   text-shadow: 0 0 8px rgba(57,255,136,0.4); border-bottom-color: rgba(57,255,136,0.2); }
+
+/* ========== SENSORS ========== */
+.sensor-visual-container {
+  background: var(--panel2);
+  border: 1px solid rgba(0,229,255,0.15);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  min-height: 0;
+  box-shadow: inset 0 0 30px rgba(0,229,255,0.03);
+}
+#sensorVisual { display: block; max-width: 100%; max-height: 100%; height: auto; }
+
+.sensor-values { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; flex-shrink: 0; }
+
+.sensor-box {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  text-align: center;
+  transition: all 0.25s;
+  position: relative;
+  overflow: hidden;
+}
+.sensor-box::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.sensor-box:hover { border-color: var(--accent); box-shadow: 0 0 12px rgba(0,229,255,0.15); }
+.sensor-box:hover::before { opacity: 1; }
+
+.sensor-box .label {
+  font-size: 9px;
+  color: var(--muted2);
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+.sensor-box:nth-child(1) .label { color: #7dd3fc; }
+.sensor-box:nth-child(2) .label { color: #86efac; }
+.sensor-box:nth-child(3) .label { color: var(--pink); }
+.sensor-box:nth-child(4) .label { color: var(--orange); }
+
+.sensor-box .value { font-size: 16px; font-weight: 700; font-family: 'Consolas', monospace; }
+.sensor-box .value.nil    { color: var(--red); text-shadow: 0 0 8px rgba(255,51,85,0.4); }
+.sensor-box .value.active { color: var(--green); text-shadow: 0 0 8px rgba(57,255,136,0.4); }
+
+/* ── Color detection pills ── */
+.color-pill {
+  padding: 6px 4px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.5px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--muted2);
+  transition: all 0.25s;
+}
+.color-pill.active {
+  background: var(--cc);
+  border-color: var(--cc);
+  color: #000;
+  box-shadow: 0 0 14px color-mix(in srgb, var(--cc) 60%, transparent);
+  text-shadow: none;
+}
+
+.topic-status {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Consolas', monospace;
+  color: var(--teal);
+  flex-shrink: 0;
+}
+
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+  animation: pulse 2s infinite;
+  box-shadow: 0 0 6px var(--red);
+}
+.status-dot.active { background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+/* ========== ODOM ========== */
+.odom-panel {
+  background: var(--panel2);
+  border: 1px solid rgba(192,132,252,0.2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  box-shadow: inset 0 0 20px rgba(192,132,252,0.03);
+  flex-shrink: 0;
+}
+.odom-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 6px; }
+.odom-value { text-align: center; }
+.odom-value .label {
+  font-size: 9px;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+.odom-value:nth-child(1) .label { color: #7dd3fc; }
+.odom-value:nth-child(2) .label { color: #f9a8d4; }
+.odom-value:nth-child(3) .label { color: var(--yellow); }
+.odom-value .number {
+  font-size: 20px;
+  font-weight: 700;
+  font-family: 'Consolas', monospace;
+}
+.odom-value:nth-child(1) .number { color: var(--accent); text-shadow: 0 0 10px rgba(0,229,255,0.35); }
+.odom-value:nth-child(2) .number { color: var(--pink);   text-shadow: 0 0 10px rgba(255,110,180,0.35); }
+.odom-value:nth-child(3) .number { color: var(--yellow); text-shadow: 0 0 10px rgba(255,214,0,0.35); }
+
+.bot-tf-container {
+  background: var(--panel2);
+  border: 1px solid rgba(0,255,213,0.15);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  min-height: 0;
+  box-shadow: inset 0 0 30px rgba(0,255,213,0.03);
+}
+#botTfVisual { display: block; max-width: 100%; max-height: 100%; height: auto; }
+
+/* ========== TOPICS & LOG ========== */
+.topics-panel {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  max-height: 130px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+.topics-panel h4 {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+.topics-panel h4.pub-title  { color: var(--green); }
+.topics-panel h4.sub-title  { color: var(--purple); }
+
+.topic-list { font-size: 10px; line-height: 1.6; margin-bottom: 10px; }
+.topic-item {
+  padding: 5px 10px;
+  background: var(--panel);
+  border-radius: 3px;
+  margin-bottom: 4px;
+  font-family: 'Consolas', monospace;
+  color: var(--green);
+  border-left: 2px solid var(--green);
+  font-size: 11px;
+}
+
+.log-panel {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-shrink: 0; }
+.log-header span { color: var(--teal); font-weight: 700; font-size: 10px; }
+
+.log-count {
+  font-size: 9px;
+  color: var(--yellow);
+  background: rgba(255,214,0,0.08);
+  border: 1px solid rgba(255,214,0,0.2);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.log-content {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+  font-family: 'Consolas', monospace;
+  font-size: 9px;
+  line-height: 1.6;
+  min-height: 0;
+  max-height: 100%;
+}
+.log-entry {
+  margin-bottom: 5px;
+  padding: 4px 6px;
+  border-left: 2px solid var(--muted);
+  background: rgba(15,24,36,0.5);
+  border-radius: 3px;
+}
+.log-entry .timestamp { color: var(--muted2); margin-right: 6px; }
+.log-entry .type { font-weight: 700; margin-right: 6px; text-transform: uppercase; }
+.log-entry.waypoint { border-left-color: var(--green); }
+.log-entry.waypoint .type { color: var(--green); }
+.log-entry.cancel { border-left-color: var(--red); }
+.log-entry.cancel .type { color: var(--red); }
+.log-entry .data { color: var(--text); }
+
+.export-btn {
+  background: linear-gradient(135deg, var(--accent2), #ff4500);
+  border: none;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  box-shadow: 0 4px 14px rgba(255,107,53,0.3);
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+.export-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,107,53,0.45); }
+.export-btn:active { transform: translateY(0); }
+
+.topics-panel::-webkit-scrollbar,
+.log-content::-webkit-scrollbar { width: 5px; }
+.topics-panel::-webkit-scrollbar-thumb,
+.log-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.topics-panel::-webkit-scrollbar-thumb:hover,
+.log-content::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+/* ========== BOT STATUS MODAL ========== */
+.bot-status-btn {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 7px 18px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.bot-status-btn:hover {
+  background: rgba(0,229,255,0.12);
+  box-shadow: 0 0 14px rgba(0,229,255,0.3);
+}
+.bot-status-btn .btn-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse 2s infinite;
+  box-shadow: 0 0 6px var(--green);
+}
+
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(6px);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+}
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--panel);
+  border: 1px solid rgba(0,229,255,0.2);
+  border-radius: 10px;
+  width: 520px;
+  max-width: 95vw;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7), 0 0 40px rgba(0,229,255,0.08);
+  overflow: hidden;
+}
+
+.modal-header {
+  background: linear-gradient(135deg, var(--panel2), #0d1828);
+  border-bottom: 1px solid rgba(0,229,255,0.15);
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-header h2 {
+  font-size: 13px;
+  letter-spacing: 2px;
+  font-weight: 800;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(90deg, var(--accent), var(--teal));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.modal-close {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted2);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+.modal-close:hover { color: var(--red); border-color: var(--red); background: rgba(255,51,85,0.1); }
+
+.modal-body { padding: 18px; display: flex; flex-direction: column; gap: 8px; }
+
+.modal-footer {
+  padding: 8px 18px;
+  border-top: 1px solid var(--border);
+  font-size: 10px;
+  color: var(--teal);
+  text-align: center;
+  font-family: 'Consolas', monospace;
+  opacity: 0.7;
+}
+
+.status-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 11px 14px;
+  transition: all 0.3s;
+}
+.status-row.publishing     { border-color: rgba(57,255,136,0.4); background: rgba(57,255,136,0.04); }
+.status-row.not-publishing { border-color: rgba(255,51,85,0.2); }
+
+.status-row .topic-name { font-size: 12px; font-weight: 700; color: var(--text); }
+.status-row .topic-sub  { font-size: 10px; color: var(--muted2); font-family: 'Consolas', monospace; margin-top: 2px; }
+
+.status-pill {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+  padding: 4px 10px; border-radius: 12px; text-transform: uppercase; white-space: nowrap;
+}
+.status-pill.publishing     { color: var(--green);  background: rgba(57,255,136,0.1);  border: 1px solid rgba(57,255,136,0.35); box-shadow: 0 0 8px rgba(57,255,136,0.15); }
+.status-pill.not-publishing { color: var(--red);    background: rgba(255,51,85,0.1);   border: 1px solid rgba(255,51,85,0.25); }
+
+.status-icon { font-size: 18px; width: 24px; text-align: center; transition: all 0.3s; font-weight: 900; }
+
+/* ========== CHECKLIST MODAL ========== */
+.calib-btn {
+  background: transparent;
+  border: 1px solid var(--accent2);
+  color: var(--accent2);
+  padding: 7px 18px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.calib-btn:hover {
+  background: rgba(255,107,53,0.12);
+  box-shadow: 0 0 14px rgba(255,107,53,0.3);
+}
+
+/* ── Calibration Modal ── */
+.calib-section-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 800;
+  padding: 4px 0 8px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+  color: var(--accent2);
+  text-shadow: 0 0 8px rgba(255,107,53,0.3);
+}
+.calib-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.calib-row {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.2s;
+}
+.calib-row:hover { border-color: rgba(255,107,53,0.3); }
+.calib-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.calib-row-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.calib-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.calib-input-box {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.calib-input-box label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted2);
+}
+.calib-input-box input {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--yellow);
+  font-family: 'Consolas', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 4px;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.2s;
+}
+.calib-input-box input:focus {
+  border-color: var(--accent2);
+  box-shadow: 0 0 8px rgba(255,107,53,0.2);
+}
+.calib-calc-btn {
+  background: linear-gradient(135deg, var(--accent2), #ff4500);
+  border: none;
+  color: white;
+  padding: 7px 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.calib-calc-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(255,107,53,0.4); }
+
+.calib-track-btn {
+  padding: 6px 12px; border-radius: 5px; border: none;
+  font-size: 10px; font-weight: 800; letter-spacing: 1px;
+  cursor: pointer; transition: all 0.15s; text-transform: uppercase;
+}
+.calib-track-btn.start { background: rgba(57,255,136,0.15); color: var(--green); border: 1px solid var(--green); }
+.calib-track-btn.start:hover { background: rgba(57,255,136,0.28); }
+.calib-track-btn.start.active { background: var(--green); color: #000; animation: pulse 1s infinite; }
+.calib-track-btn.snap  { background: rgba(255,51,85,0.15);  color: var(--red);   border: 1px solid var(--red); }
+.calib-track-btn.snap:hover:not(:disabled)  { background: rgba(255,51,85,0.28); }
+.calib-track-btn.snap:disabled { opacity: 0.35; cursor: not-allowed; }
+.calib-result {
+  background: var(--panel);
+  border: 1px solid rgba(0,229,255,0.15);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-family: 'Consolas', monospace;
+  font-size: 10px;
+  line-height: 1.8;
+  display: none;
+  color: var(--text);
+}
+.calib-result.show { display: block; }
+.calib-result .cr-label { color: var(--muted2); }
+.calib-result .cr-good  { color: var(--green);  font-weight: 700; }
+.calib-result .cr-warn  { color: var(--yellow); font-weight: 700; }
+.calib-result .cr-bad   { color: var(--red);    font-weight: 700; }
+.calib-result .cr-val   { color: var(--accent);  font-weight: 700; }
+.calib-summary {
+  background: rgba(0,229,255,0.04);
+  border: 1px solid rgba(0,229,255,0.15);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-family: 'Consolas', monospace;
+  font-size: 10px;
+  line-height: 2;
+  display: none;
+  margin-top: 4px;
+}
+.calib-summary.show { display: block; }
+.calib-summary-title {
+  font-size: 10px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 1.5px; color: var(--accent); margin-bottom: 8px;
+}
+.calib-result-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px;
+  background: var(--panel); border-radius: 6px; padding: 8px 12px; margin-top: 6px;
+}
+.calib-result-item { display: flex; justify-content: space-between; align-items: center; padding: 2px 0; border-bottom: 1px solid var(--border); }
+.calib-result-item:last-child { border-bottom: none; }
+.cr-label { font-size: 9px; color: var(--muted2); text-transform: uppercase; letter-spacing: 0.5px; }
+.cr-val   { font-family: Consolas, monospace; font-size: 11px; font-weight: 700; }
+.calib-summary-title {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.rotation-inputs {
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  gap: 6px;
+}
+
+.checklist-btn {
+  background: transparent;
+  border: 1px solid var(--yellow);
+  color: var(--yellow);
+  padding: 7px 18px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.checklist-btn:hover {
+  background: rgba(255,214,0,0.12);
+  box-shadow: 0 0 14px rgba(255,214,0,0.25);
+}
+
+.cl-section-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 800;
+  padding: 4px 0 8px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+.cl-section-title.bat   { color: var(--green);  text-shadow: 0 0 8px rgba(57,255,136,0.3); border-bottom-color: rgba(57,255,136,0.15); }
+.cl-section-title.lap   { color: var(--yellow); text-shadow: 0 0 8px rgba(255,214,0,0.3);  border-bottom-color: rgba(255,214,0,0.15); }
+.cl-section-title.mech  { color: var(--orange); text-shadow: 0 0 8px rgba(255,159,28,0.3); border-bottom-color: rgba(255,159,28,0.15); }
+.cl-section-title.timer { color: var(--teal);   text-shadow: 0 0 8px rgba(0,255,213,0.3);  border-bottom-color: rgba(0,255,213,0.15); }
+
+.cl-voltage-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.cl-voltage-box {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cl-voltage-box label {
+  font-size: 10px;
+  color: var(--muted2);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.cl-voltage-box input {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--yellow);
+  font-family: 'Consolas', monospace;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 3px;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.2s;
+}
+.cl-voltage-box input:focus {
+  border-color: var(--yellow);
+  box-shadow: 0 0 8px rgba(255,214,0,0.2);
+}
+.cl-voltage-box input::placeholder {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.cl-mech-row {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: border-color 0.2s;
+}
+.cl-mech-row.pass  { border-color: rgba(77, 255, 145, 0.4); }
+.cl-mech-row.fail  { border-color: rgba(255, 68, 85, 0.4); }
+
+.cl-mech-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cl-toggle {
+  display: flex;
+  gap: 6px;
+}
+
+.cl-toggle-btn {
+  width: 42px;
+  height: 36px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  font-size: 18px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted2);
+}
+.cl-toggle-btn:hover { color: var(--text); border-color: var(--muted2); }
+.cl-toggle-btn.active-pass {
+  background: rgba(77, 255, 145, 0.18);
+  border-color: var(--green);
+  color: var(--green);
+  box-shadow: 0 0 8px rgba(77,255,145,0.3);
+}
+.cl-toggle-btn.active-fail {
+  background: rgba(255, 68, 85, 0.18);
+  border-color: var(--red);
+  color: var(--red);
+  box-shadow: 0 0 8px rgba(255,68,85,0.3);
+}
+
+/* ========== TIMER ========== */
+.cl-timer-box {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.cl-timer-display {
+  font-family: 'Consolas', monospace;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 3px;
+  min-width: 130px;
+}
+.cl-timer-display.running { color: var(--green); }
+.cl-timer-display.paused  { color: var(--yellow); }
+.cl-timer-btns {
+  display: flex;
+  gap: 8px;
+}
+.cl-timer-btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.cl-timer-btn.start  { border-color: var(--green); color: var(--green); }
+.cl-timer-btn.start:hover  { background: rgba(77,255,145,0.12); }
+.cl-timer-btn.pause  { border-color: var(--yellow); color: var(--yellow); }
+.cl-timer-btn.pause:hover  { background: rgba(255,204,0,0.12); }
+.cl-timer-btn.reset  { border-color: var(--muted); color: var(--muted2); }
+.cl-timer-btn.reset:hover  { background: rgba(255,255,255,0.05); }
+
+.generate-report-btn {
+  background: var(--accent2);
+  border: none;
+  color: white;
+  padding: 13px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  width: 100%;
+  margin-top: 4px;
+}
+.generate-report-btn:hover {
+  background: #ff8555;
+  box-shadow: 0 4px 14px rgba(255,107,53,0.35);
+  transform: translateY(-1px);
+}
+
+/* ========== EMERGENCY STOP ========== */
+.estop-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0 2px;
+  flex-shrink: 0;
+}
+
+.estop-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #8b0000, #cc0000, #ff0000, #cc0000, #8b0000);
+  background-size: 300% 100%;
+  animation: estop-shimmer 3s ease infinite;
+  border: 3px solid #ff0000;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  padding: 10px 12px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.1s;
+  box-shadow:
+    0 0 20px rgba(255,0,0,0.5),
+    0 0 40px rgba(255,0,0,0.2),
+    inset 0 1px 0 rgba(255,255,255,0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.estop-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgba(0,0,0,0.08) 10px,
+    rgba(0,0,0,0.08) 20px
+  );
+  pointer-events: none;
+}
+
+@keyframes estop-shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50%       { background-position: 100% 50%; }
+}
+
+.estop-btn:hover {
+  transform: scale(1.02);
+  box-shadow:
+    0 0 30px rgba(255,0,0,0.7),
+    0 0 60px rgba(255,0,0,0.3),
+    inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+.estop-btn:active {
+  transform: scale(0.97);
+  box-shadow: 0 0 10px rgba(255,0,0,0.4);
+}
+
+.estop-btn.activated {
+  background: linear-gradient(135deg, #1a0000, #330000);
+  background-size: unset;
+  animation: none;
+  border-color: #ff4444;
+  box-shadow: 0 0 15px rgba(255,68,68,0.3);
+  cursor: not-allowed;
+}
+
+.estop-icon {
+  font-size: 20px;
+  line-height: 1;
+  filter: drop-shadow(0 0 6px rgba(255,200,200,0.8));
+}
+
+.estop-label {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(255,150,150,0.8), 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.estop-sub {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  opacity: 0.75;
+  font-weight: 600;
+}
+
+.estop-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-family: 'Consolas', monospace;
+  color: var(--green);
+}
+
+.estop-status-dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: pulse 2s infinite;
+}
+
+.estop-status.stopped { color: var(--red); }
+.estop-status.stopped .estop-status-dot {
+  background: var(--red);
+  box-shadow: 0 0 10px var(--red);
+  animation: pulse 0.6s infinite;
+}
+
+.estop-resume-btn {
+  width: 100%;
+  background: transparent;
+  border: 2px solid var(--green);
+  color: var(--green);
+  border-radius: 6px;
+  padding: 10px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  box-shadow: 0 0 10px rgba(57,255,136,0.2);
+}
+.estop-resume-btn:hover {
+  background: rgba(57,255,136,0.12);
+  box-shadow: 0 0 18px rgba(57,255,136,0.35);
+}
+
+/* ========== CAMERA FEED ========== */
+.camera-container {
+  position: relative;
+  background: #000;
+  border: 1px solid rgba(255,110,180,0.25);
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 120px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 30px rgba(0,0,0,0.5), 0 0 20px rgba(255,110,180,0.05);
+}
+
+#cameraCanvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 130px;
+  object-fit: contain;
+}
+
+.camera-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, rgba(10,15,25,0.85) 0%, rgba(6,11,20,0.95) 100%);
+  transition: opacity 0.4s;
+}
+.camera-overlay.hidden { opacity: 0; pointer-events: none; }
+
+.camera-no-signal {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.camera-icon { font-size: 36px; opacity: 0.4; animation: pulse 3s infinite; }
+.camera-no-signal-text {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted2);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.camera-topic-label {
+  font-family: 'Consolas', monospace;
+  font-size: 9px;
+  color: var(--pink);
+  opacity: 0.5;
+  letter-spacing: 0.5px;
+}
+
+.camera-hud {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 6px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(transparent, rgba(0,0,0,0.75));
+}
+.camera-hud-right { display: flex; gap: 8px; align-items: center; }
+
+.camera-badge {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-family: 'Consolas', monospace;
+  color: var(--red);
+}
+.camera-badge.live {
+  color: var(--green);
+  text-shadow: 0 0 8px rgba(57,255,136,0.6);
+  animation: pulse 1.5s infinite;
+}
+.camera-res, .camera-fps {
+  font-size: 9px;
+  font-family: 'Consolas', monospace;
+  color: var(--muted2);
+  background: rgba(0,0,0,0.5);
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+}
+.camera-fps.live { color: var(--teal); border-color: rgba(0,255,213,0.3); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>
+      <!-- Indian Flag SVG -->
+      <svg class="india-flag" viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg">
+        <!-- Saffron band -->
+        <rect width="900" height="200" fill="#FF9933"/>
+        <!-- White band -->
+        <rect y="200" width="900" height="200" fill="#FFFFFF"/>
+        <!-- Green band -->
+        <rect y="400" width="900" height="200" fill="#138808"/>
+        <!-- Ashoka Chakra (navy blue) -->
+        <circle cx="450" cy="300" r="70" fill="none" stroke="#000080" stroke-width="8"/>
+        <circle cx="450" cy="300" r="10" fill="#000080"/>
+        <!-- 24 spokes -->
+        <g stroke="#000080" stroke-width="3">
+          <line x1="450" y1="230" x2="450" y2="370"/>
+          <line x1="450" y1="230" x2="450" y2="370" transform="rotate(15 450 300)"/>
+          <line x1="450" y1="230" x2="450" y2="370" transform="rotate(30 450 300)"/>
+          <line x1="450" y1="230" x2="450" y2="370" transform="rotate(45 450 300)"/>
+          <line x1="450" y1="230" x2="450" y2="370" transform="rotate(60 450 300)"/>
+          <line x1="450" y1="230" x2="450" y2="370" transform="rotate(75 450 300)"/>
+          <line x1="450" y1="230" x2="450" y2="370" transform="rotate(90 450 300)"/>
+          <line x1="450" y1="230" x2="450" y2="370" transform="rotate(105 450 300)"/>
+          <line x1="450" y1="230" x2="450" y2="370" transform="rotate(120 450 300)"/>
+          <line x1="450" y1="230" x2="450" y2="370" transform="rotate(135 450 300)"/>
+          <line x1="450" y1="230" x2="450" y2="370" transform="rotate(150 450 300)"/>
+          <line x1="450" y1="230" x2="450" y2="370" transform="rotate(165 450 300)"/>
+        </g>
+      </svg>
+      <span class="word-team">TEAM</span>
+      <span class="word-india">INDIA</span>
+      <span class="word-debug">DEBUG</span>
+      <span class="word-station">STATION</span>
+    </h1>
+  </div>
+  <div class="connection-status">
+    <button class="bot-status-btn" onclick="openBotStatus()">
+      <span class="btn-dot"></span>
+      BOT STATUS
+    </button>
+    <button class="calib-btn" onclick="openCalib()">
+      🎯 ERROR CALIBRATION
+    </button>
+    <button class="checklist-btn" onclick="openChecklist()">
+      📋 RUN CHECKLIST
+    </button>
+    <span style="color: var(--muted2);">ROS Bridge:</span>
+    <div class="status-badge connecting" id="rosStatus">CONNECTING</div>
+  </div>
+</div>
+
+<!-- ========== BOT STATUS MODAL ========== -->
+<div class="modal-overlay" id="botStatusModal" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>🤖 Bot Status</h2>
+      <button class="modal-close" onclick="closeBotStatus()">✕</button>
+    </div>
+    <div class="modal-body" id="botStatusBody">
+
+      <div class="status-row" id="status-fl">
+        <div>
+          <div class="topic-name">Front Left Sensor</div>
+          <div class="topic-sub">topic: —</div>
+        </div>
+        <div class="status-pill not-publishing">Not Publishing</div>
+        <div class="status-icon">✗</div>
+      </div>
+
+      <div class="status-row" id="status-fr">
+        <div>
+          <div class="topic-name">Front Right Sensor</div>
+          <div class="topic-sub">topic: —</div>
+        </div>
+        <div class="status-pill not-publishing">Not Publishing</div>
+        <div class="status-icon">✗</div>
+      </div>
+
+      <div class="status-row" id="status-left">
+        <div>
+          <div class="topic-name">Left Sensor</div>
+          <div class="topic-sub">topic: —</div>
+        </div>
+        <div class="status-pill not-publishing">Not Publishing</div>
+        <div class="status-icon">✗</div>
+      </div>
+
+      <div class="status-row" id="status-right">
+        <div>
+          <div class="topic-name">Right Sensor</div>
+          <div class="topic-sub">topic: —</div>
+        </div>
+        <div class="status-pill not-publishing">Not Publishing</div>
+        <div class="status-icon">✗</div>
+      </div>
+
+      <div class="status-row" id="status-odom">
+        <div>
+          <div class="topic-name">Odometry (X, Y)</div>
+          <div class="topic-sub">topic: —</div>
+        </div>
+        <div class="status-pill not-publishing">Not Publishing</div>
+        <div class="status-icon">✗</div>
+      </div>
+
+      <div class="status-row" id="status-imu">
+        <div>
+          <div class="topic-name">IMU Yaw</div>
+          <div class="topic-sub">topic: —</div>
+        </div>
+        <div class="status-pill not-publishing">Not Publishing</div>
+        <div class="status-icon">✗</div>
+      </div>
+
+      <div class="status-row" id="status-camera">
+        <div>
+          <div class="topic-name">Camera</div>
+          <div class="topic-sub">topic: —</div>
+        </div>
+        <div class="status-pill not-publishing">Not Publishing</div>
+        <div class="status-icon">✗</div>
+      </div>
+
+      <div class="status-row" id="status-gripper">
+        <div>
+          <div class="topic-name">Gripper</div>
+          <div class="topic-sub">topic: — &nbsp;|&nbsp; state: —</div>
+        </div>
+        <div class="status-pill not-publishing">Not Publishing</div>
+        <div class="status-icon">✗</div>
+      </div>
+
+      <div class="status-row" id="status-detected">
+        <div>
+          <div class="topic-name">Color + QR Detection</div>
+          <div class="topic-sub">topic: /camera/colour &amp; /camera/qr &nbsp;|&nbsp; color: <span id="statusDetectedColor">—</span> &nbsp;|&nbsp; qr: <span id="statusDetectedQR">—</span></div>
+        </div>
+        <div class="status-pill not-publishing">Not Publishing</div>
+        <div class="status-icon">✗</div>
+      </div>
+      <div class="status-row" id="status-cmdvel">
+        <div>
+          <div class="topic-name">CMD Velocity</div>
+          <div class="topic-sub">topic: /cmd_vel &nbsp;|&nbsp; lx: <span id="statusCmdVelLx">—</span> &nbsp;|&nbsp; az: <span id="statusCmdVelAz">—</span></div>
+        </div>
+        <div class="status-pill not-publishing">Not Publishing</div>
+        <div class="status-icon">✗</div>
+      </div>
+    </div>
+    <div class="modal-footer" id="botStatusFooter">
+      Last updated: —
+    </div>
+  </div>
+</div>
+
+<!-- ========== ERROR CALIBRATION MODAL ========== -->
+<div class="modal-overlay" id="calibModal" onclick="handleCalibOverlayClick(event)">
+  <div class="modal" style="width:700px;max-height:92vh;display:flex;flex-direction:column;">
+    <div class="modal-header">
+      <h2>🎯 Error Calibration</h2>
+      <button class="modal-close" onclick="closeCalib()">✕</button>
+    </div>
+    <div class="modal-body" style="overflow-y:auto;flex:1;gap:12px;">
+
+      <div style="font-size:10px;color:var(--muted2);margin-bottom:8px;line-height:1.6;">
+        <b style="color:var(--yellow)">How to use:</b> Enter commanded value → press <b style="color:var(--green)">▶ START TRACKING</b> → drive your bot → press <b style="color:var(--red)">⏹ SNAP &amp; CALCULATE</b>. Odom is read live from the dashboard.
+      </div>
+
+      <!-- ── LIVE ODOM DISPLAY ── -->
+      <div style="background:var(--panel2);border:1px solid rgba(0,229,255,0.2);border-radius:8px;padding:10px 14px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:4px;">
+        <div style="text-align:center;">
+          <div style="font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;">Live X</div>
+          <div style="font-size:18px;font-weight:700;font-family:Consolas,monospace;color:var(--accent)" id="cal-live-x">0.000</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;">Live Y</div>
+          <div style="font-size:18px;font-weight:700;font-family:Consolas,monospace;color:var(--pink)" id="cal-live-y">0.000</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;">Live Yaw</div>
+          <div style="font-size:18px;font-weight:700;font-family:Consolas,monospace;color:var(--yellow)" id="cal-live-yaw">0.0°</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;">Δ Distance</div>
+          <div style="font-size:18px;font-weight:700;font-family:Consolas,monospace;color:var(--green)" id="cal-live-dist">0.000 m</div>
+        </div>
+      </div>
+
+      <!-- ── BOT SPECS ── -->
+      <div class="calib-section-title">⚙️ Bot Specs (pre-filled from your robot)</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:4px;">
+        <div class="calib-input-box"><label>Wheel Dia (mm)</label><input type="number" id="cal-wheel-dia" value="58" step="0.1"/></div>
+        <div class="calib-input-box"><label>Ticks/Rev</label><input type="number" id="cal-ticks-rev" value="390" step="1"/></div>
+        <div class="calib-input-box"><label>Chassis R (m)</label><input type="number" id="cal-chassis-r" value="0.27" step="0.001"/></div>
+        <div class="calib-input-box"><label>Current Scale</label><input type="number" id="cal-current-scale" value="1.0" step="0.0001"/></div>
+      </div>
+
+      <!-- ── LINEAR ── -->
+      <div class="calib-section-title" style="margin-top:10px;">📏 Linear Movement</div>
+      <div class="calib-grid">
+
+        <div class="calib-row" id="cal-row-fwd">
+          <div class="calib-row-header">
+            <div class="calib-row-label">⬆️ Forward</div>
+            <div style="display:flex;gap:6px;">
+              <button class="calib-track-btn start" id="cal-track-fwd" onclick="startTracking('fwd')">▶ START</button>
+              <button class="calib-track-btn snap"  id="cal-snap-fwd"  onclick="snapAndCalc('fwd')"  disabled>⏹ SNAP &amp; CALC</button>
+            </div>
+          </div>
+          <div class="calib-inputs">
+            <div class="calib-input-box"><label>Commanded (m)</label><input type="number" id="cal-fwd-cmd" placeholder="e.g. 1.0" step="0.01" min="0.01"/></div>
+            <div class="calib-input-box"><label>Odom Start X</label><input type="number" id="cal-fwd-sx" placeholder="auto" readonly style="opacity:0.6"/></div>
+            <div class="calib-input-box"><label>Odom Start Y</label><input type="number" id="cal-fwd-sy" placeholder="auto" readonly style="opacity:0.6"/></div>
+            <div class="calib-input-box"><label>Actual Dist (m)</label><input type="number" id="cal-fwd-act" placeholder="auto from odom" readonly style="opacity:0.6"/></div>
+          </div>
+          <div class="calib-result" id="cal-fwd-result"></div>
+        </div>
+
+        <div class="calib-row" id="cal-row-bwd">
+          <div class="calib-row-header">
+            <div class="calib-row-label">⬇️ Backward</div>
+            <div style="display:flex;gap:6px;">
+              <button class="calib-track-btn start" id="cal-track-bwd" onclick="startTracking('bwd')">▶ START</button>
+              <button class="calib-track-btn snap"  id="cal-snap-bwd"  onclick="snapAndCalc('bwd')"  disabled>⏹ SNAP &amp; CALC</button>
+            </div>
+          </div>
+          <div class="calib-inputs">
+            <div class="calib-input-box"><label>Commanded (m)</label><input type="number" id="cal-bwd-cmd" placeholder="e.g. 1.0" step="0.01" min="0.01"/></div>
+            <div class="calib-input-box"><label>Odom Start X</label><input type="number" id="cal-bwd-sx" placeholder="auto" readonly style="opacity:0.6"/></div>
+            <div class="calib-input-box"><label>Odom Start Y</label><input type="number" id="cal-bwd-sy" placeholder="auto" readonly style="opacity:0.6"/></div>
+            <div class="calib-input-box"><label>Actual Dist (m)</label><input type="number" id="cal-bwd-act" placeholder="auto from odom" readonly style="opacity:0.6"/></div>
+          </div>
+          <div class="calib-result" id="cal-bwd-result"></div>
+        </div>
+
+        <div class="calib-row" id="cal-row-left">
+          <div class="calib-row-header">
+            <div class="calib-row-label">⬅️ Left (Strafe)</div>
+            <div style="display:flex;gap:6px;">
+              <button class="calib-track-btn start" id="cal-track-left" onclick="startTracking('left')">▶ START</button>
+              <button class="calib-track-btn snap"  id="cal-snap-left"  onclick="snapAndCalc('left')"  disabled>⏹ SNAP &amp; CALC</button>
+            </div>
+          </div>
+          <div class="calib-inputs">
+            <div class="calib-input-box"><label>Commanded (m)</label><input type="number" id="cal-left-cmd" placeholder="e.g. 1.0" step="0.01" min="0.01"/></div>
+            <div class="calib-input-box"><label>Odom Start X</label><input type="number" id="cal-left-sx" placeholder="auto" readonly style="opacity:0.6"/></div>
+            <div class="calib-input-box"><label>Odom Start Y</label><input type="number" id="cal-left-sy" placeholder="auto" readonly style="opacity:0.6"/></div>
+            <div class="calib-input-box"><label>Actual Dist (m)</label><input type="number" id="cal-left-act" placeholder="auto from odom" readonly style="opacity:0.6"/></div>
+          </div>
+          <div class="calib-result" id="cal-left-result"></div>
+        </div>
+
+        <div class="calib-row" id="cal-row-right">
+          <div class="calib-row-header">
+            <div class="calib-row-label">➡️ Right (Strafe)</div>
+            <div style="display:flex;gap:6px;">
+              <button class="calib-track-btn start" id="cal-track-right" onclick="startTracking('right')">▶ START</button>
+              <button class="calib-track-btn snap"  id="cal-snap-right"  onclick="snapAndCalc('right')"  disabled>⏹ SNAP &amp; CALC</button>
+            </div>
+          </div>
+          <div class="calib-inputs">
+            <div class="calib-input-box"><label>Commanded (m)</label><input type="number" id="cal-right-cmd" placeholder="e.g. 1.0" step="0.01" min="0.01"/></div>
+            <div class="calib-input-box"><label>Odom Start X</label><input type="number" id="cal-right-sx" placeholder="auto" readonly style="opacity:0.6"/></div>
+            <div class="calib-input-box"><label>Odom Start Y</label><input type="number" id="cal-right-sy" placeholder="auto" readonly style="opacity:0.6"/></div>
+            <div class="calib-input-box"><label>Actual Dist (m)</label><input type="number" id="cal-right-act" placeholder="auto from odom" readonly style="opacity:0.6"/></div>
+          </div>
+          <div class="calib-result" id="cal-right-result"></div>
+        </div>
+
+      </div>
+
+      <!-- ── ROTATION ── -->
+      <div class="calib-section-title" style="margin-top:10px;">🔄 Rotation Calibration</div>
+
+      <div class="calib-row">
+        <div class="calib-row-header">
+          <div class="calib-row-label">↻ Clockwise</div>
+          <div style="display:flex;gap:6px;">
+            <button class="calib-track-btn start" id="cal-track-cw" onclick="startTracking('cw')">▶ START</button>
+            <button class="calib-track-btn snap"  id="cal-snap-cw"  onclick="snapAndCalc('cw')"  disabled>⏹ SNAP &amp; CALC</button>
+          </div>
+        </div>
+        <div style="font-size:9px;color:var(--muted2);margin-bottom:6px;">Enter commanded angle. Odom yaw will be snapped automatically.</div>
+        <div class="rotation-inputs">
+          <div class="calib-input-box"><label>Cmd 90° — Actual Yaw (°)</label><input type="number" id="cal-cw-90"  placeholder="auto" readonly style="opacity:0.6"/></div>
+          <div class="calib-input-box"><label>Cmd 180° — Actual Yaw (°)</label><input type="number" id="cal-cw-180" placeholder="auto" readonly style="opacity:0.6"/></div>
+          <div class="calib-input-box"><label>Cmd 270° — Actual Yaw (°)</label><input type="number" id="cal-cw-270" placeholder="auto" readonly style="opacity:0.6"/></div>
+          <div class="calib-input-box"><label>Cmd Angle (°)</label><input type="number" id="cal-cw-cmd" placeholder="e.g. 90" step="1" style="opacity:1"/></div>
+        </div>
+        <div class="calib-result" id="cal-cw-result"></div>
+      </div>
+
+      <div class="calib-row" style="margin-top:8px;">
+        <div class="calib-row-header">
+          <div class="calib-row-label">↺ Anti-Clockwise</div>
+          <div style="display:flex;gap:6px;">
+            <button class="calib-track-btn start" id="cal-track-acw" onclick="startTracking('acw')">▶ START</button>
+            <button class="calib-track-btn snap"  id="cal-snap-acw"  onclick="snapAndCalc('acw')"  disabled>⏹ SNAP &amp; CALC</button>
+          </div>
+        </div>
+        <div style="font-size:9px;color:var(--muted2);margin-bottom:6px;">Enter commanded angle. Odom yaw will be snapped automatically.</div>
+        <div class="rotation-inputs">
+          <div class="calib-input-box"><label>Cmd 90° — Actual Yaw (°)</label><input type="number" id="cal-acw-90"  placeholder="auto" readonly style="opacity:0.6"/></div>
+          <div class="calib-input-box"><label>Cmd 180° — Actual Yaw (°)</label><input type="number" id="cal-acw-180" placeholder="auto" readonly style="opacity:0.6"/></div>
+          <div class="calib-input-box"><label>Cmd 270° — Actual Yaw (°)</label><input type="number" id="cal-acw-270" placeholder="auto" readonly style="opacity:0.6"/></div>
+          <div class="calib-input-box"><label>Cmd Angle (°)</label><input type="number" id="cal-acw-cmd" placeholder="e.g. 90" step="1" style="opacity:1"/></div>
+        </div>
+        <div class="calib-result" id="cal-acw-result"></div>
+      </div>
+
+      <!-- ── SUMMARY ── -->
+      <div class="calib-summary" id="calib-summary">
+        <div class="calib-summary-title">📋 Calibration Summary — Copy to your ROS2 node</div>
+        <div id="calib-summary-content"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ========== PRE-FLIGHT CHECKLIST MODAL ========== -->
+<div class="modal-overlay" id="checklistModal" onclick="handleChecklistOverlayClick(event)">
+  <div class="modal" style="width:580px;max-height:90vh;display:flex;flex-direction:column;">
+    <div class="modal-header">
+      <h2>📋 Run Checklist</h2>
+      <button class="modal-close" onclick="closeChecklist()">✕</button>
+    </div>
+    <div class="modal-body" style="overflow-y:auto;flex:1;">
+
+      <!-- ── CHECKS ── -->
+      <div class="cl-section-title mech">✅ Pre-Flight Checks</div>
+
+      <div class="cl-mech-row" id="cl-row-battery-level">
+        <div class="cl-mech-name">🔋 Battery Level</div>
+        <div class="cl-toggle">
+          <button class="cl-toggle-btn" id="cl-pass-battery-level" onclick="setMech('battery-level','pass')">✓</button>
+          <button class="cl-toggle-btn" id="cl-fail-battery-level" onclick="setMech('battery-level','fail')">✗</button>
+        </div>
+      </div>
+
+      <div class="cl-mech-row" id="cl-row-wheel-align">
+        <div class="cl-mech-name">🔩 Wheel Alignment</div>
+        <div class="cl-toggle">
+          <button class="cl-toggle-btn" id="cl-pass-wheel-align" onclick="setMech('wheel-align','pass')">✓</button>
+          <button class="cl-toggle-btn" id="cl-fail-wheel-align" onclick="setMech('wheel-align','fail')">✗</button>
+        </div>
+      </div>
+
+      <div class="cl-mech-row" id="cl-row-power-wiring">
+        <div class="cl-mech-name">⚡ Power Wiring Routing</div>
+        <div class="cl-toggle">
+          <button class="cl-toggle-btn" id="cl-pass-power-wiring" onclick="setMech('power-wiring','pass')">✓</button>
+          <button class="cl-toggle-btn" id="cl-fail-power-wiring" onclick="setMech('power-wiring','fail')">✗</button>
+        </div>
+      </div>
+
+      <div class="cl-mech-row" id="cl-row-sensor-wiring">
+        <div class="cl-mech-name">📡 Sensor Wiring Routing</div>
+        <div class="cl-toggle">
+          <button class="cl-toggle-btn" id="cl-pass-sensor-wiring" onclick="setMech('sensor-wiring','pass')">✓</button>
+          <button class="cl-toggle-btn" id="cl-fail-sensor-wiring" onclick="setMech('sensor-wiring','fail')">✗</button>
+        </div>
+      </div>
+
+      <div class="cl-mech-row" id="cl-row-servo-wiring">
+        <div class="cl-mech-name">🔧 Servo Wiring & Routing</div>
+        <div class="cl-toggle">
+          <button class="cl-toggle-btn" id="cl-pass-servo-wiring" onclick="setMech('servo-wiring','pass')">✓</button>
+          <button class="cl-toggle-btn" id="cl-fail-servo-wiring" onclick="setMech('servo-wiring','fail')">✗</button>
+        </div>
+      </div>
+
+      <div class="cl-mech-row" id="cl-row-initial-pose">
+        <div class="cl-mech-name">📍 Correct Initial Pose</div>
+        <div class="cl-toggle">
+          <button class="cl-toggle-btn" id="cl-pass-initial-pose" onclick="setMech('initial-pose','pass')">✓</button>
+          <button class="cl-toggle-btn" id="cl-fail-initial-pose" onclick="setMech('initial-pose','fail')">✗</button>
+        </div>
+      </div>
+
+      <div class="cl-mech-row" id="cl-row-bot-rigidity">
+        <div class="cl-mech-name">🏗️ Bot Rigidity</div>
+        <div class="cl-toggle">
+          <button class="cl-toggle-btn" id="cl-pass-bot-rigidity" onclick="setMech('bot-rigidity','pass')">✓</button>
+          <button class="cl-toggle-btn" id="cl-fail-bot-rigidity" onclick="setMech('bot-rigidity','fail')">✗</button>
+        </div>
+      </div>
+
+      <!-- ── BATTERY VOLTAGES ── -->
+      <div class="cl-section-title bat" style="margin-top:16px;">🔋 Bot Battery Voltage</div>
+      <div class="cl-voltage-grid">
+        <div class="cl-voltage-box">
+          <label>Before Run</label>
+          <input type="text" id="cl-bat-before" placeholder="e.g. 12.6v" />
+        </div>
+        <div class="cl-voltage-box">
+          <label>After Run</label>
+          <input type="text" id="cl-bat-after" placeholder="e.g. 11.2v" />
+        </div>
+      </div>
+
+      <div class="cl-section-title lap" style="margin-top:14px;">⚡ Lap Battery Voltage</div>
+      <div class="cl-voltage-grid">
+        <div class="cl-voltage-box">
+          <label>Before Run</label>
+          <input type="text" id="cl-lap-before" placeholder="e.g. 12.6v" />
+        </div>
+        <div class="cl-voltage-box">
+          <label>After Run</label>
+          <input type="text" id="cl-lap-after" placeholder="e.g. 11.2v" />
+        </div>
+      </div>
+
+      <!-- ── TIMER ── -->
+      <div class="cl-section-title timer" style="margin-top:16px;">⏱ Session Timer</div>
+      <div class="cl-timer-box">
+        <div class="cl-timer-display" id="cl-timer-display">00:00:00</div>
+        <div class="cl-timer-btns">
+          <button class="cl-timer-btn start" id="cl-timer-start-btn" onclick="timerStartStop()">▶ Start</button>
+          <button class="cl-timer-btn reset" onclick="timerReset()">↺ Reset</button>
+        </div>
+      </div>
+
+      <button class="generate-report-btn" onclick="generateReport()">📦 Generate & Export Report</button>
+
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  
+  <!-- ========== LEFT SECTION: SENSOR (top) + ROS TOPICS (bottom) ========== -->
+  <div class="section" style="display:flex;flex-direction:column;gap:8px;">
+
+    <!-- Ultrasonic Sensor -->
+    <div class="section-title cyan">🎯 Ultrasonic Sensor Data</div>
+    <div class="sensor-visual-container" style="min-height:160px;flex:1;">
+      <canvas id="sensorVisual" width="300" height="200" style="display:block;max-width:100%;height:auto;"></canvas>
+    </div>
+    <div class="sensor-values">
+      <div class="sensor-box">
+        <div class="label">Front Left</div>
+        <div class="value nil" id="sensorFL">NIL</div>
+      </div>
+      <div class="sensor-box">
+        <div class="label">Front Right</div>
+        <div class="value nil" id="sensorFR">NIL</div>
+      </div>
+      <div class="sensor-box">
+        <div class="label">Left</div>
+        <div class="value nil" id="sensorL">NIL</div>
+      </div>
+      <div class="sensor-box">
+        <div class="label">Right</div>
+        <div class="value nil" id="sensorR">NIL</div>
+      </div>
+    </div>
+    <div class="topic-status">
+      <span>Topic: /dis_data</span>
+      <div class="status-dot" id="disDataStatus"></div>
+    </div>
+
+    <!-- Active ROS Topics -->
+    <div class="section-title orange" style="margin-top:6px;">📡 Active ROS Topics</div>
+    <div class="topics-panel" style="max-height:none;flex:1;overflow-y:auto;">
+      <h4 class="pub-title">📤 Publishing</h4>
+      <div class="topic-list" id="publishingTopics">
+        <div style="color:var(--green);font-size:10px;opacity:0.5;">Discovering topics...</div>
+      </div>
+      <h4 class="sub-title" style="margin-top:6px;">📥 Subscribing</h4>
+      <div class="topic-list" id="subscribingTopics">
+        <div style="color:var(--purple);font-size:10px;opacity:0.5;">Discovering topics...</div>
+      </div>
+    </div>
+
+    <!-- Emergency Stop -->
+    <div class="estop-container">
+      <button class="estop-btn" id="estopBtn" onclick="triggerEStop()">
+        <span class="estop-icon">⛔</span>
+        <span class="estop-label">EMERGENCY STOP</span>
+        <span class="estop-sub">TAP TO HALT ALL MOVEMENT</span>
+      </button>
+      <div class="estop-status" id="estopStatus">
+        <span class="estop-status-dot" id="estopDot"></span>
+        <span id="estopStatusText">READY</span>
+      </div>
+      <button class="estop-resume-btn" id="estopResumeBtn" onclick="resumeFromEStop()" style="display:none;">
+        ▶ RESUME OPERATION
+      </button>
+    </div>
+  </div>
+  
+  <!-- ========== CENTER SECTION: ODOM & BOT TF ========== -->
+  <div class="section">
+    <div class="section-title purple">📍 Odometry Data</div>
+    <div class="odom-panel">
+      <div class="odom-grid">
+        <div class="odom-value">
+          <div class="label">X Position</div>
+          <div class="number" id="odomX">0.00</div>
+        </div>
+        <div class="odom-value">
+          <div class="label">Y Position</div>
+          <div class="number" id="odomY">0.00</div>
+        </div>
+        <div class="odom-value">
+          <div class="label">YAW Angle</div>
+          <div class="number" id="odomYaw">0°</div>
+        </div>
+      </div>
+    </div>
+    <div class="section-title teal" style="margin-top:16px;">🧭 Bot Orientation (TF)</div>
+    <div class="bot-tf-container" style="min-height:200px;">
+      <canvas id="botTfVisual" width="400" height="280" style="display:block;max-width:100%;height:auto;"></canvas>
+    </div>
+
+    <!-- ========== IMU PANEL ========== -->
+    <div class="section-title purple" style="margin-top:16px;">📐 IMU Data <span id="imuLiveTag" style="font-size:10px;font-weight:400;color:#5a7a94;margin-left:8px;">● WAITING</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:6px;">
+      <!-- Orientation -->
+      <div style="background:var(--panel2);border-radius:8px;padding:10px;border:1px solid var(--border);">
+        <div style="font-size:9px;color:var(--purple);font-weight:700;letter-spacing:1px;margin-bottom:6px;">ORIENTATION</div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:10px;color:var(--muted2);">YAW</span>
+            <span id="imuYaw" style="font-size:13px;font-weight:700;color:var(--accent);font-family:monospace;">—°</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:10px;color:var(--muted2);">PITCH</span>
+            <span id="imuPitch" style="font-size:13px;font-weight:700;color:var(--accent);font-family:monospace;">—°</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:10px;color:var(--muted2);">ROLL</span>
+            <span id="imuRoll" style="font-size:13px;font-weight:700;color:var(--accent);font-family:monospace;">—°</span>
+          </div>
+        </div>
+      </div>
+      <!-- Angular Velocity -->
+      <div style="background:var(--panel2);border-radius:8px;padding:10px;border:1px solid var(--border);">
+        <div style="font-size:9px;color:var(--teal);font-weight:700;letter-spacing:1px;margin-bottom:6px;">ANG. VELOCITY (rad/s)</div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:10px;color:var(--muted2);">X</span>
+            <span id="imuAvX" style="font-size:13px;font-weight:700;color:var(--teal);font-family:monospace;">—</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:10px;color:var(--muted2);">Y</span>
+            <span id="imuAvY" style="font-size:13px;font-weight:700;color:var(--teal);font-family:monospace;">—</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:10px;color:var(--muted2);">Z</span>
+            <span id="imuAvZ" style="font-size:13px;font-weight:700;color:var(--teal);font-family:monospace;">—</span>
+          </div>
+        </div>
+      </div>
+      <!-- Linear Acceleration -->
+      <div style="background:var(--panel2);border-radius:8px;padding:10px;border:1px solid var(--border);">
+        <div style="font-size:9px;color:var(--orange);font-weight:700;letter-spacing:1px;margin-bottom:6px;">LINEAR ACCEL (m/s²)</div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:10px;color:var(--muted2);">X</span>
+            <span id="imuLaX" style="font-size:13px;font-weight:700;color:var(--orange);font-family:monospace;">—</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:10px;color:var(--muted2);">Y</span>
+            <span id="imuLaY" style="font-size:13px;font-weight:700;color:var(--orange);font-family:monospace;">—</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:10px;color:var(--muted2);">Z</span>
+            <span id="imuLaZ" style="font-size:13px;font-weight:700;color:var(--orange);font-family:monospace;">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="section-title pink" style="margin-top:16px;">📷 RGB Camera Feed</div>
+    <div class="camera-container" id="cameraContainer">
+      <canvas id="cameraCanvas"></canvas>
+      <div class="camera-overlay" id="cameraOverlay">
+        <div class="camera-no-signal">
+          <div class="camera-icon">📷</div>
+          <div class="camera-no-signal-text">No Signal</div>
+          <div class="camera-topic-label">/ascamera_hp60c/camera_publisher/rgb0/image</div>
+        </div>
+      </div>
+      <div class="camera-hud">
+        <div class="camera-hud-left"><span class="camera-badge" id="cameraBadge">● OFFLINE</span></div>
+        <div class="camera-hud-right">
+          <span class="camera-res" id="cameraRes">—</span>
+          <span class="camera-fps" id="cameraFps">0 FPS</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- ========== RIGHT SECTION: COLOR + QR + WAYPOINT LOG ========== -->
+  <div class="section" style="display:flex;flex-direction:column;gap:10px;height:100%;min-height:0;overflow:hidden;">
+
+    <!-- 🎨 Color Detection -->
+    <div style="flex-shrink:0;">
+      <div class="section-title pink">🎨 Color Detection <span id="colorLiveTag" style="font-size:10px;font-weight:400;color:#5a7a94;margin-left:8px;">● WAITING</span></div>
+      <div style="background:var(--panel2);border-radius:10px;padding:10px;border:1px solid var(--border);">
+        <div id="colorSwatch" style="
+          width:100%;height:54px;border-radius:8px;
+          background:#0b1320;border:2px solid var(--border);
+          display:flex;align-items:center;justify-content:center;
+          font-size:20px;font-weight:900;letter-spacing:3px;
+          color:#5a7a94;font-family:monospace;
+          transition:background 0.3s,box-shadow 0.3s,color 0.3s;">— NO DETECTION —</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:8px;">
+          <div class="color-pill" id="cpill-RED"    style="--cc:#ff2244;">🔴 RED</div>
+          <div class="color-pill" id="cpill-GREEN"  style="--cc:#39ff88;">🟢 GREEN</div>
+          <div class="color-pill" id="cpill-BLUE"   style="--cc:#00aaff;">🔵 BLUE</div>
+          <div class="color-pill" id="cpill-ORANGE" style="--cc:#ff7700;">🟠 ORANGE</div>
+          <div class="color-pill" id="cpill-YELLOW" style="--cc:#ffe600;">🟡 YELLOW</div>
+          <div class="color-pill" id="cpill-BLACK"  style="--cc:#888888;">⚫ BLACK</div>
+        </div>
+        <div style="margin-top:7px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+            <span style="font-size:9px;color:var(--pink);font-weight:700;letter-spacing:1px;">SCAN HISTORY</span>
+            <span id="colorScanCount" style="font-size:9px;color:var(--muted2);">0 scans</span>
+          </div>
+          <div id="colorLog" style="
+            max-height:68px;overflow-y:auto;
+            background:var(--panel);border-radius:6px;padding:4px 6px;
+            font-size:10px;font-family:monospace;color:var(--muted2);
+            border:1px solid var(--border);">
+            <div data-placeholder style="opacity:0.4;text-align:center;padding:4px;">No detections yet...</div>
+          </div>
+        </div>
+        <div style="margin-top:6px;font-size:9px;color:var(--muted2);text-align:center;">topic: /camera/colour</div>
+      </div>
+    </div>
+
+    <!-- 📦 QR Code -->
+    <div style="flex-shrink:0;">
+      <div class="section-title teal">📦 QR Code <span id="qrLiveTag" style="font-size:10px;font-weight:400;color:#5a7a94;margin-left:8px;">● WAITING</span></div>
+      <div style="background:var(--panel2);border-radius:10px;padding:10px;border:1px solid var(--border);">
+        <div id="qrResultBox" style="
+          width:100%;min-height:44px;border-radius:8px;padding:8px 12px;box-sizing:border-box;
+          background:#0b1320;border:2px solid var(--border);
+          display:flex;align-items:center;justify-content:center;
+          font-size:13px;font-weight:700;letter-spacing:1px;
+          color:#5a7a94;font-family:monospace;word-break:break-all;text-align:center;
+          transition:border-color 0.3s,box-shadow 0.3s,color 0.3s;">— NO QR DETECTED —</div>
+        <div style="margin-top:7px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+            <span style="font-size:9px;color:var(--teal);font-weight:700;letter-spacing:1px;">SCAN HISTORY</span>
+            <span id="qrScanCount" style="font-size:9px;color:var(--muted2);">0 scans</span>
+          </div>
+          <div id="qrLog" style="
+            max-height:68px;overflow-y:auto;
+            background:var(--panel);border-radius:6px;padding:4px 6px;
+            font-size:10px;font-family:monospace;color:var(--muted2);
+            border:1px solid var(--border);">
+            <div style="opacity:0.4;text-align:center;padding:4px;">No scans yet...</div>
+          </div>
+        </div>
+        <div style="margin-top:6px;font-size:9px;color:var(--muted2);text-align:center;">topic: /camera/qr</div>
+      </div>
+    </div>
+
+    <!-- 🕹️ CMD_VEL Live -->
+    <div style="flex-shrink:0;">
+      <div class="section-title" style="color:var(--orange);">🕹️ CMD VEL <span id="cmdvelLiveTag" style="font-size:10px;font-weight:400;color:#5a7a94;margin-left:8px;">● WAITING</span></div>
+      <div style="background:var(--panel2);border-radius:10px;padding:10px;border:1px solid var(--border);">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div style="background:var(--panel);border-radius:8px;padding:8px;border:1px solid var(--border);">
+            <div style="font-size:9px;color:var(--teal);font-weight:700;letter-spacing:1px;margin-bottom:6px;">LINEAR (m/s)</div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <div style="display:flex;justify-content:space-between;"><span style="font-size:10px;color:var(--muted2);">X</span><span id="cmdvel-lx" style="font-size:13px;font-weight:700;font-family:monospace;color:var(--fg);">0.000</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="font-size:10px;color:var(--muted2);">Y</span><span id="cmdvel-ly" style="font-size:13px;font-weight:700;font-family:monospace;color:var(--fg);">0.000</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="font-size:10px;color:var(--muted2);">Z</span><span id="cmdvel-lz" style="font-size:13px;font-weight:700;font-family:monospace;color:var(--fg);">0.000</span></div>
+            </div>
+          </div>
+          <div style="background:var(--panel);border-radius:8px;padding:8px;border:1px solid var(--border);">
+            <div style="font-size:9px;color:var(--orange);font-weight:700;letter-spacing:1px;margin-bottom:6px;">ANGULAR (rad/s)</div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <div style="display:flex;justify-content:space-between;"><span style="font-size:10px;color:var(--muted2);">X</span><span id="cmdvel-ax" style="font-size:13px;font-weight:700;font-family:monospace;color:var(--fg);">0.000</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="font-size:10px;color:var(--muted2);">Y</span><span id="cmdvel-ay" style="font-size:13px;font-weight:700;font-family:monospace;color:var(--fg);">0.000</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="font-size:10px;color:var(--muted2);">Z</span><span id="cmdvel-az" style="font-size:13px;font-weight:700;font-family:monospace;color:var(--fg);">0.000</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:6px;font-size:9px;color:var(--muted2);text-align:center;">topic: /cmd_vel</div>
+      </div>
+    </div>
+
+    <!-- 📝 Waypoint Log — takes remaining height -->
+    <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;">
+      <div class="section-title green">📝 Waypoint Log</div>
+      <div class="log-panel" style="flex:1;min-height:0;display:grid;grid-template-rows:auto 1fr auto;overflow:hidden;">
+        <div class="log-header">
+          <span>Session Log</span>
+          <div class="log-count" id="logCount">0 entries</div>
+        </div>
+        <div class="log-content" id="logContent" style="overflow-y:auto;min-height:0;">
+          <div style="color:var(--teal);text-align:center;padding:20px;opacity:0.5;">
+            Waiting for waypoint data...
+          </div>
+        </div>
+        <button class="export-btn" onclick="generateRunReport()" style="margin-top:8px;">📊 Summarize Run</button>
+      </div>
+    </div>
+
+  </div><!-- end right section -->
+  
+</div><!-- end .container -->
+
+<script>
+// ========== KIWI SERVER WEBSOCKET CONNECTION ==========
+// Connects directly to kiwi_server.py at ws://localhost:8080/ws
+// Message format: { "type": "odom"|"dis_data"|"imu"|"gripper"|"waypoints"|"cancel"|"camera", ... }
+
+const rosStatusEl = document.getElementById('rosStatus');
+let kiwiWS = null;
+let wsReconnectTimer = null;
+
+function connectKiwiWS() {
+  if (kiwiWS && (kiwiWS.readyState === WebSocket.OPEN || kiwiWS.readyState === WebSocket.CONNECTING)) return;
+
+  rosStatusEl.textContent = 'CONNECTING';
+  rosStatusEl.className = 'status-badge connecting';
+
+  var wsUrl = 'ws://localhost:8080/ws';
+  console.log('[KIWI] Connecting to:', wsUrl);
+  kiwiWS = new WebSocket(wsUrl);
+
+  kiwiWS.onopen = function() {
+    console.log('[KIWI] ✅ Connected!');
+    rosStatusEl.textContent = 'CONNECTED';
+    rosStatusEl.className = 'status-badge connected';
+    clearTimeout(wsReconnectTimer);
+    showStaticTopics();
+  };
+
+  kiwiWS.onerror = function(e) {
+    console.error('❌ WebSocket error:', e);
+    rosStatusEl.textContent = 'ERROR';
+    rosStatusEl.className = 'status-badge disconnected';
+  };
+
+  kiwiWS.onclose = function() {
+    console.warn('🔌 WebSocket closed — reconnecting in 3s...');
+    rosStatusEl.textContent = 'DISCONNECTED';
+    rosStatusEl.className = 'status-badge disconnected';
+    wsReconnectTimer = setTimeout(connectKiwiWS, 3000);
+  };
+
+  kiwiWS.onmessage = function(evt) {
+    try {
+      const msg = JSON.parse(evt.data);
+      handleKiwiMessage(msg);
+    } catch(e) {
+      console.warn('Bad WS message:', e);
+    }
+  };
+}
+
+// ── Dispatch incoming kiwi_server messages to the right handler ──
+function handleKiwiMessage(msg) {
+  switch(msg.type) {
+
+    case 'odom':
+      // { type:"odom", x, y, yaw }  — yaw already in radians from server
+      markPublishingWithTimeout('odom');
+      updateOdometry({
+        pose: { pose: {
+          position:    { x: msg.x, y: msg.y },
+          orientation: { z: Math.sin(msg.yaw / 2), w: Math.cos(msg.yaw / 2) }
+        }}
+      });
+      break;
+
+    case 'dis_data':
+      try {
+        // Mapping: FL=IR2, FR=US1, L=IR1, R=US2
+        const parsed = {
+          fl:    msg.IR2 !== undefined ? msg.IR2 : undefined,
+          fr:    msg.US1 !== undefined ? msg.US1 : undefined,
+          left:  msg.IR1 !== undefined ? msg.IR1 : undefined,
+          right: msg.US2 !== undefined ? msg.US2 : undefined,
+        };
+        if (parsed.fl    !== undefined) markPublishingWithTimeout('fl');
+        if (parsed.fr    !== undefined) markPublishingWithTimeout('fr');
+        if (parsed.left  !== undefined) markPublishingWithTimeout('left');
+        if (parsed.right !== undefined) markPublishingWithTimeout('right');
+        document.getElementById('disDataStatus').classList.add('active');
+        updateSensorData(parsed);
+      } catch(e) { console.warn('dis_data parse error:', e); }
+      break;
+
+    case 'imu':
+      // { type:"imu", orientation:{x,y,z,w}, angular_velocity:{x,y,z}, linear_acceleration:{x,y,z} }
+      markPublishingWithTimeout('imu');
+      updateImuPanel(msg);
+      break;
+
+    case 'gripper':
+      // { type:"gripper", data: true|false }
+      gripperState = msg.data ? 'OPEN' : 'CLOSED';
+      markPublishingWithTimeout('gripper');
+      break;
+
+    case 'waypoints':
+      // { type:"waypoints", data: "<json string>" }
+      try {
+        const wpData = JSON.parse(msg.data);
+        addLogEntry('waypoint', wpData);
+      } catch(e) {
+        addLogEntry('waypoint', { raw: msg.data });
+      }
+      markPublishingWithTimeout('waypoints');
+      break;
+
+    case 'cancel':
+      // { type:"cancel", data: "..." }
+      addLogEntry('cancel', { msg: msg.data });
+      break;
+
+    case 'cmd_vel':
+      document.getElementById('cmdvel-lx').textContent = msg.lx.toFixed(3);
+      document.getElementById('cmdvel-ly').textContent = msg.ly.toFixed(3);
+      document.getElementById('cmdvel-lz').textContent = msg.lz.toFixed(3);
+      document.getElementById('cmdvel-ax').textContent = msg.ax.toFixed(3);
+      document.getElementById('cmdvel-ay').textContent = msg.ay.toFixed(3);
+      document.getElementById('cmdvel-az').textContent = msg.az.toFixed(3);
+      ['cmdvel-lx','cmdvel-ly','cmdvel-lz'].forEach(id => {
+        const el = document.getElementById(id);
+        el.style.color = parseFloat(el.textContent) !== 0 ? 'var(--teal)' : 'var(--fg)';
+      });
+      ['cmdvel-ax','cmdvel-ay','cmdvel-az'].forEach(id => {
+        const el = document.getElementById(id);
+        el.style.color = parseFloat(el.textContent) !== 0 ? 'var(--orange)' : 'var(--fg)';
+      });
+      const cvTag = document.getElementById('cmdvelLiveTag');
+      if (cvTag) { cvTag.textContent = '● LIVE'; cvTag.style.color = 'var(--green)'; }
+      // update bot status row
+      const slx = document.getElementById('statusCmdVelLx');
+      const saz = document.getElementById('statusCmdVelAz');
+      if (slx) slx.textContent = msg.lx.toFixed(3);
+      if (saz) saz.textContent = msg.az.toFixed(3);
+      markPublishing('cmdvel', true);
+      break;
+
+    case 'detected_data':
+      // { type:"detected_data", color:"RED"|"NONE", qr:"text"|"" }
+      updateColorPanel(msg.color);
+      updateQRPanel(msg.qr);
+      markPublishingWithTimeout('detected');
+      markPublishing('detected', true);
+      break;
+
+    case 'camera':
+      // { type:"camera", width, height, encoding, data:<base64> }
+      renderRawFrame(msg);
+      markPublishingWithTimeout('camera');
+      break;
+
+    case 'topic_info':
+      // { type:"topic_info", topics: [{topic, publishers, subscribers}, ...] }
+      renderTopicInfo(msg.topics);
+      break;
+  }
+}
+
+// ── Publish e-stop back to kiwi_server ──
+function kiwiPublish(obj) {
+  if (kiwiWS && kiwiWS.readyState === WebSocket.OPEN) {
+    kiwiWS.send(JSON.stringify(obj));
+  }
+}
+
+// Stub so estop code still works
+const _ROSLib = {
+  Ros:   function() {},
+  Topic: function(opts) {
+    this.publish = function(msg) {
+      kiwiPublish({ op: 'publish', topic: opts.name, msg: msg });
+    };
+  }
+};
+let ros = { getTopics: function(cb) { cb({ topics: [] }); } };
+
+connectKiwiWS();
+
+// ========== WAYPOINT LOG ==========
+let waypointLog = [];
+
+function _renderNode(node) {
+  if (!node || !node.node) return '';
+  const n = node.node;
+  if (n === 'goto') {
+    return `<span style="color:var(--teal);font-weight:700;">GOTO</span> `
+         + `<span style="color:var(--text);">x=<b>${node.x}</b>&nbsp;&nbsp;y=<b>${node.y}</b>&nbsp;&nbsp;yaw=<b>${node.yaw}°</b></span>`;
+  } else if (n === 'detect_color') {
+    return `<span style="color:#ff6eb4;font-weight:700;">DETECT COLOR</span>`;
+  } else if (n === 'detect_qr') {
+    return `<span style="color:var(--teal);font-weight:700;">DETECT QR</span>`;
+  } else if (n === 'grip') {
+    return `<span style="color:var(--orange);font-weight:700;">GRIP</span>`;
+  } else {
+    return `<span style="color:var(--yellow);font-weight:700;">${n.toUpperCase()}</span>`;
+  }
+}
+
+function addLogEntry(type, data) {
+  const timestamp = new Date().toLocaleTimeString('en-GB', { hour12: false });
+  waypointLog.push({ timestamp, type, data });
+
+  const logContent = document.getElementById('logContent');
+  const logCount   = document.getElementById('logCount');
+
+  if (waypointLog.length === 1) logContent.innerHTML = '';
+
+  const entryEl = document.createElement('div');
+  entryEl.className = `log-entry ${type}`;
+  entryEl.style.marginBottom = '6px';
+
+  if (type === 'cancel') {
+    entryEl.innerHTML = `
+      <span class="timestamp">[${timestamp}]</span>
+      <span class="type" style="color:var(--red);">CANCEL</span>
+      <span class="data" style="color:var(--red);">Mission cancelled</span>`;
+
+  } else if (type === 'waypoint') {
+    const tree = data.tree;
+    if (tree && Array.isArray(tree.children)) {
+      const seqType = (tree.type || 'sequence').toUpperCase();
+      const nodesHtml = tree.children.map((child, i) =>
+        `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+          <span style="font-size:9px;color:var(--muted2);min-width:16px;text-align:right;">${i+1}.</span>
+          <span style="font-size:10px;">${_renderNode(child)}</span>
+        </div>`
+      ).join('');
+      entryEl.innerHTML = `
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+          <span class="timestamp">[${timestamp}]</span>
+          <span class="type" style="color:var(--green);">WAYPOINT</span>
+          <span style="font-size:9px;background:rgba(0,229,255,0.1);color:var(--accent);border:1px solid rgba(0,229,255,0.2);border-radius:4px;padding:1px 6px;">${seqType}</span>
+          <span style="font-size:9px;color:var(--muted2);">${tree.children.length} steps</span>
+        </div>
+        <div style="padding-left:8px;border-left:2px solid var(--green);">${nodesHtml}</div>`;
+    } else {
+      entryEl.innerHTML = `
+        <span class="timestamp">[${timestamp}]</span>
+        <span class="type" style="color:var(--green);">WAYPOINT</span>
+        <span class="data">${JSON.stringify(data)}</span>`;
+    }
+  }
+
+  logContent.appendChild(entryEl);
+  logContent.scrollTop = logContent.scrollHeight;
+  logCount.textContent = `${waypointLog.length} entries`;
+}
+
+function exportLog() {
+  const exportData = {
+    session_start: waypointLog.length > 0 ? waypointLog[0].timestamp : new Date().toISOString(),
+    total_entries: waypointLog.length,
+    entries: waypointLog
+  };
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `kiwi_waypoint_log_${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ========== RUN REPORT PDF GENERATOR ==========
+function generateRunReport() {
+  const now     = new Date();
+  const dateStr = now.toLocaleDateString('en-IN', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  const timeStr = now.toLocaleTimeString('en-GB', { hour12: false });
+  const timer   = document.getElementById('cl-timer-display')?.textContent || '00:00:00';
+
+  const gVal = id => document.getElementById(id)?.value?.trim() || '—';
+
+  // Battery voltages
+  const batBefore = gVal('cl-bat-before');
+  const batAfter  = gVal('cl-bat-after');
+  const lapBefore = gVal('cl-lap-before');
+  const lapAfter  = gVal('cl-lap-after');
+
+  // Checklist
+  const mechLabels = {
+    'battery-level':'🔋 Battery Level','wheel-align':'🔩 Wheel Alignment',
+    'power-wiring':'⚡ Power Wiring','sensor-wiring':'📡 Sensor Wiring',
+    'servo-wiring':'🔧 Servo Wiring','initial-pose':'📍 Initial Pose','bot-rigidity':'🏗️ Bot Rigidity'
+  };
+  const checklistRows = Object.entries(mechLabels).map(([id,label]) => {
+    const st=mechState[id];
+    const icon=st==='pass'?'✅ PASS':st==='fail'?'❌ FAIL':'— NOT SET';
+    const color=st==='pass'?'#00c853':st==='fail'?'#ff1744':'#888';
+    return `<tr><td style="padding:8px 14px;border-bottom:1px solid #1e293b;">${label}</td><td style="padding:8px 14px;border-bottom:1px solid #1e293b;color:${color};font-weight:700;">${icon}</td></tr>`;
+  }).join('');
+
+  // Colour scan history
+  const colourHistory = Array.from(document.querySelectorAll('#colorLog > div:not([data-placeholder])')).map(el=>el.textContent.trim()).filter(Boolean);
+
+  // QR scan history
+  const qrHistory = Array.from(document.querySelectorAll('#qrLog > div')).map(el=>el.textContent.trim()).filter(Boolean);
+
+  // Waypoint log
+  const wpRows = waypointLog.map((entry,i) => {
+    let detail='';
+    if(entry.type==='cancel') detail='<span style="color:#ff4444">Mission cancelled</span>';
+    else if(entry.type==='waypoint'&&entry.data?.tree?.children){
+      const ch=entry.data.tree.children;
+      detail=`<b>${(entry.data.tree.type||'sequence').toUpperCase()}</b> - ${ch.length} steps: `
+        +ch.map((c,j)=>c.node==='goto'?`${j+1}.GOTO(${c.x},${c.y},${c.yaw}deg)`:(`${j+1}.${c.node.toUpperCase()}`)).join(' > ');
+    }
+    return `<tr style="background:${i%2===0?'#111827':'#0f172a'}"><td style="padding:5px 10px;font-family:monospace;font-size:11px;white-space:nowrap">${entry.timestamp}</td><td style="padding:5px 10px;font-weight:700;color:${entry.type==='cancel'?'#ff4444':'#39ff88'};text-transform:uppercase">${entry.type}</td><td style="padding:5px 10px;font-size:11px">${detail}</td></tr>`;
+  }).join('');
+
+  const sec=(icon,title)=>`<h2 style="font-size:12px;font-weight:700;letter-spacing:2px;color:#00e5ff;text-transform:uppercase;border-bottom:1px solid #1e293b;padding-bottom:6px;margin:24px 0 10px">${icon} ${title}</h2>`;
+  const card=(lbl,val,col='#e2e8f0')=>`<div style="background:#0f172a;border:1px solid #1e293b;border-radius:8px;padding:12px"><div style="font-size:9px;color:#64748b;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">${lbl}</div><div style="font-size:20px;font-weight:700;font-family:monospace;color:${col}">${val}</div></div>`;
+  const scanList=(items,emptyMsg)=>items.length===0
+    ?`<div style="color:#64748b;padding:10px;font-size:11px">${emptyMsg}</div>`
+    :'<div style="background:#0f172a;border:1px solid #1e293b;border-radius:8px;padding:10px;">'+items.map((h,i)=>`<div style="font-size:11px;font-family:monospace;color:#94a3b8;padding:4px 0;border-bottom:1px solid #1e293b"><span style="color:#334155;margin-right:8px">${i+1}.</span>${h}</div>`).join('')+'</div>';
+
+  const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>KIWI Run Report</title>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',Arial,sans-serif;background:#0b0f1a;color:#e2e8f0;padding:32px;font-size:13px}table{width:100%;border-collapse:collapse}thead th{background:#0f172a;color:#64748b;font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:8px 12px;text-align:left;border-bottom:1px solid #1e293b}@media print{body{background:#fff!important;color:#000!important}}</style>
+</head><body>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #00e5ff33;padding-bottom:18px;margin-bottom:4px">
+  <div>
+    <div style="font-size:24px;font-weight:900;letter-spacing:3px;color:#00e5ff">KIWI RUN REPORT</div>
+    <div style="font-size:11px;color:#64748b;margin-top:4px">TEAM INDIA — Debug Station</div>
+    <div style="font-size:12px;color:#94a3b8;margin-top:8px">Date: ${dateStr}</div>
+    <div style="font-size:12px;color:#94a3b8;margin-top:2px">Generated at: ${timeStr}</div>
+  </div>
+  <div style="background:#0f172a;border:2px solid #00e5ff44;border-radius:12px;padding:14px 24px;text-align:center">
+    <div style="font-size:9px;color:#64748b;letter-spacing:2px">⏱ RUN DURATION</div>
+    <div style="font-size:36px;font-family:monospace;font-weight:900;color:#00e5ff;margin:6px 0">${timer}</div>
+    <div style="font-size:9px;color:#64748b;letter-spacing:1px">MM : SS : ms</div>
+  </div>
+</div>
+
+${sec('✅','Pre-Flight Checklist')}
+<table><thead><tr><th>Item</th><th>Status</th></tr></thead><tbody>${checklistRows}</tbody></table>
+
+${sec('🔋','Battery Levels')}
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px">
+  ${card('Bot Battery — Before', batBefore, '#39ff88')}
+  ${card('Bot Battery — After',  batAfter,  batAfter==='—'?'#64748b': '#ff9f1c')}
+  ${card('Lap Battery — Before', lapBefore, '#39ff88')}
+  ${card('Lap Battery — After',  lapAfter,  lapAfter==='—'?'#64748b':'#ff9f1c')}
+</div>
+
+${sec('🎨','Colour Scan History')} 
+<div style="margin-bottom:4px;font-size:10px;color:#64748b">${colourHistory.length} scan(s) recorded</div>
+${scanList(colourHistory,'No colour scans recorded this session.')}
+
+${sec('📷','QR Code Scan History')}
+<div style="margin-bottom:4px;font-size:10px;color:#64748b">${qrHistory.length} scan(s) recorded</div>
+${scanList(qrHistory,'No QR scans recorded this session.')}
+
+${sec('📍','Waypoint Log')} 
+<div style="margin-bottom:8px;font-size:10px;color:#64748b">${waypointLog.length} entr${waypointLog.length===1?'y':'ies'} recorded</div>
+${waypointLog.length>0
+  ?`<table><thead><tr><th>Time</th><th>Type</th><th>Detail</th></tr></thead><tbody>${wpRows}</tbody></table>`
+  :'<div style="color:#64748b;padding:10px;font-size:11px">No waypoints recorded this session.</div>'}
+
+<div style="margin-top:32px;font-size:9px;color:#334155;text-align:center;border-top:1px solid #1e293b;padding-top:12px">
+  Generated by KIWI Debug Station — Team India | ${dateStr} ${timeStr}
+</div>
+<script>window.onload=function(){window.print();}<\/script>
+</body></html>`;
+
+  const blob=new Blob([html],{type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  const w=window.open(url,'_blank');
+  if(!w) alert('Please allow popups to generate the run report PDF.');
+  setTimeout(()=>URL.revokeObjectURL(url),10000);
+}
+
+// ========== STATIC TOPIC LIST (no rosbridge needed) ==========
+function showStaticTopics() {
+  // Topics will be populated dynamically via topic_info WebSocket messages
+  // Show placeholders until first update arrives
+  const pubList = document.getElementById('publishingTopics');
+  const subList = document.getElementById('subscribingTopics');
+  pubList.innerHTML = '<div style="color:var(--muted2);font-size:10px;opacity:0.5;">Waiting for topic info...</div>';
+  subList.innerHTML = '<div style="color:var(--muted2);font-size:10px;opacity:0.5;">Waiting for topic info...</div>';
+}
+
+function renderTopicInfo(topics) {
+  const PUB_TOPICS = ['/estop', '/cmd_vel'];
+  const pubList = document.getElementById('publishingTopics');
+  const subList = document.getElementById('subscribingTopics');
+  pubList.innerHTML = '';
+  subList.innerHTML = '';
+
+  topics.forEach(t => {
+    const isPub = PUB_TOPICS.includes(t.topic);
+    const el = document.createElement('div');
+    el.className = 'topic-item';
+    el.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:4px 6px;margin-bottom:3px;border-radius:5px;background:rgba(255,255,255,0.03);border:1px solid var(--border);';
+
+    const alive = t.publishers > 0 || t.subscribers > 0;
+    const dot   = alive ? '🟢' : '⚪';
+
+    // shorten long topic names
+    const shortName = t.topic.replace('/ascamera_hp60c/camera_publisher/rgb0/', '/ascamera/.../');
+
+    el.innerHTML = `
+      <span style="font-size:9px;color:var(--text);font-family:monospace;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${t.topic}">${dot} ${shortName}</span>
+      <span style="display:flex;gap:5px;flex-shrink:0;margin-left:6px;">
+        <span title="Publishers"  style="font-size:9px;background:rgba(57,255,136,0.12);color:var(--green);border:1px solid rgba(57,255,136,0.25);border-radius:4px;padding:1px 6px;font-weight:700;">↑${t.publishers}</span>
+        <span title="Subscribers" style="font-size:9px;background:rgba(0,229,255,0.10);color:var(--accent);border:1px solid rgba(0,229,255,0.20);border-radius:4px;padding:1px 6px;font-weight:700;">↓${t.subscribers}</span>
+      </span>`;
+
+    (isPub ? pubList : subList).appendChild(el);
+  });
+}
+
+// ========== CAMERA FEED ==========
+// Camera frames arrive via handleKiwiMessage (type:"camera")
+let cameraFrameCount = 0;
+let cameraActive     = false;
+setInterval(() => {
+  const fps = cameraFrameCount;
+  cameraFrameCount = 0;
+  const el = document.getElementById('cameraFps');
+  if (el) { el.textContent = fps + ' FPS'; el.className = fps > 0 ? 'camera-fps live' : 'camera-fps'; }
+}, 1000);
+
+// ── Update camera with an image src (compressed path) ──
+function updateCameraImg(src, width, height) {
+  const canvas = document.getElementById('cameraCanvas');
+  if (!canvas) return;
+
+  const img = new Image();
+  img.onload = function() {
+    const w = width  || img.naturalWidth;
+    const h = height || img.naturalHeight;
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width  = w;
+      canvas.height = h;
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+    onCameraFrame(w, h);
+  };
+  img.src = src;
+}
+
+// ── Render raw sensor_msgs/Image ──
+function renderRawFrame(msg) {
+  const canvas = document.getElementById('cameraCanvas');
+  if (!canvas) return;
+
+  const width    = msg.width;
+  const height   = msg.height;
+  const encoding = (msg.encoding || 'rgb8').toLowerCase();
+
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width  = width;
+    canvas.height = height;
+  }
+
+  const ctx = canvas.getContext('2d');
+
+  try {
+    // msg.data comes as base64 string from rosbridge
+    const b64  = msg.data;
+    const bin  = atob(b64);
+    const imgD = ctx.createImageData(width, height);
+    const px   = imgD.data;
+
+    const isBGR  = encoding === 'bgr8';
+    const isMono = encoding === 'mono8' || encoding === '8uc1';
+    const ch     = isMono ? 1 : 3;
+
+    for (let i = 0; i < width * height; i++) {
+      const s = i * ch;
+      const d = i * 4;
+      if (isMono) {
+        const v = bin.charCodeAt(s) & 0xff;
+        px[d] = px[d+1] = px[d+2] = v;
+      } else if (isBGR) {
+        px[d]   = bin.charCodeAt(s+2) & 0xff;
+        px[d+1] = bin.charCodeAt(s+1) & 0xff;
+        px[d+2] = bin.charCodeAt(s)   & 0xff;
+      } else {
+        px[d]   = bin.charCodeAt(s)   & 0xff;
+        px[d+1] = bin.charCodeAt(s+1) & 0xff;
+        px[d+2] = bin.charCodeAt(s+2) & 0xff;
+      }
+      px[d+3] = 255;
+    }
+
+    ctx.putImageData(imgD, 0, 0);
+    onCameraFrame(width, height);
+
+  } catch(e) {
+    console.error('Raw camera decode error:', e);
+  }
+}
+
+// ── Called every time a frame is successfully rendered ──
+function onCameraFrame(width, height) {
+  cameraFrameCount++;
+
+  if (!cameraActive) {
+    cameraActive = true;
+    const overlay = document.getElementById('cameraOverlay');
+    const badge   = document.getElementById('cameraBadge');
+    const resEl   = document.getElementById('cameraRes');
+    if (overlay) overlay.classList.add('hidden');
+    if (badge)   { badge.textContent = '● LIVE'; badge.className = 'camera-badge live'; }
+    if (resEl)   resEl.textContent = width + '×' + height;
+    console.log('📷 Camera live: ' + width + '×' + height);
+  }
+  markPublishingWithTimeout('camera');
+}
+
+// ========== ODOMETRY UPDATE ==========
+let currentYaw = 0;
+
+function updateOdometry(message) {
+  const x = message.pose.pose.position.x;
+  const y = message.pose.pose.position.y;
+  
+  // Convert quaternion to yaw
+  const qz = message.pose.pose.orientation.z;
+  const qw = message.pose.pose.orientation.w;
+  const yaw = Math.atan2(2 * (qw * qz), 1 - 2 * (qz * qz));
+  const yawDeg = (yaw * 180 / Math.PI).toFixed(0);
+  
+  currentYaw = yaw;
+  
+  document.getElementById('odomX').textContent = x.toFixed(2);
+  document.getElementById('odomY').textContent = y.toFixed(2);
+  document.getElementById('odomYaw').textContent = yawDeg + '°';
+  
+  drawBotOrientation();
+}
+
+// ========== SENSOR DATA UPDATE ==========
+function updateSensorData(data) {
+  const flEl = document.getElementById('sensorFL');
+  const frEl = document.getElementById('sensorFR');
+  const lEl  = document.getElementById('sensorL');
+  const rEl  = document.getElementById('sensorR');
+  if (data.fl    !== undefined) { flEl.textContent = parseFloat(data.fl).toFixed(1)    + ' cm'; flEl.className = 'value active'; }
+  if (data.fr    !== undefined) { frEl.textContent = parseFloat(data.fr).toFixed(1)    + ' cm'; frEl.className = 'value active'; }
+  if (data.left  !== undefined) { lEl.textContent  = parseFloat(data.left).toFixed(1)  + ' cm'; lEl.className  = 'value active'; }
+  if (data.right !== undefined) { rEl.textContent  = parseFloat(data.right).toFixed(1) + ' cm'; rEl.className  = 'value active'; }
+  try { drawSensorVisual(data); } catch(e) {}
+}
+
+// ========== IMU PANEL UPDATE ==========
+function updateImuPanel(msg) {
+  const o  = msg.orientation         || {};
+  const av = msg.angular_velocity    || {};
+  const la = msg.linear_acceleration || {};
+
+  // Quaternion → Euler (yaw/pitch/roll in degrees)
+  const qx = o.x || 0, qy = o.y || 0, qz = o.z || 0, qw = o.w || 1;
+  const yaw   = Math.atan2(2*(qw*qz + qx*qy), 1 - 2*(qy*qy + qz*qz)) * 180 / Math.PI;
+  const pitch = Math.asin( Math.max(-1, Math.min(1, 2*(qw*qy - qz*qx)))) * 180 / Math.PI;
+  const roll  = Math.atan2(2*(qw*qx + qy*qz), 1 - 2*(qx*qx + qy*qy)) * 180 / Math.PI;
+
+  document.getElementById('imuYaw').textContent   = yaw.toFixed(1)   + '°';
+  document.getElementById('imuPitch').textContent = pitch.toFixed(1) + '°';
+  document.getElementById('imuRoll').textContent  = roll.toFixed(1)  + '°';
+
+  document.getElementById('imuAvX').textContent = (av.x || 0).toFixed(3);
+  document.getElementById('imuAvY').textContent = (av.y || 0).toFixed(3);
+  document.getElementById('imuAvZ').textContent = (av.z || 0).toFixed(3);
+
+  document.getElementById('imuLaX').textContent = (la.x || 0).toFixed(3);
+  document.getElementById('imuLaY').textContent = (la.y || 0).toFixed(3);
+  document.getElementById('imuLaZ').textContent = (la.z || 0).toFixed(3);
+
+  // Live tag
+  const tag = document.getElementById('imuLiveTag');
+  if (tag) { tag.textContent = '● LIVE'; tag.style.color = 'var(--green)'; }
+}
+
+// ========== COLOR DETECTION PANEL ==========
+const COLOR_MAP = {
+  RED:    { bg: '#ff2244', text: '#fff' },
+  GREEN:  { bg: '#39ff88', text: '#000' },
+  BLUE:   { bg: '#00aaff', text: '#fff' },
+  ORANGE: { bg: '#ff7700', text: '#000' },
+  YELLOW: { bg: '#ffe600', text: '#000' },
+  BLACK:  { bg: '#444444', text: '#fff' },
+  NONE:   { bg: '#0b1320', text: '#5a7a94' },
+};
+
+let _colorScanCount = 0;
+let _lastColor = '';
+
+function updateColorPanel(color) {
+  const c      = COLOR_MAP[color] || COLOR_MAP['NONE'];
+  const swatch = document.getElementById('colorSwatch');
+  const tag    = document.getElementById('colorLiveTag');
+
+  // Reset swatch immediately when NONE
+  swatch.style.background = c.bg;
+  swatch.style.color      = c.text;
+  swatch.style.boxShadow  = color !== 'NONE'
+    ? `0 0 30px ${c.bg}88, inset 0 0 20px ${c.bg}33`
+    : 'none';
+  swatch.style.border     = color !== 'NONE'
+    ? `2px solid ${c.bg}`
+    : '2px solid var(--border)';
+  swatch.textContent = color === 'NONE' ? '— NO DETECTION —' : color;
+
+  // Update pills — deactivate all, activate current
+  ['RED','GREEN','BLUE','ORANGE','YELLOW','BLACK'].forEach(n => {
+    const el = document.getElementById('cpill-' + n);
+    if (el) el.classList.toggle('active', n === color);
+  });
+
+  // Live tag
+  if (tag) {
+    tag.textContent = color !== 'NONE' ? '● LIVE' : '● WAITING';
+    tag.style.color = color !== 'NONE' ? 'var(--green)' : '#5a7a94';
+  }
+
+  // Add to scan history only when a real colour is newly detected
+  if (color !== 'NONE' && color !== _lastColor) {
+    _colorScanCount++;
+    const log = document.getElementById('colorLog');
+    const cnt = document.getElementById('colorScanCount');
+    if (cnt) cnt.textContent = _colorScanCount + ' scans';
+    if (log) {
+      // Remove placeholder
+      const placeholder = log.querySelector('[data-placeholder]');
+      if (placeholder) placeholder.remove();
+      const now  = new Date();
+      const time = now.toLocaleTimeString('en-GB', { hour12: false });
+      const entry = document.createElement('div');
+      entry.style.cssText = 'padding:2px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;';
+      const cc = COLOR_MAP[color] || COLOR_MAP['NONE'];
+      entry.innerHTML = `<span style="color:var(--muted2);">${time}</span><span style="font-weight:700;color:${cc.bg};">${color}</span>`;
+      log.insertBefore(entry, log.firstChild);
+    }
+  }
+  _lastColor = color;
+
+  // Bot Status modal
+  const sc = document.getElementById('statusDetectedColor');
+  if (sc) sc.textContent = color || '—';
+}
+
+// ========== QR CODE PANEL ==========
+let _qrScanCount = 0;
+function updateQRPanel(text) {
+  const box   = document.getElementById('qrResultBox');
+  const log   = document.getElementById('qrLog');
+  const ltag  = document.getElementById('qrLiveTag');
+  const cnt   = document.getElementById('qrScanCount');
+  const sqr   = document.getElementById('statusDetectedQR');
+
+  const active = text && text.length > 0;
+
+  // Result box
+  if (box) {
+    box.textContent       = active ? text : '— NO QR DETECTED —';
+    box.style.color       = active ? '#00f5d4' : '#5a7a94';
+    box.style.borderColor = active ? '#00f5d4' : 'var(--border)';
+    box.style.boxShadow   = active ? '0 0 18px #00f5d488' : 'none';
+  }
+
+  // Live tag
+  if (ltag) {
+    ltag.textContent = active ? '● LIVE' : '● WAITING';
+    ltag.style.color = active ? 'var(--green)' : '#5a7a94';
+  }
+
+  // Scan history — add new entry only if text changed and non-empty
+  if (active && log) {
+    _qrScanCount++;
+    if (cnt) cnt.textContent = _qrScanCount + ' scan' + (_qrScanCount !== 1 ? 's' : '');
+    // Remove placeholder
+    const ph = log.querySelector('[data-placeholder]');
+    if (ph) ph.remove();
+    // Prepend entry
+    const ts  = new Date().toLocaleTimeString();
+    const row = document.createElement('div');
+    row.style.cssText = 'padding:2px 0;border-bottom:1px solid var(--border);color:var(--teal);';
+    row.innerHTML = `<span style="color:var(--muted2);margin-right:6px;">${ts}</span>${text}`;
+    log.insertBefore(row, log.firstChild);
+    // Keep max 10
+    while (log.children.length > 10) log.removeChild(log.lastChild);
+  }
+
+  // Bot Status modal
+  if (sqr) sqr.textContent = active ? text : '—';
+}
+
+function discoverTopics() { showStaticTopics(); }
+
+// ========== CANVAS DRAWING: SENSOR VISUAL ==========
+let sensorCanvas, sensorCtx, botCanvas, botCtx;
+
+function drawSensorVisual(data = {}) {
+  if (!sensorCtx) return;
+  if (sensorCanvas.width === 0 || sensorCanvas.height === 0) return;
+  
+  const ctx = sensorCtx;
+  const w = sensorCanvas.width;
+  const h = sensorCanvas.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  const centerX = w / 2;
+  const centerY = h / 2 + 10; // shift slightly down so triangle is centered visually
+  const triHalfW = 55;  // half-width of flat top (front)
+  const triTop = -45;   // y of top flat edge (front)
+  const triBot = 55;    // y of bottom tip
+
+  ctx.save();
+  ctx.translate(centerX, centerY);
+
+  // --- Triangle robot body ---
+  // Vertices: top-left, top-right, bottom-tip
+  const TLx = -triHalfW, TLy = triTop;
+  const TRx =  triHalfW, TRy = triTop;
+  const BTx = 0,         BTy = triBot;
+
+  ctx.beginPath();
+  ctx.moveTo(TLx, TLy);
+  ctx.lineTo(TRx, TRy);
+  ctx.lineTo(BTx, BTy);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(0, 212, 255, 0.12)';
+  ctx.fill();
+  ctx.strokeStyle = '#00d4ff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Thick front edge (top flat side = FRONT)
+  ctx.beginPath();
+  ctx.moveTo(TLx, TLy);
+  ctx.lineTo(TRx, TRy);
+  ctx.strokeStyle = '#ff6b35';
+  ctx.lineWidth = 6;
+  ctx.stroke();
+
+  // Center label
+  ctx.fillStyle = '#5a7a94';
+  ctx.font = 'bold 11px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('KIWI', 0, triTop + (triBot - triTop) * 0.45);
+
+  // --- Sensor positions ---
+  // FL and FR are above the top-left and top-right corners of the triangle
+  // L is to the left of the left edge midpoint, R to the right
+  const leftMidX = (TLx + BTx) / 2;
+  const leftMidY = (TLy + BTy) / 2;
+  const rightMidX = (TRx + BTx) / 2;
+  const rightMidY = (TRy + BTy) / 2;
+
+  const sensors = [
+    { label: 'FL', x: TLx - 28, y: TLy - 38, value: data.fl,    edgeX: TLx, edgeY: TLy },
+    { label: 'FR', x: TRx + 28, y: TRy - 38, value: data.fr,    edgeX: TRx, edgeY: TRy },
+    { label: 'L',  x: leftMidX  - 62, y: leftMidY,  value: data.left,  edgeX: leftMidX,  edgeY: leftMidY },
+    { label: 'R',  x: rightMidX + 62, y: rightMidY, value: data.right, edgeX: rightMidX, edgeY: rightMidY }
+  ];
+
+  sensors.forEach(sensor => {
+    const hasValue = sensor.value !== undefined && sensor.value !== null && !isNaN(sensor.value);
+    const boxW = 44, boxH = 32;
+    ctx.fillStyle = 'rgba(20, 35, 55, 0.97)';
+    ctx.strokeStyle = hasValue ? '#4dff91' : '#5a7a94';
+    ctx.lineWidth = hasValue ? 2 : 1;
+    ctx.fillRect(sensor.x - boxW/2, sensor.y - boxH/2, boxW, boxH);
+    ctx.strokeRect(sensor.x - boxW/2, sensor.y - boxH/2, boxW, boxH);
+
+    // Label
+    ctx.fillStyle = hasValue ? '#4dff91' : '#8aacbf';
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(sensor.label, sensor.x, sensor.y - 6);
+
+    // Value
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText(hasValue ? sensor.value.toFixed(2) : '—', sensor.x, sensor.y + 8);
+
+    // Dashed beam line to triangle edge
+    if (hasValue) {
+      ctx.beginPath();
+      ctx.setLineDash([3, 3]);
+      ctx.moveTo(sensor.edgeX, sensor.edgeY);
+      const dx = sensor.x - sensor.edgeX;
+      const dy = sensor.y - sensor.edgeY;
+      ctx.lineTo(sensor.edgeX + dx * 0.65, sensor.edgeY + dy * 0.65);
+      ctx.strokeStyle = 'rgba(77, 255, 145, 0.4)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  });
+
+  ctx.restore();
+}
+
+// ========== CANVAS DRAWING: BOT ORIENTATION ==========
+function drawBotOrientation() {
+  if (!botCtx) return;
+  if (botCanvas.width === 0 || botCanvas.height === 0) return;
+  
+  const ctx = botCtx;
+  const w = botCanvas.width;
+  const h = botCanvas.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  const centerX = w / 2;
+  const centerY = h / 2;
+  const radius = 120;
+  
+  // Draw compass circle
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+  ctx.strokeStyle = '#1e2d3d';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  
+  // Compass rings
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, radius - 20, 0, 2 * Math.PI);
+  ctx.strokeStyle = 'rgba(0, 212, 255, 0.15)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  
+  // Cardinal directions
+  const directions = [
+    { label: '0° N', angle: -Math.PI / 2, color: '#00d4ff' },
+    { label: '90° E', angle: 0, color: '#5a7a94' },
+    { label: '180° S', angle: Math.PI / 2, color: '#5a7a94' },
+    { label: '270° W', angle: Math.PI, color: '#5a7a94' }
+  ];
+  
+  directions.forEach(dir => {
+    const x = centerX + (radius + 30) * Math.cos(dir.angle);
+    const y = centerY + (radius + 30) * Math.sin(dir.angle);
+    
+    ctx.fillStyle = dir.color;
+    ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(dir.label, x, y + 5);
+    
+    // Tick marks
+    const tx1 = centerX + radius * Math.cos(dir.angle);
+    const ty1 = centerY + radius * Math.sin(dir.angle);
+    const tx2 = centerX + (radius - 10) * Math.cos(dir.angle);
+    const ty2 = centerY + (radius - 10) * Math.sin(dir.angle);
+    
+    ctx.beginPath();
+    ctx.moveTo(tx1, ty1);
+    ctx.lineTo(tx2, ty2);
+    ctx.strokeStyle = dir.color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  });
+  
+  // Draw triangle robot (flat top = front, tip at bottom)
+  const triSize = 42; // half-width of flat top edge
+  const triTopY = -triSize * 0.7;
+  const triBotY = triSize * 1.1;
+
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  ctx.rotate(currentYaw);
+
+  // Triangle body
+  ctx.beginPath();
+  ctx.moveTo(-triSize, triTopY);   // top-left
+  ctx.lineTo( triSize, triTopY);   // top-right
+  ctx.lineTo(0,        triBotY);   // bottom tip
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(0, 212, 255, 0.25)';
+  ctx.fill();
+  ctx.strokeStyle = '#00d4ff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Thick front edge (flat top = FRONT)
+  ctx.beginPath();
+  ctx.moveTo(-triSize, triTopY);
+  ctx.lineTo( triSize, triTopY);
+  ctx.strokeStyle = '#ff6b35';
+  ctx.lineWidth = 6;
+  ctx.stroke();
+
+  // Direction arrow pointing upward (front direction)
+  ctx.beginPath();
+  ctx.moveTo(0, triTopY);
+  ctx.lineTo(0, triTopY - 38);
+  ctx.strokeStyle = '#ff6b35';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  // Arrowhead
+  ctx.beginPath();
+  ctx.moveTo(0, triTopY - 38);
+  ctx.lineTo(-8, triTopY - 26);
+  ctx.lineTo( 8, triTopY - 26);
+  ctx.closePath();
+  ctx.fillStyle = '#ff6b35';
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// ========== INITIAL DRAWS ==========
+function initCanvases() {
+  sensorCanvas = document.getElementById('sensorVisual');
+  botCanvas    = document.getElementById('botTfVisual');
+  if (sensorCanvas) {
+    sensorCanvas.width  = 300;
+    sensorCanvas.height = 240;
+    sensorCtx = sensorCanvas.getContext('2d');
+  }
+  if (botCanvas) {
+    botCanvas.width  = 400;
+    botCanvas.height = 280;
+    botCtx = botCanvas.getContext('2d');
+  }
+  setTimeout(function() {
+    try { drawSensorVisual();  } catch(e) { console.error('sensor draw:', e); }
+    try { drawBotOrientation();} catch(e) { console.error('bot draw:',    e); }
+  }, 100);
+  setInterval(function() { try { drawBotOrientation(); } catch(e) {} }, 100);
+}
+window.addEventListener('load', initCanvases);
+
+// ========== BOT STATUS MODAL ==========
+
+// Topic definitions — swap '—' for real topic names when ready
+const botStatusTopics = [
+  { id: 'fl',       name: 'Front Left Sensor',  topic: '—' },
+  { id: 'fr',       name: 'Front Right Sensor', topic: '—' },
+  { id: 'left',     name: 'Left Sensor',         topic: '—' },
+  { id: 'right',    name: 'Right Sensor',        topic: '—' },
+  { id: 'odom',     name: 'Odometry (X, Y)',     topic: '—' },
+  { id: 'imu',      name: 'IMU Yaw',             topic: '—' },
+  { id: 'camera',   name: 'Camera',              topic: '/ascamera_hp60c/camera_publisher/rgb0/image' },
+  { id: 'gripper',  name: 'Gripper',             topic: '—' },
+  { id: 'detected', name: 'Color + QR',          topic: '/camera/colour + /camera/qr' },
+];
+
+const publishingState = {
+  fl: false, fr: false, left: false, right: false,
+  odom: false, imu: false, camera: false, gripper: false, detected: false
+};
+
+let gripperState = '—';
+
+// Timeout tracker — marks not-publishing if no message in 3s
+const _pubTimers = {};
+function markPublishing(id, isPublishing, extra) {
+  publishingState[id] = isPublishing;
+  if (id === 'gripper' && extra) gripperState = extra;
+  // Reset camera HUD when it goes offline
+  if (id === 'camera' && !isPublishing && cameraActive) {
+    cameraActive = false;
+    const overlay = document.getElementById('cameraOverlay');
+    const badge   = document.getElementById('cameraBadge');
+    const fpsEl   = document.getElementById('cameraFps');
+    if (overlay) overlay.classList.remove('hidden');
+    if (badge)   { badge.textContent = '● OFFLINE'; badge.className = 'camera-badge'; }
+    if (fpsEl)   { fpsEl.textContent = '0 FPS'; fpsEl.className = 'camera-fps'; }
+  }
+}
+
+function markPublishingWithTimeout(id, extra) {
+  markPublishing(id, true, extra);
+  clearTimeout(_pubTimers[id]);
+  _pubTimers[id] = setTimeout(() => markPublishing(id, false), 3000);
+}
+
+// odom and sensor marking is done inside handleKiwiMessage directly
+
+function refreshBotStatusUI() {
+  botStatusTopics.forEach(t => {
+    const row  = document.getElementById('status-' + t.id);
+    if (!row) return;
+    const pill = row.querySelector('.status-pill');
+    const icon = row.querySelector('.status-icon');
+    const sub  = row.querySelector('.topic-sub');
+    const pub  = publishingState[t.id];
+
+    row.className    = 'status-row ' + (pub ? 'publishing' : 'not-publishing');
+    pill.className   = 'status-pill ' + (pub ? 'publishing' : 'not-publishing');
+    pill.textContent = pub ? 'Publishing' : 'Not Publishing';
+    icon.textContent = pub ? '✓' : '✗';
+    icon.style.color = pub ? 'var(--green)' : 'var(--red)';
+
+    let subText = 'topic: ' + t.topic;
+    if (t.id === 'gripper') subText += '  |  state: ' + gripperState;
+    sub.textContent = subText;
+  });
+
+  document.getElementById('botStatusFooter').textContent =
+    'Last updated: ' + new Date().toLocaleTimeString();
+}
+
+function openBotStatus() {
+  document.getElementById('botStatusModal').classList.add('open');
+  refreshBotStatusUI();
+}
+
+function closeBotStatus() {
+  document.getElementById('botStatusModal').classList.remove('open');
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('botStatusModal')) closeBotStatus();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeBotStatus();
+});
+
+// Auto-refresh every second while modal is open
+setInterval(() => {
+  if (document.getElementById('botStatusModal').classList.contains('open')) {
+    refreshBotStatusUI();
+  }
+}, 1000);
+
+// ========== PRE-FLIGHT CHECKLIST ==========
+
+// --- Timer ---
+let timerMs = 0;
+let timerInterval = null;
+let timerRunning = false;
+
+function timerTick() {
+  timerMs += 10;
+  const m  = String(Math.floor(timerMs / 60000)).padStart(2, '0');
+  const s  = String(Math.floor((timerMs % 60000) / 1000)).padStart(2, '0');
+  const ms = String(Math.floor((timerMs % 1000) / 10)).padStart(2, '0');
+  document.getElementById('cl-timer-display').textContent = `${m}:${s}:${ms}`;
+}
+
+function timerStartStop() {
+  const btn     = document.getElementById('cl-timer-start-btn');
+  const display = document.getElementById('cl-timer-display');
+  if (!timerRunning) {
+    timerInterval = setInterval(timerTick, 10);
+    timerRunning = true;
+    btn.textContent = '⏸ Pause';
+    btn.className = 'cl-timer-btn pause';
+    display.className = 'cl-timer-display running';
+  } else {
+    clearInterval(timerInterval);
+    timerRunning = false;
+    btn.textContent = '▶ Resume';
+    btn.className = 'cl-timer-btn start';
+    display.className = 'cl-timer-display paused';
+  }
+}
+
+function timerReset() {
+  clearInterval(timerInterval);
+  timerRunning = false;
+  timerMs = 0;
+  const btn     = document.getElementById('cl-timer-start-btn');
+  const display = document.getElementById('cl-timer-display');
+  display.textContent = '00:00:00';
+  display.className   = 'cl-timer-display';
+  btn.textContent = '▶ Start';
+  btn.className   = 'cl-timer-btn start';
+}
+
+function timerFormatted() {
+function timerFormatted() {
+  const m  = String(Math.floor(timerMs / 60000)).padStart(2, '0');
+  const s  = String(Math.floor((timerMs % 60000) / 1000)).padStart(2, '0');
+  const ms = String(Math.floor((timerMs % 1000) / 10)).padStart(2, '0');
+  return `${m}:${s}:${ms}`;
+}
+}
+
+// --- Mechanical checks ---
+const mechItems = ['battery-level','wheel-align','power-wiring','sensor-wiring','servo-wiring','initial-pose','bot-rigidity'];
+const mechState = {};
+mechItems.forEach(id => mechState[id] = null);
+
+function setMech(id, state) {
+  mechState[id] = state;
+  const row     = document.getElementById('cl-row-' + id);
+  const passBtn = document.getElementById('cl-pass-' + id);
+  const failBtn = document.getElementById('cl-fail-' + id);
+  row.className     = 'cl-mech-row ' + (state === 'pass' ? 'pass' : 'fail');
+  passBtn.className = 'cl-toggle-btn' + (state === 'pass' ? ' active-pass' : '');
+  failBtn.className = 'cl-toggle-btn' + (state === 'fail' ? ' active-fail' : '');
+}
+
+function openChecklist() {
+  document.getElementById('checklistModal').classList.add('open');
+}
+
+function closeChecklist() {
+  document.getElementById('checklistModal').classList.remove('open');
+}
+
+function handleChecklistOverlayClick(e) {
+  if (e.target === document.getElementById('checklistModal')) closeChecklist();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeBotStatus(); closeChecklist(); }
+});
+
+function generateReport() {
+  const report = {
+    generated_at: new Date().toISOString(),
+
+    preflight_checklist: {
+      checks: {
+        battery_level:         mechState['battery-level']  || 'not checked',
+        wheel_alignment:       mechState['wheel-align']    || 'not checked',
+        power_wiring_routing:  mechState['power-wiring']   || 'not checked',
+        sensor_wiring_routing: mechState['sensor-wiring']  || 'not checked',
+        servo_wiring_routing:  mechState['servo-wiring']   || 'not checked',
+        correct_initial_pose:  mechState['initial-pose']   || 'not checked',
+        bot_rigidity:          mechState['bot-rigidity']   || 'not checked',
+      },
+      bot_battery: {
+        before: document.getElementById('cl-bat-before').value || '—',
+        after:  document.getElementById('cl-bat-after').value  || '—',
+      },
+      lap_battery: {
+        before: document.getElementById('cl-lap-before').value || '—',
+        after:  document.getElementById('cl-lap-after').value  || '—',
+      },
+      session_timer: timerFormatted()
+    },
+
+    waypoint_session: {
+      total_entries: waypointLog.length,
+      entries: waypointLog
+    },
+
+    bot_status_snapshot: Object.fromEntries(
+      Object.entries(publishingState).map(([k, v]) => [k, v ? 'publishing' : 'not publishing'])
+    )
+  };
+
+  const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `kiwi_report_${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+// ========== EMERGENCY STOP ==========
+let estopActive = false;
+let estopTopic  = null;
+
+function getEStopTopic() {
+  if (!estopTopic) {
+    estopTopic = new _ROSLib.Topic({
+      ros: ros,
+      name: '/estop',            // ← update this topic name when ready
+      messageType: 'std_msgs/Bool'
+    });
+  }
+  return estopTopic;
+}
+
+function triggerEStop() {
+  if (estopActive) return;
+  estopActive = true;
+
+  // Publish stop command
+  try {
+    getEStopTopic().publish({ data: true });
+    console.warn('🚨 EMERGENCY STOP TRIGGERED');
+  } catch(e) {
+    console.error('E-Stop publish error:', e);
+  }
+
+  // Update UI
+  const btn        = document.getElementById('estopBtn');
+  const statusDiv  = document.getElementById('estopStatus');
+  const statusText = document.getElementById('estopStatusText');
+  const resumeBtn  = document.getElementById('estopResumeBtn');
+
+  btn.classList.add('activated');
+  btn.querySelector('.estop-sub').textContent = 'BOT HALTED — MOVEMENT STOPPED';
+
+  statusDiv.className = 'estop-status stopped';
+  statusText.textContent = 'STOPPED';
+
+  resumeBtn.style.display = 'block';
+
+  // Flash the whole left section red briefly
+  const section = btn.closest('.section');
+  section.style.transition = 'box-shadow 0.1s';
+  section.style.boxShadow  = '0 0 40px rgba(255,0,0,0.6), inset 0 0 30px rgba(255,0,0,0.1)';
+  setTimeout(() => { section.style.boxShadow = ''; }, 800);
+}
+
+function resumeFromEStop() {
+  estopActive = false;
+
+  // Publish resume command
+  try {
+    getEStopTopic().publish({ data: false });
+    console.log('✅ E-Stop cleared — resuming operation');
+  } catch(e) {
+    console.error('E-Stop resume error:', e);
+  }
+
+  const btn        = document.getElementById('estopBtn');
+  const statusDiv  = document.getElementById('estopStatus');
+  const statusText = document.getElementById('estopStatusText');
+  const resumeBtn  = document.getElementById('estopResumeBtn');
+
+  btn.classList.remove('activated');
+  btn.querySelector('.estop-sub').textContent = 'TAP TO HALT ALL MOVEMENT';
+
+  statusDiv.className = 'estop-status';
+  statusText.textContent = 'READY';
+
+  resumeBtn.style.display = 'none';
+}
+
+// ========== ERROR CALIBRATION SYSTEM ==========
+// Live odom state (updated by updateOdometry)
+let _calOdomX = 0, _calOdomY = 0, _calOdomYaw = 0;
+
+// Track active calibration session
+let _calActive = null;  // { key, sx, sy, syaw }
+const _calResults = {}; // store results per key
+
+// Keys: fwd, bwd, left, right, cw, acw
+const _calIsRotation = { cw: true, acw: true };
+
+// ── Hook into odom updates to keep cal display live ──
+const _origUpdateOdometryForCal = updateOdometry;
+updateOdometry = function(msg) {
+  _origUpdateOdometryForCal(msg);
+  _calOdomX   = msg.pose.pose.position.x;
+  _calOdomY   = msg.pose.pose.position.y;
+  const qz    = msg.pose.pose.orientation.z;
+  const qw    = msg.pose.pose.orientation.w;
+  _calOdomYaw = Math.atan2(2*(qw*qz), 1-2*(qz*qz)) * 180 / Math.PI;
+  _updateCalLiveDisplay();
+};
+
+function _updateCalLiveDisplay() {
+  const lx = document.getElementById('cal-live-x');
+  const ly = document.getElementById('cal-live-y');
+  const lyaw = document.getElementById('cal-live-yaw');
+  const ld = document.getElementById('cal-live-dist');
+  if (!lx) return;
+  lx.textContent   = _calOdomX.toFixed(3);
+  ly.textContent   = _calOdomY.toFixed(3);
+  lyaw.textContent = _calOdomYaw.toFixed(1) + '°';
+
+  if (_calActive) {
+    const key = _calActive.key;
+    if (_calIsRotation[key]) {
+      let dyaw = _calOdomYaw - _calActive.syaw;
+      // normalise to -180..180
+      while (dyaw >  180) dyaw -= 360;
+      while (dyaw < -180) dyaw += 360;
+      ld.textContent = Math.abs(dyaw).toFixed(1) + '°';
+    } else {
+      const dx = _calOdomX - _calActive.sx;
+      const dy = _calOdomY - _calActive.sy;
+      ld.textContent = Math.sqrt(dx*dx + dy*dy).toFixed(3) + ' m';
+    }
+    ld.style.color = 'var(--yellow)';
+  } else {
+    ld.style.color = 'var(--green)';
+    ld.textContent = '0.000 m';
+  }
+}
+
+function startTracking(key) {
+  // Stop any previous session
+  if (_calActive) _resetTrackBtn(_calActive.key);
+
+  _calActive = { key, sx: _calOdomX, sy: _calOdomY, syaw: _calOdomYaw };
+
+  // Fill start fields
+  const sx = document.getElementById('cal-' + key + '-sx');
+  const sy = document.getElementById('cal-' + key + '-sy');
+  if (sx) { sx.value = _calOdomX.toFixed(4); }
+  if (sy) { sy.value = _calOdomY.toFixed(4); }
+
+  // Update buttons
+  const startBtn = document.getElementById('cal-track-' + key);
+  const snapBtn  = document.getElementById('cal-snap-'  + key);
+  if (startBtn) { startBtn.classList.add('active'); startBtn.textContent = '● TRACKING'; }
+  if (snapBtn)  { snapBtn.disabled = false; }
+}
+
+function snapAndCalc(key) {
+  if (!_calActive || _calActive.key !== key) return;
+
+  const sx   = _calActive.sx;
+  const sy   = _calActive.sy;
+  const syaw = _calActive.syaw;
+
+  _calActive = null;
+  _resetTrackBtn(key);
+
+  if (_calIsRotation[key]) {
+    let dyaw = _calOdomYaw - syaw;
+    while (dyaw >  180) dyaw -= 360;
+    while (dyaw < -180) dyaw += 360;
+    const actualDeg = Math.abs(dyaw);
+
+    // fill yaw fields
+    const cmd = parseFloat(document.getElementById('cal-' + key + '-cmd').value) || 0;
+    if (Math.abs(cmd - 90)  < 10) document.getElementById('cal-' + key + '-90').value  = actualDeg.toFixed(1);
+    if (Math.abs(cmd - 180) < 10) document.getElementById('cal-' + key + '-180').value = actualDeg.toFixed(1);
+    if (Math.abs(cmd - 270) < 10) document.getElementById('cal-' + key + '-270').value = actualDeg.toFixed(1);
+
+    _calcRotationResult(key, cmd, actualDeg);
+
+  } else {
+    const dx   = _calOdomX - sx;
+    const dy   = _calOdomY - sy;
+    const actualDist = Math.sqrt(dx*dx + dy*dy);
+
+    const actEl = document.getElementById('cal-' + key + '-act');
+    if (actEl) actEl.value = actualDist.toFixed(4);
+
+    const cmd = parseFloat(document.getElementById('cal-' + key + '-cmd').value) || 0;
+    _calcLinearResult(key, cmd, actualDist);
+  }
+  _updateSummary();
+}
+
+function _resetTrackBtn(key) {
+  const startBtn = document.getElementById('cal-track-' + key);
+  const snapBtn  = document.getElementById('cal-snap-'  + key);
+  if (startBtn) { startBtn.classList.remove('active'); startBtn.textContent = '▶ START'; }
+  if (snapBtn)  { snapBtn.disabled = true; }
+}
+
+function _calcLinearResult(key, cmd, actual) {
+  const resEl = document.getElementById('cal-' + key + '-result');
+  if (!cmd || !actual || cmd === 0) { if(resEl) resEl.innerHTML = ''; return; }
+
+  const wheelDia   = parseFloat(document.getElementById('cal-wheel-dia').value)    / 1000;
+  const ticksRev   = parseFloat(document.getElementById('cal-ticks-rev').value);
+  const currScale  = parseFloat(document.getElementById('cal-current-scale').value) || 1.0;
+  const circumf    = Math.PI * wheelDia;
+  const nomTicksPerM = ticksRev / circumf;
+
+  const errorRatio     = actual / cmd;
+  const correction     = 1.0 / errorRatio;
+  const corrTicksPerM  = nomTicksPerM * errorRatio;
+  const corrDistPerTick = 1.0 / corrTicksPerM;
+  const newScale       = currScale * correction;
+  const errPct         = (errorRatio - 1) * 100;
+  const errDir         = errPct > 0 ? 'overshooting' : 'undershooting';
+  const errColor       = Math.abs(errPct) < 2 ? 'var(--green)' : Math.abs(errPct) < 10 ? 'var(--yellow)' : 'var(--red)';
+
+  _calResults[key] = { cmd, actual, errorRatio, correction, corrTicksPerM, corrDistPerTick, newScale };
+
+  if (!resEl) return;
+  resEl.innerHTML = `
+    <div class="calib-result-grid">
+      <div class="calib-result-item"><span class="cr-label">Commanded</span><span class="cr-val" style="color:var(--yellow)">${cmd.toFixed(3)} m</span></div>
+      <div class="calib-result-item"><span class="cr-label">Actual (odom)</span><span class="cr-val" style="color:var(--accent2)">${actual.toFixed(4)} m</span></div>
+      <div class="calib-result-item"><span class="cr-label">Error</span><span class="cr-val" style="color:${errColor}">${errPct > 0 ? '+' : ''}${errPct.toFixed(1)}% (${errDir})</span></div>
+      <div class="calib-result-item"><span class="cr-label">Correction factor</span><span class="cr-val" style="color:var(--green)">${correction.toFixed(6)}</span></div>
+      <div class="calib-result-item"><span class="cr-label">New scale factor</span><span class="cr-val" style="color:var(--green)">${newScale.toFixed(6)}</span></div>
+      <div class="calib-result-item"><span class="cr-label">Ticks/meter (corrected)</span><span class="cr-val" style="color:var(--accent)">${corrTicksPerM.toFixed(2)}</span></div>
+      <div class="calib-result-item"><span class="cr-label">Dist/tick (corrected)</span><span class="cr-val" style="color:var(--accent)">${(corrDistPerTick*1000).toFixed(4)} mm</span></div>
+    </div>`;
+  resEl.style.display = 'block';
+}
+
+function _calcRotationResult(key, cmd, actual) {
+  const resEl = document.getElementById('cal-' + key + '-result');
+  if (!cmd || !actual) { if(resEl) resEl.innerHTML = ''; return; }
+
+  const wheelDia   = parseFloat(document.getElementById('cal-wheel-dia').value)    / 1000;
+  const ticksRev   = parseFloat(document.getElementById('cal-ticks-rev').value);
+  const chassisR   = parseFloat(document.getElementById('cal-chassis-r').value);
+  const circumf    = Math.PI * wheelDia;
+  const nomTicksPer360 = (2 * Math.PI * chassisR / circumf) * ticksRev;
+
+  const errorRatio    = actual / cmd;
+  const correction    = 1.0 / errorRatio;
+  const errPct        = (errorRatio - 1) * 100;
+  const corrTicks90   = (nomTicksPer360 / 4) * errorRatio;
+  const corrTicks180  = (nomTicksPer360 / 2) * errorRatio;
+  const corrTicks360  = nomTicksPer360 * errorRatio;
+  const errColor      = Math.abs(errPct) < 2 ? 'var(--green)' : Math.abs(errPct) < 10 ? 'var(--yellow)' : 'var(--red)';
+
+  _calResults[key] = { cmd, actual, errorRatio, correction, corrTicks90, corrTicks180, corrTicks360 };
+
+  if (!resEl) return;
+  resEl.innerHTML = `
+    <div class="calib-result-grid">
+      <div class="calib-result-item"><span class="cr-label">Commanded</span><span class="cr-val" style="color:var(--yellow)">${cmd.toFixed(1)}°</span></div>
+      <div class="calib-result-item"><span class="cr-label">Actual (odom yaw)</span><span class="cr-val" style="color:var(--accent2)">${actual.toFixed(2)}°</span></div>
+      <div class="calib-result-item"><span class="cr-label">Error</span><span class="cr-val" style="color:${errColor}">${errPct > 0 ? '+' : ''}${errPct.toFixed(1)}%</span></div>
+      <div class="calib-result-item"><span class="cr-label">Correction factor</span><span class="cr-val" style="color:var(--green)">${correction.toFixed(6)}</span></div>
+      <div class="calib-result-item"><span class="cr-label">Ticks for 90°</span><span class="cr-val" style="color:var(--accent)">${corrTicks90.toFixed(1)}</span></div>
+      <div class="calib-result-item"><span class="cr-label">Ticks for 180°</span><span class="cr-val" style="color:var(--accent)">${corrTicks180.toFixed(1)}</span></div>
+      <div class="calib-result-item"><span class="cr-label">Ticks for 360°</span><span class="cr-val" style="color:var(--accent)">${corrTicks360.toFixed(1)}</span></div>
+    </div>`;
+  resEl.style.display = 'block';
+}
+
+function _updateSummary() {
+  const keys = ['fwd','bwd','left','right','cw','acw'];
+  const labels = { fwd:'Forward', bwd:'Backward', left:'Left', right:'Right', cw:'Clockwise', acw:'Anti-Clockwise' };
+  const hasAny = keys.some(k => _calResults[k]);
+  if (!hasAny) return;
+
+  const summEl = document.getElementById('calib-summary');
+  const contEl = document.getElementById('calib-summary-content');
+  summEl.classList.add('show');
+
+  let lines = [];
+  lines.push('# ── Kiwi Bot Calibration Values ──');
+  const wheelDia  = parseFloat(document.getElementById('cal-wheel-dia').value) / 1000;
+  const ticksRev  = parseFloat(document.getElementById('cal-ticks-rev').value);
+  const chassisR  = parseFloat(document.getElementById('cal-chassis-r').value);
+  lines.push(`WHEEL_RADIUS_M    = ${(wheelDia/2).toFixed(5)}  # ${wheelDia*1000} mm dia`);
+  lines.push(`ENCODER_TICKS_REV = ${ticksRev}`);
+  lines.push(`CHASSIS_RADIUS_M  = ${chassisR}`);
+  lines.push('');
+  ['fwd','bwd','left','right'].forEach(k => {
+    if (_calResults[k]) {
+      const r = _calResults[k];
+      lines.push(`# ${labels[k]}: cmd=${r.cmd.toFixed(3)}m  actual=${r.actual.toFixed(4)}m  err=${((r.errorRatio-1)*100).toFixed(1)}%`);
+      lines.push(`SCALE_${k.toUpperCase().padEnd(5)} = ${r.newScale.toFixed(6)}   # correction: ${r.correction.toFixed(6)}`);
+      lines.push(`TICKS_PER_M_${k.toUpperCase().padEnd(5)} = ${r.corrTicksPerM.toFixed(2)}`);
+      lines.push('');
+    }
+  });
+  ['cw','acw'].forEach(k => {
+    if (_calResults[k]) {
+      const r = _calResults[k];
+      lines.push(`# ${labels[k]}: cmd=${r.cmd.toFixed(1)}°  actual=${r.actual.toFixed(2)}°  err=${((r.errorRatio-1)*100).toFixed(1)}%`);
+      lines.push(`CORRECTION_${k.toUpperCase().padEnd(3)} = ${r.correction.toFixed(6)}`);
+      lines.push(`TICKS_90_${k.toUpperCase().padEnd(3)}  = ${r.corrTicks90.toFixed(1)}`);
+      lines.push(`TICKS_180_${k.toUpperCase().padEnd(3)} = ${r.corrTicks180.toFixed(1)}`);
+      lines.push(`TICKS_360_${k.toUpperCase().padEnd(3)} = ${r.corrTicks360.toFixed(1)}`);
+      lines.push('');
+    }
+  });
+  contEl.innerHTML = `<pre style="font-family:Consolas,monospace;font-size:10px;color:var(--teal);white-space:pre-wrap;margin:0;">${lines.join('\n')}</pre>
+    <button onclick="copyCalibSummary()" style="margin-top:8px;padding:6px 16px;background:var(--accent);color:#000;border:none;border-radius:4px;font-weight:800;font-size:10px;cursor:pointer;letter-spacing:1px;">📋 COPY TO CLIPBOARD</button>`;
+}
+
+function copyCalibSummary() {
+  const text = document.querySelector('#calib-summary-content pre').textContent;
+  navigator.clipboard.writeText(text).then(() => alert('Copied to clipboard!'));
+}
+
+function openCalib()  { document.getElementById('calibModal').classList.add('open'); }
+function closeCalib() { document.getElementById('calibModal').classList.remove('open'); }
+function handleCalibOverlayClick(e) { if (e.target === document.getElementById('calibModal')) closeCalib(); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCalib(); });
+
+
+
+</script>
+</body>
+</html>

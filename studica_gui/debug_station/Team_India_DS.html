@@ -1,0 +1,2352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TEAM INDIA Debug Station</title>
+<script>
+// ========== INLINE ROSLIB — no CDN needed, works fully offline ==========
+// Minimal but functional ROSLIB implementation using native WebSocket
+window.ROSLIB = (function() {
+
+  function Ros(options) {
+    this._callbacks = {};
+    this._socket = null;
+    this._topicCallbacks = {};
+    this._msgId = 0;
+    if (options && options.url) {
+      this.connect(options.url);
+    }
+  }
+
+  Ros.prototype.on = function(event, cb) {
+    if (!this._callbacks[event]) this._callbacks[event] = [];
+    this._callbacks[event].push(cb);
+  };
+
+  Ros.prototype._emit = function(event, data) {
+    var cbs = this._callbacks[event] || [];
+    for (var i = 0; i < cbs.length; i++) cbs[i](data);
+  };
+
+  Ros.prototype.connect = function(url) {
+    var self = this;
+    try {
+      self._socket = new WebSocket(url);
+    } catch(e) {
+      setTimeout(function() { self._emit('error', e.message); }, 10);
+      return;
+    }
+
+    self._socket.onopen = function() {
+      self._emit('connection');
+    };
+
+    self._socket.onerror = function(e) {
+      self._emit('error', 'WebSocket error');
+    };
+
+    self._socket.onclose = function() {
+      self._emit('close');
+    };
+
+    self._socket.onmessage = function(evt) {
+      try {
+        var msg = JSON.parse(evt.data);
+        // Support both rosbridge format (op:'publish') and kiwi_bridge format (topic directly)
+        var topic = msg.topic;
+        var payload = msg.msg;
+        if (topic && payload && self._topicCallbacks[topic]) {
+          var handlers = self._topicCallbacks[topic];
+          for (var i = 0; i < handlers.length; i++) handlers[i](payload);
+        }
+      } catch(e) {}
+    };
+  };
+
+  Ros.prototype.close = function() {
+    if (this._socket) this._socket.close();
+  };
+
+  Ros.prototype.getTopics = function(cb) {
+    // stub — would require service call
+    if (cb) cb({ topics: [] });
+  };
+
+  Ros.prototype._send = function(obj) {
+    if (this._socket && this._socket.readyState === WebSocket.OPEN) {
+      this._socket.send(JSON.stringify(obj));
+    }
+  };
+
+  // ---- Topic ----
+  function Topic(options) {
+    this._ros = options.ros;
+    this._name = options.name;
+    this._type = options.messageType;
+  }
+
+  Topic.prototype.subscribe = function(cb) {
+    var ros = this._ros;
+    var name = this._name;
+    if (!ros._topicCallbacks[name]) ros._topicCallbacks[name] = [];
+    ros._topicCallbacks[name].push(cb);
+    ros._send({ op: 'subscribe', topic: name, type: this._type });
+  };
+
+  Topic.prototype.unsubscribe = function() {
+    var ros = this._ros;
+    var name = this._name;
+    delete ros._topicCallbacks[name];
+    ros._send({ op: 'unsubscribe', topic: name });
+  };
+
+  Topic.prototype.publish = function(msg) {
+    this._ros._send({ op: 'publish', topic: this._name, msg: msg });
+  };
+
+  return { Ros: Ros, Topic: Topic };
+})();
+</script>
+<style>
+:root {
+  --bg: #060b14;
+  --panel: #0b1320;
+  --panel2: #101a2b;
+  --border: #1a2d45;
+  --accent: #00e5ff;
+  --accent2: #ff6b35;
+  --green: #39ff88;
+  --red: #ff3355;
+  --yellow: #ffd600;
+  --purple: #c084fc;
+  --pink: #ff6eb4;
+  --orange: #ff9f1c;
+  --teal: #00ffd5;
+  --text: #e8f4ff;
+  --muted: #4a6a85;
+  --muted2: #6b8fa8;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 11px;
+  line-height: 1.4;
+  overflow: hidden;
+  background-image:
+    radial-gradient(ellipse at 20% 0%, rgba(0,229,255,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 0%, rgba(192,132,252,0.04) 0%, transparent 60%);
+}
+
+.header {
+  background: linear-gradient(135deg, #0b1525 0%, #0f1e35 50%, #0b1525 100%);
+  border-bottom: 2px solid transparent;
+  border-image: linear-gradient(90deg, #ff9933, #ff9933, #ffffff, #138808, #138808) 1;
+  padding: 8px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(255,153,51,0.04), rgba(255,255,255,0.02), rgba(19,136,8,0.04));
+  pointer-events: none;
+}
+
+.header h1 {
+  font-size: 20px;
+  letter-spacing: 3px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header h1 .word-team {
+  background: linear-gradient(180deg, #ff9933 0%, #ff9933 33%, #ffffff 33%, #ffffff 66%, #138808 66%, #138808 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 8px rgba(255,153,51,0.5));
+}
+
+.header h1 .word-india {
+  background: linear-gradient(180deg, #ff9933 0%, #ff9933 33%, #ffffff 33%, #ffffff 66%, #138808 66%, #138808 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 8px rgba(19,136,8,0.5));
+  text-shadow: none;
+}
+
+.header h1 .word-debug {
+  background: linear-gradient(180deg, #ff9933 0%, #ff9933 33%, #ffffff 33%, #ffffff 66%, #138808 66%, #138808 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 8px rgba(255,153,51,0.4));
+}
+
+.header h1 .word-station {
+  background: linear-gradient(180deg, #ff9933 0%, #ff9933 33%, #ffffff 33%, #ffffff 66%, #138808 66%, #138808 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Indian flag SVG in header */
+.india-flag {
+  width: 40px;
+  height: 26px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 10px rgba(255,153,51,0.3);
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+.header .subtitle {
+  color: var(--muted2);
+  font-size: 11px;
+  margin-top: 5px;
+  letter-spacing: 1px;
+}
+.header .subtitle span { color: var(--teal); }
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+}
+
+.status-badge {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid;
+  letter-spacing: 1px;
+  font-weight: 700;
+  font-size: 11px;
+}
+.status-badge.connected    { color: var(--green);  border-color: var(--green);  background: rgba(57,255,136,0.08); box-shadow: 0 0 10px rgba(57,255,136,0.2); }
+.status-badge.disconnected { color: var(--red);    border-color: var(--red);    background: rgba(255,51,85,0.08); }
+.status-badge.connecting   { color: var(--yellow); border-color: var(--yellow); background: rgba(255,214,0,0.08); }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+.container {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr 1fr;
+  gap: 10px;
+  padding: 10px;
+  height: calc(100vh - 58px);
+  overflow: hidden;
+}
+
+.section {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.section-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 800;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.section-title.cyan   { color: var(--accent);  text-shadow: 0 0 8px rgba(0,229,255,0.4); border-bottom-color: rgba(0,229,255,0.2); }
+.section-title.purple { color: var(--purple);  text-shadow: 0 0 8px rgba(192,132,252,0.4); border-bottom-color: rgba(192,132,252,0.2); }
+.section-title.orange { color: var(--orange);  text-shadow: 0 0 8px rgba(255,159,28,0.4); border-bottom-color: rgba(255,159,28,0.2); }
+.section-title.teal   { color: var(--teal);    text-shadow: 0 0 8px rgba(0,255,213,0.4); border-bottom-color: rgba(0,255,213,0.2); }
+.section-title.pink   { color: var(--pink);    text-shadow: 0 0 8px rgba(255,110,180,0.4); border-bottom-color: rgba(255,110,180,0.2); }
+.section-title.green  { color: var(--green);   text-shadow: 0 0 8px rgba(57,255,136,0.4); border-bottom-color: rgba(57,255,136,0.2); }
+
+/* ========== SENSORS ========== */
+.sensor-visual-container {
+  background: var(--panel2);
+  border: 1px solid rgba(0,229,255,0.15);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  min-height: 0;
+  box-shadow: inset 0 0 30px rgba(0,229,255,0.03);
+}
+#sensorVisual { display: block; max-width: 100%; max-height: 100%; height: auto; }
+
+.sensor-values { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; flex-shrink: 0; }
+
+.sensor-box {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  text-align: center;
+  transition: all 0.25s;
+  position: relative;
+  overflow: hidden;
+}
+.sensor-box::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.sensor-box:hover { border-color: var(--accent); box-shadow: 0 0 12px rgba(0,229,255,0.15); }
+.sensor-box:hover::before { opacity: 1; }
+
+.sensor-box .label {
+  font-size: 9px;
+  color: var(--muted2);
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+.sensor-box:nth-child(1) .label { color: #7dd3fc; }
+.sensor-box:nth-child(2) .label { color: #86efac; }
+.sensor-box:nth-child(3) .label { color: var(--pink); }
+.sensor-box:nth-child(4) .label { color: var(--orange); }
+
+.sensor-box .value { font-size: 16px; font-weight: 700; font-family: 'Consolas', monospace; }
+.sensor-box .value.nil    { color: var(--red); text-shadow: 0 0 8px rgba(255,51,85,0.4); }
+.sensor-box .value.active { color: var(--green); text-shadow: 0 0 8px rgba(57,255,136,0.4); }
+
+.topic-status {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Consolas', monospace;
+  color: var(--teal);
+  flex-shrink: 0;
+}
+
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+  animation: pulse 2s infinite;
+  box-shadow: 0 0 6px var(--red);
+}
+.status-dot.active { background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+/* ========== ODOM ========== */
+.odom-panel {
+  background: var(--panel2);
+  border: 1px solid rgba(192,132,252,0.2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  box-shadow: inset 0 0 20px rgba(192,132,252,0.03);
+  flex-shrink: 0;
+}
+.odom-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 6px; }
+.odom-value { text-align: center; }
+.odom-value .label {
+  font-size: 9px;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+.odom-value:nth-child(1) .label { color: #7dd3fc; }
+.odom-value:nth-child(2) .label { color: #f9a8d4; }
+.odom-value:nth-child(3) .label { color: var(--yellow); }
+.odom-value .number {
+  font-size: 20px;
+  font-weight: 700;
+  font-family: 'Consolas', monospace;
+}
+.odom-value:nth-child(1) .number { color: var(--accent); text-shadow: 0 0 10px rgba(0,229,255,0.35); }
+.odom-value:nth-child(2) .number { color: var(--pink);   text-shadow: 0 0 10px rgba(255,110,180,0.35); }
+.odom-value:nth-child(3) .number { color: var(--yellow); text-shadow: 0 0 10px rgba(255,214,0,0.35); }
+
+.bot-tf-container {
+  background: var(--panel2);
+  border: 1px solid rgba(0,255,213,0.15);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  min-height: 0;
+  box-shadow: inset 0 0 30px rgba(0,255,213,0.03);
+}
+#botTfVisual { display: block; max-width: 100%; max-height: 100%; height: auto; }
+
+/* ========== TOPICS & LOG ========== */
+.topics-panel {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  max-height: 130px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+.topics-panel h4 {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+.topics-panel h4.pub-title  { color: var(--green); }
+.topics-panel h4.sub-title  { color: var(--purple); }
+
+.topic-list { font-size: 10px; line-height: 1.6; margin-bottom: 10px; }
+.topic-item {
+  padding: 3px 8px;
+  background: var(--panel);
+  border-radius: 3px;
+  margin-bottom: 3px;
+  font-family: 'Consolas', monospace;
+  color: var(--green);
+  border-left: 2px solid var(--green);
+  font-size: 9px;
+}
+
+.log-panel {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-shrink: 0; }
+.log-header span { color: var(--teal); font-weight: 700; font-size: 10px; }
+
+.log-count {
+  font-size: 9px;
+  color: var(--yellow);
+  background: rgba(255,214,0,0.08);
+  border: 1px solid rgba(255,214,0,0.2);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.log-content {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+  font-family: 'Consolas', monospace;
+  font-size: 9px;
+  line-height: 1.6;
+  margin-bottom: 8px;
+  min-height: 0;
+}
+.log-entry {
+  margin-bottom: 5px;
+  padding: 4px 6px;
+  border-left: 2px solid var(--muted);
+  background: rgba(15,24,36,0.5);
+  border-radius: 3px;
+}
+.log-entry .timestamp { color: var(--muted2); margin-right: 6px; }
+.log-entry .type { font-weight: 700; margin-right: 6px; text-transform: uppercase; }
+.log-entry.waypoint { border-left-color: var(--green); }
+.log-entry.waypoint .type { color: var(--green); }
+.log-entry.cancel { border-left-color: var(--red); }
+.log-entry.cancel .type { color: var(--red); }
+.log-entry .data { color: var(--text); }
+
+.export-btn {
+  background: linear-gradient(135deg, var(--accent2), #ff4500);
+  border: none;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  box-shadow: 0 4px 14px rgba(255,107,53,0.3);
+}
+.export-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,107,53,0.45); }
+.export-btn:active { transform: translateY(0); }
+
+.topics-panel::-webkit-scrollbar,
+.log-content::-webkit-scrollbar { width: 5px; }
+.topics-panel::-webkit-scrollbar-thumb,
+.log-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.topics-panel::-webkit-scrollbar-thumb:hover,
+.log-content::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+/* ========== BOT STATUS MODAL ========== */
+.bot-status-btn {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 7px 18px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.bot-status-btn:hover {
+  background: rgba(0,229,255,0.12);
+  box-shadow: 0 0 14px rgba(0,229,255,0.3);
+}
+.bot-status-btn .btn-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse 2s infinite;
+  box-shadow: 0 0 6px var(--green);
+}
+
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(6px);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+}
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--panel);
+  border: 1px solid rgba(0,229,255,0.2);
+  border-radius: 10px;
+  width: 520px;
+  max-width: 95vw;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7), 0 0 40px rgba(0,229,255,0.08);
+  overflow: hidden;
+}
+
+.modal-header {
+  background: linear-gradient(135deg, var(--panel2), #0d1828);
+  border-bottom: 1px solid rgba(0,229,255,0.15);
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-header h2 {
+  font-size: 13px;
+  letter-spacing: 2px;
+  font-weight: 800;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(90deg, var(--accent), var(--teal));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.modal-close {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted2);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+.modal-close:hover { color: var(--red); border-color: var(--red); background: rgba(255,51,85,0.1); }
+
+.modal-body { padding: 18px; display: flex; flex-direction: column; gap: 8px; }
+
+.modal-footer {
+  padding: 8px 18px;
+  border-top: 1px solid var(--border);
+  font-size: 10px;
+  color: var(--teal);
+  text-align: center;
+  font-family: 'Consolas', monospace;
+  opacity: 0.7;
+}
+
+.status-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 11px 14px;
+  transition: all 0.3s;
+}
+.status-row.publishing     { border-color: rgba(57,255,136,0.4); background: rgba(57,255,136,0.04); }
+.status-row.not-publishing { border-color: rgba(255,51,85,0.2); }
+
+.status-row .topic-name { font-size: 12px; font-weight: 700; color: var(--text); }
+.status-row .topic-sub  { font-size: 10px; color: var(--muted2); font-family: 'Consolas', monospace; margin-top: 2px; }
+
+.status-pill {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+  padding: 4px 10px; border-radius: 12px; text-transform: uppercase; white-space: nowrap;
+}
+.status-pill.publishing     { color: var(--green);  background: rgba(57,255,136,0.1);  border: 1px solid rgba(57,255,136,0.35); box-shadow: 0 0 8px rgba(57,255,136,0.15); }
+.status-pill.not-publishing { color: var(--red);    background: rgba(255,51,85,0.1);   border: 1px solid rgba(255,51,85,0.25); }
+
+.status-icon { font-size: 18px; width: 24px; text-align: center; transition: all 0.3s; font-weight: 900; }
+
+/* ========== CHECKLIST MODAL ========== */
+.checklist-btn {
+  background: transparent;
+  border: 1px solid var(--yellow);
+  color: var(--yellow);
+  padding: 7px 18px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.checklist-btn:hover {
+  background: rgba(255,214,0,0.12);
+  box-shadow: 0 0 14px rgba(255,214,0,0.25);
+}
+
+.cl-section-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 800;
+  padding: 4px 0 8px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+.cl-section-title.bat   { color: var(--green);  text-shadow: 0 0 8px rgba(57,255,136,0.3); border-bottom-color: rgba(57,255,136,0.15); }
+.cl-section-title.lap   { color: var(--yellow); text-shadow: 0 0 8px rgba(255,214,0,0.3);  border-bottom-color: rgba(255,214,0,0.15); }
+.cl-section-title.mech  { color: var(--orange); text-shadow: 0 0 8px rgba(255,159,28,0.3); border-bottom-color: rgba(255,159,28,0.15); }
+.cl-section-title.timer { color: var(--teal);   text-shadow: 0 0 8px rgba(0,255,213,0.3);  border-bottom-color: rgba(0,255,213,0.15); }
+
+.cl-voltage-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.cl-voltage-box {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cl-voltage-box label {
+  font-size: 10px;
+  color: var(--muted2);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.cl-voltage-box input {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--yellow);
+  font-family: 'Consolas', monospace;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 3px;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.2s;
+}
+.cl-voltage-box input:focus {
+  border-color: var(--yellow);
+  box-shadow: 0 0 8px rgba(255,214,0,0.2);
+}
+.cl-voltage-box input::placeholder {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.cl-mech-row {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: border-color 0.2s;
+}
+.cl-mech-row.pass  { border-color: rgba(77, 255, 145, 0.4); }
+.cl-mech-row.fail  { border-color: rgba(255, 68, 85, 0.4); }
+
+.cl-mech-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cl-toggle {
+  display: flex;
+  gap: 6px;
+}
+
+.cl-toggle-btn {
+  width: 42px;
+  height: 36px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  font-size: 18px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted2);
+}
+.cl-toggle-btn:hover { color: var(--text); border-color: var(--muted2); }
+.cl-toggle-btn.active-pass {
+  background: rgba(77, 255, 145, 0.18);
+  border-color: var(--green);
+  color: var(--green);
+  box-shadow: 0 0 8px rgba(77,255,145,0.3);
+}
+.cl-toggle-btn.active-fail {
+  background: rgba(255, 68, 85, 0.18);
+  border-color: var(--red);
+  color: var(--red);
+  box-shadow: 0 0 8px rgba(255,68,85,0.3);
+}
+
+/* ========== TIMER ========== */
+.cl-timer-box {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.cl-timer-display {
+  font-family: 'Consolas', monospace;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 3px;
+  min-width: 130px;
+}
+.cl-timer-display.running { color: var(--green); }
+.cl-timer-display.paused  { color: var(--yellow); }
+.cl-timer-btns {
+  display: flex;
+  gap: 8px;
+}
+.cl-timer-btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.cl-timer-btn.start  { border-color: var(--green); color: var(--green); }
+.cl-timer-btn.start:hover  { background: rgba(77,255,145,0.12); }
+.cl-timer-btn.pause  { border-color: var(--yellow); color: var(--yellow); }
+.cl-timer-btn.pause:hover  { background: rgba(255,204,0,0.12); }
+.cl-timer-btn.reset  { border-color: var(--muted); color: var(--muted2); }
+.cl-timer-btn.reset:hover  { background: rgba(255,255,255,0.05); }
+
+.generate-report-btn {
+  background: var(--accent2);
+  border: none;
+  color: white;
+  padding: 13px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  width: 100%;
+  margin-top: 4px;
+}
+.generate-report-btn:hover {
+  background: #ff8555;
+  box-shadow: 0 4px 14px rgba(255,107,53,0.35);
+  transform: translateY(-1px);
+}
+
+/* ========== EMERGENCY STOP ========== */
+.estop-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0 2px;
+  flex-shrink: 0;
+}
+
+.estop-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #8b0000, #cc0000, #ff0000, #cc0000, #8b0000);
+  background-size: 300% 100%;
+  animation: estop-shimmer 3s ease infinite;
+  border: 3px solid #ff0000;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  padding: 10px 12px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.1s;
+  box-shadow:
+    0 0 20px rgba(255,0,0,0.5),
+    0 0 40px rgba(255,0,0,0.2),
+    inset 0 1px 0 rgba(255,255,255,0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.estop-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgba(0,0,0,0.08) 10px,
+    rgba(0,0,0,0.08) 20px
+  );
+  pointer-events: none;
+}
+
+@keyframes estop-shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50%       { background-position: 100% 50%; }
+}
+
+.estop-btn:hover {
+  transform: scale(1.02);
+  box-shadow:
+    0 0 30px rgba(255,0,0,0.7),
+    0 0 60px rgba(255,0,0,0.3),
+    inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+.estop-btn:active {
+  transform: scale(0.97);
+  box-shadow: 0 0 10px rgba(255,0,0,0.4);
+}
+
+.estop-btn.activated {
+  background: linear-gradient(135deg, #1a0000, #330000);
+  background-size: unset;
+  animation: none;
+  border-color: #ff4444;
+  box-shadow: 0 0 15px rgba(255,68,68,0.3);
+  cursor: not-allowed;
+}
+
+.estop-icon {
+  font-size: 20px;
+  line-height: 1;
+  filter: drop-shadow(0 0 6px rgba(255,200,200,0.8));
+}
+
+.estop-label {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(255,150,150,0.8), 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.estop-sub {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  opacity: 0.75;
+  font-weight: 600;
+}
+
+.estop-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-family: 'Consolas', monospace;
+  color: var(--green);
+}
+
+.estop-status-dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: pulse 2s infinite;
+}
+
+.estop-status.stopped { color: var(--red); }
+.estop-status.stopped .estop-status-dot {
+  background: var(--red);
+  box-shadow: 0 0 10px var(--red);
+  animation: pulse 0.6s infinite;
+}
+
+.estop-resume-btn {
+  width: 100%;
+  background: transparent;
+  border: 2px solid var(--green);
+  color: var(--green);
+  border-radius: 6px;
+  padding: 10px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  box-shadow: 0 0 10px rgba(57,255,136,0.2);
+}
+.estop-resume-btn:hover {
+  background: rgba(57,255,136,0.12);
+  box-shadow: 0 0 18px rgba(57,255,136,0.35);
+}
+
+/* ========== CAMERA FEED ========== */
+.camera-container {
+  position: relative;
+  background: #000;
+  border: 1px solid rgba(255,110,180,0.25);
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 120px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 30px rgba(0,0,0,0.5), 0 0 20px rgba(255,110,180,0.05);
+}
+
+#cameraCanvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 130px;
+  object-fit: contain;
+}
+
+.camera-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, rgba(10,15,25,0.85) 0%, rgba(6,11,20,0.95) 100%);
+  transition: opacity 0.4s;
+}
+.camera-overlay.hidden { opacity: 0; pointer-events: none; }
+
+.camera-no-signal {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.camera-icon { font-size: 36px; opacity: 0.4; animation: pulse 3s infinite; }
+.camera-no-signal-text {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted2);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.camera-topic-label {
+  font-family: 'Consolas', monospace;
+  font-size: 9px;
+  color: var(--pink);
+  opacity: 0.5;
+  letter-spacing: 0.5px;
+}
+
+.camera-hud {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 6px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(transparent, rgba(0,0,0,0.75));
+}
+.camera-hud-right { display: flex; gap: 8px; align-items: center; }
+
+.camera-badge {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-family: 'Consolas', monospace;
+  color: var(--red);
+}
+.camera-badge.live {
+  color: var(--green);
+  text-shadow: 0 0 8px rgba(57,255,136,0.6);
+  animation: pulse 1.5s infinite;
+}
+.camera-res, .camera-fps {
+  font-size: 9px;
+  font-family: 'Consolas', monospace;
+  color: var(--muted2);
+  background: rgba(0,0,0,0.5);
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+}
+.camera-fps.live { color: var(--teal); border-color: rgba(0,255,213,0.3); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>
+      <!-- Indian Flag SVG -->
+      <svg class="india-flag" viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg">
+        <!-- Saffron band -->
+        <rect width="900" height="200" fill="#FF9933"/>
+        <!-- White band -->
+        <rect y="200" width="900" height="200" fill="#FFFFFF"/>
+        <!-- Green band -->
+        <rect y="400" width="900" height="200" fill="#138808"/>
+        <!-- Ashoka Chakra (navy blue) -->
+        <circle cx="450" cy="300" r="70" fill="none" stroke="#000080" stroke-width="8"/>
+        <circle cx="450" cy="300" r="10" fill="#000080"/>
+        <!-- 24 spokes -->
+        <g stroke="#000080" stroke-width="3">
+          <line x1="450" y1="230" x2="450" y2="370"/>
+          <line x1="450" y1="230" x2="450" y2="370" transform="rotate(15 450 300)"/>
+          <line x1="450" y1="230" x2="450" y2="370" transform="rotate(30 450 300)"/>
+          <line x1="450" y1="230" x2="450" y2="370" transform="rotate(45 450 300)"/>
+          <line x1="450" y1="230" x2="450" y2="370" transform="rotate(60 450 300)"/>
+          <line x1="450" y1="230" x2="450" y2="370" transform="rotate(75 450 300)"/>
+          <line x1="450" y1="230" x2="450" y2="370" transform="rotate(90 450 300)"/>
+          <line x1="450" y1="230" x2="450" y2="370" transform="rotate(105 450 300)"/>
+          <line x1="450" y1="230" x2="450" y2="370" transform="rotate(120 450 300)"/>
+          <line x1="450" y1="230" x2="450" y2="370" transform="rotate(135 450 300)"/>
+          <line x1="450" y1="230" x2="450" y2="370" transform="rotate(150 450 300)"/>
+          <line x1="450" y1="230" x2="450" y2="370" transform="rotate(165 450 300)"/>
+        </g>
+      </svg>
+      <span class="word-team">TEAM</span>
+      <span class="word-india">INDIA</span>
+      <span class="word-debug">DEBUG</span>
+      <span class="word-station">STATION</span>
+    </h1>
+  </div>
+  <div class="connection-status">
+    <button class="bot-status-btn" onclick="openBotStatus()">
+      <span class="btn-dot"></span>
+      BOT STATUS
+    </button>
+    <button class="checklist-btn" onclick="openChecklist()">
+      📋 PRE-FLIGHT
+    </button>
+    <span style="color: var(--muted2);">ROS Bridge:</span>
+    <div class="status-badge connecting" id="rosStatus">CONNECTING</div>
+  </div>
+</div>
+
+<!-- ========== BOT STATUS MODAL ========== -->
+<div class="modal-overlay" id="botStatusModal" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>🤖 Bot Status</h2>
+      <button class="modal-close" onclick="closeBotStatus()">✕</button>
+    </div>
+    <div class="modal-body" id="botStatusBody">
+
+      <div class="status-row" id="status-fl">
+        <div>
+          <div class="topic-name">Front Left Sensor</div>
+          <div class="topic-sub">topic: —</div>
+        </div>
+        <div class="status-pill not-publishing">Not Publishing</div>
+        <div class="status-icon">✗</div>
+      </div>
+
+      <div class="status-row" id="status-fr">
+        <div>
+          <div class="topic-name">Front Right Sensor</div>
+          <div class="topic-sub">topic: —</div>
+        </div>
+        <div class="status-pill not-publishing">Not Publishing</div>
+        <div class="status-icon">✗</div>
+      </div>
+
+      <div class="status-row" id="status-left">
+        <div>
+          <div class="topic-name">Left Sensor</div>
+          <div class="topic-sub">topic: —</div>
+        </div>
+        <div class="status-pill not-publishing">Not Publishing</div>
+        <div class="status-icon">✗</div>
+      </div>
+
+      <div class="status-row" id="status-right">
+        <div>
+          <div class="topic-name">Right Sensor</div>
+          <div class="topic-sub">topic: —</div>
+        </div>
+        <div class="status-pill not-publishing">Not Publishing</div>
+        <div class="status-icon">✗</div>
+      </div>
+
+      <div class="status-row" id="status-odom">
+        <div>
+          <div class="topic-name">Odometry (X, Y)</div>
+          <div class="topic-sub">topic: —</div>
+        </div>
+        <div class="status-pill not-publishing">Not Publishing</div>
+        <div class="status-icon">✗</div>
+      </div>
+
+      <div class="status-row" id="status-imu">
+        <div>
+          <div class="topic-name">IMU Yaw</div>
+          <div class="topic-sub">topic: —</div>
+        </div>
+        <div class="status-pill not-publishing">Not Publishing</div>
+        <div class="status-icon">✗</div>
+      </div>
+
+      <div class="status-row" id="status-camera">
+        <div>
+          <div class="topic-name">Camera</div>
+          <div class="topic-sub">topic: —</div>
+        </div>
+        <div class="status-pill not-publishing">Not Publishing</div>
+        <div class="status-icon">✗</div>
+      </div>
+
+      <div class="status-row" id="status-gripper">
+        <div>
+          <div class="topic-name">Gripper</div>
+          <div class="topic-sub">topic: — &nbsp;|&nbsp; state: —</div>
+        </div>
+        <div class="status-pill not-publishing">Not Publishing</div>
+        <div class="status-icon">✗</div>
+      </div>
+
+    </div>
+    <div class="modal-footer" id="botStatusFooter">
+      Last updated: —
+    </div>
+  </div>
+</div>
+
+<!-- ========== PRE-FLIGHT CHECKLIST MODAL ========== -->
+<div class="modal-overlay" id="checklistModal" onclick="handleChecklistOverlayClick(event)">
+  <div class="modal" style="width:560px;">
+    <div class="modal-header">
+      <h2>📋 Pre-Flight Checklist</h2>
+      <button class="modal-close" onclick="closeChecklist()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- BATTERY -->
+      <div class="cl-section-title bat">🔋 Battery Voltage</div>
+      <div class="cl-voltage-grid">
+        <div class="cl-voltage-box">
+          <label>Battery — Before</label>
+          <input type="text" id="cl-bat-before" placeholder="e.g. 12.6v" />
+        </div>
+        <div class="cl-voltage-box">
+          <label>Battery — After</label>
+          <input type="text" id="cl-bat-after" placeholder="e.g. 11.2v" />
+        </div>
+      </div>
+
+      <!-- LAP BATTERY -->
+      <div class="cl-section-title lap" style="margin-top:14px;">⚡ Lap Battery Voltage</div>
+      <div class="cl-voltage-grid">
+        <div class="cl-voltage-box">
+          <label>Lap Battery — Before</label>
+          <input type="text" id="cl-lap-before" placeholder="e.g. 12.6v" />
+        </div>
+        <div class="cl-voltage-box">
+          <label>Lap Battery — After</label>
+          <input type="text" id="cl-lap-after" placeholder="e.g. 11.2v" />
+        </div>
+      </div>
+
+      <!-- MECHANICAL -->
+      <div class="cl-section-title mech" style="margin-top:14px;">🔧 Mechanical</div>
+
+      <div class="cl-mech-row" id="cl-row-motor-align">
+        <div class="cl-mech-name">Motor Alignment</div>
+        <div class="cl-toggle">
+          <button class="cl-toggle-btn" id="cl-pass-motor-align" onclick="setMech('motor-align','pass')">✓</button>
+          <button class="cl-toggle-btn" id="cl-fail-motor-align" onclick="setMech('motor-align','fail')">✗</button>
+        </div>
+      </div>
+
+      <div class="cl-mech-row" id="cl-row-motor-shaft">
+        <div class="cl-mech-name">Motor Shaft</div>
+        <div class="cl-toggle">
+          <button class="cl-toggle-btn" id="cl-pass-motor-shaft" onclick="setMech('motor-shaft','pass')">✓</button>
+          <button class="cl-toggle-btn" id="cl-fail-motor-shaft" onclick="setMech('motor-shaft','fail')">✗</button>
+        </div>
+      </div>
+
+      <div class="cl-mech-row" id="cl-row-power-wiring">
+        <div class="cl-mech-name">Power Wiring</div>
+        <div class="cl-toggle">
+          <button class="cl-toggle-btn" id="cl-pass-power-wiring" onclick="setMech('power-wiring','pass')">✓</button>
+          <button class="cl-toggle-btn" id="cl-fail-power-wiring" onclick="setMech('power-wiring','fail')">✗</button>
+        </div>
+      </div>
+
+      <div class="cl-mech-row" id="cl-row-sensor-wiring">
+        <div class="cl-mech-name">Sensor Wiring Routed</div>
+        <div class="cl-toggle">
+          <button class="cl-toggle-btn" id="cl-pass-sensor-wiring" onclick="setMech('sensor-wiring','pass')">✓</button>
+          <button class="cl-toggle-btn" id="cl-fail-sensor-wiring" onclick="setMech('sensor-wiring','fail')">✗</button>
+        </div>
+      </div>
+
+      <!-- TIMER -->
+      <div class="cl-section-title timer" style="margin-top:14px;">⏱ Session Timer</div>
+      <div class="cl-timer-box">
+        <div class="cl-timer-display" id="cl-timer-display">00:00:00</div>
+        <div class="cl-timer-btns">
+          <button class="cl-timer-btn start" id="cl-timer-start-btn" onclick="timerStartStop()">▶ Start</button>
+          <button class="cl-timer-btn reset" onclick="timerReset()">↺ Reset</button>
+        </div>
+      </div>
+
+      <button class="generate-report-btn" onclick="generateReport()">📦 Generate & Export Report</button>
+
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  
+  <!-- ========== LEFT SECTION: UL SENSOR DATA ========== -->
+  <div class="section">
+    <div class="section-title cyan">🎯 Ultrasonic Sensor Data</div>
+    
+    <div class="sensor-visual-container">
+      <canvas id="sensorVisual" width="300" height="320"></canvas>
+    </div>
+    
+    <div class="sensor-values">
+      <div class="sensor-box">
+        <div class="label">Front Left</div>
+        <div class="value nil" id="sensorFL">NIL</div>
+      </div>
+      <div class="sensor-box">
+        <div class="label">Front Right</div>
+        <div class="value nil" id="sensorFR">NIL</div>
+      </div>
+      <div class="sensor-box">
+        <div class="label">Left</div>
+        <div class="value nil" id="sensorL">NIL</div>
+      </div>
+      <div class="sensor-box">
+        <div class="label">Right</div>
+        <div class="value nil" id="sensorR">NIL</div>
+      </div>
+    </div>
+    
+    <div class="topic-status">
+      <span>Topic: /dis_data</span>
+      <div class="status-dot" id="disDataStatus"></div>
+    </div>
+
+    <!-- EMERGENCY STOP -->
+    <div class="estop-container">
+      <button class="estop-btn" id="estopBtn" onclick="triggerEStop()">
+        <span class="estop-icon">⛔</span>
+        <span class="estop-label">EMERGENCY STOP</span>
+        <span class="estop-sub">TAP TO HALT ALL MOVEMENT</span>
+      </button>
+      <div class="estop-status" id="estopStatus">
+        <span class="estop-status-dot" id="estopDot"></span>
+        <span id="estopStatusText">READY</span>
+      </div>
+      <button class="estop-resume-btn" id="estopResumeBtn" onclick="resumeFromEStop()" style="display:none;">
+        ▶ RESUME OPERATION
+      </button>
+    </div>
+  </div>
+  
+  <!-- ========== CENTER SECTION: ODOM & BOT TF ========== -->
+  <div class="section">
+    <div class="section-title purple">📍 Odometry Data</div>
+    
+    <div class="odom-panel">
+      <div class="odom-grid">
+        <div class="odom-value">
+          <div class="label">X Position</div>
+          <div class="number" id="odomX">0.00</div>
+        </div>
+        <div class="odom-value">
+          <div class="label">Y Position</div>
+          <div class="number" id="odomY">0.00</div>
+        </div>
+        <div class="odom-value">
+          <div class="label">YAW Angle</div>
+          <div class="number" id="odomYaw">0°</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="section-title teal" style="margin-top: 16px;">🧭 Bot Orientation (TF)</div>
+    
+    <div class="bot-tf-container">
+      <canvas id="botTfVisual" width="400" height="350"></canvas>
+    </div>
+
+    <!-- CAMERA FEED -->
+    <div class="section-title pink" style="margin-top: 16px;">📷 RGB Camera Feed</div>
+    <div class="camera-container" id="cameraContainer">
+      <canvas id="cameraCanvas"></canvas>
+      <div class="camera-overlay" id="cameraOverlay">
+        <div class="camera-no-signal">
+          <div class="camera-icon">📷</div>
+          <div class="camera-no-signal-text">No Signal</div>
+          <div class="camera-topic-label">/ascamera_hp60c/camera_publisher/rgb0/image</div>
+        </div>
+      </div>
+      <div class="camera-hud">
+        <div class="camera-hud-left">
+          <span class="camera-badge" id="cameraBadge">● OFFLINE</span>
+        </div>
+        <div class="camera-hud-right">
+          <span class="camera-res" id="cameraRes">—</span>
+          <span class="camera-fps" id="cameraFps">0 FPS</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- ========== RIGHT SECTION: TOPICS & LOG ========== -->
+  <div class="section">
+    <div class="section-title orange">📡 Active ROS Topics</div>
+    
+    <div class="topics-panel">
+      <h4 class="pub-title">📤 Publishing</h4>
+      <div class="topic-list" id="publishingTopics">
+        <div style="color: var(--green); font-size: 10px; opacity:0.5;">Discovering topics...</div>
+      </div>
+      
+      <h4 class="sub-title">📥 Subscribing</h4>
+      <div class="topic-list" id="subscribingTopics">
+        <div style="color: var(--purple); font-size: 10px; opacity:0.5;">Discovering topics...</div>
+      </div>
+    </div>
+    
+    <div class="section-title green" style="margin-top: 16px;">📝 Waypoint Log</div>
+    
+    <div class="log-panel">
+      <div class="log-header">
+        <span>Session Log</span>
+        <div class="log-count" id="logCount">0 entries</div>
+      </div>
+      <div class="log-content" id="logContent">
+        <div style="color: var(--teal); text-align: center; padding: 20px; opacity: 0.5;">
+          Waiting for waypoint data...
+        </div>
+      </div>
+      
+      <button class="export-btn" onclick="exportLog()">📦 Export JSON</button>
+    </div>
+  </div>
+  
+</div>
+
+<script>
+// ========== ROS CONNECTION ==========
+const _ROSLib = window.ROSLIB;
+let ros = new _ROSLib.Ros({ url: 'ws://localhost:8765' });
+
+const rosStatusEl = document.getElementById('rosStatus');
+
+ros.on('connection', function() {
+  console.log('✅ Connected to ROS bridge');
+  rosStatusEl.textContent = 'CONNECTED';
+  rosStatusEl.className = 'status-badge connected';
+  initTopics();
+  discoverTopics();
+});
+
+ros.on('error', function(error) {
+  console.error('❌ ROS connection error:', error);
+  rosStatusEl.textContent = 'ERROR';
+  rosStatusEl.className = 'status-badge disconnected';
+});
+
+ros.on('close', function() {
+  rosStatusEl.textContent = 'DISCONNECTED';
+  rosStatusEl.className = 'status-badge disconnected';
+  setTimeout(() => {
+    if (ros && typeof ros.connect === 'function') {
+      ros.connect('ws://localhost:8765');
+    }
+  }, 3000);
+});
+
+// ========== WAYPOINT LOG ==========
+let waypointLog = [];
+
+function addLogEntry(type, data) {
+  const timestamp = new Date().toLocaleTimeString();
+  const entry = { timestamp, type, data };
+  waypointLog.push(entry);
+  
+  const logContent = document.getElementById('logContent');
+  const logCount = document.getElementById('logCount');
+  
+  // Clear placeholder
+  if (waypointLog.length === 1) {
+    logContent.innerHTML = '';
+  }
+  
+  const entryEl = document.createElement('div');
+  entryEl.className = `log-entry ${type}`;
+  
+  let dataStr = '';
+  if (type === 'waypoint') {
+    if (data.waypoints) {
+      dataStr = `${data.waypoints.length} waypoint(s): `;
+      dataStr += data.waypoints.map(wp => `(${wp.x}, ${wp.y}, ${wp.yaw}°)`).join(', ');
+    }
+  } else if (type === 'cancel') {
+    dataStr = 'Mission cancelled';
+  }
+  
+  entryEl.innerHTML = `
+    <span class="timestamp">[${timestamp}]</span>
+    <span class="type">${type}</span>
+    <span class="data">${dataStr}</span>
+  `;
+  
+  logContent.appendChild(entryEl);
+  logContent.scrollTop = logContent.scrollHeight;
+  
+  logCount.textContent = `${waypointLog.length} entries`;
+}
+
+function exportLog() {
+  const exportData = {
+    session_start: waypointLog.length > 0 ? waypointLog[0].timestamp : new Date().toISOString(),
+    total_entries: waypointLog.length,
+    entries: waypointLog
+  };
+  
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `kiwi_waypoint_log_${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  console.log('📦 Exported', waypointLog.length, 'log entries');
+}
+
+// ========== ROS TOPICS ==========
+let odomSub, waypointsSub, cancelSub, disDataSub;
+
+function initTopics() {
+  try {
+  // Subscribe to odometry
+  odomSub = new _ROSLib.Topic({
+    ros: ros,
+    name: '/odom',
+    messageType: 'nav_msgs/Odometry'
+  });
+  
+  odomSub.subscribe(function(message) {
+    updateOdometry(message);
+  });
+  
+  // Subscribe to waypoints
+  waypointsSub = new _ROSLib.Topic({
+    ros: ros,
+    name: '/kiwi/waypoints',
+    messageType: 'std_msgs/String'
+  });
+  
+  waypointsSub.subscribe(function(message) {
+    try {
+      const data = JSON.parse(message.data);
+      addLogEntry('waypoint', data);
+    } catch (e) {
+      console.error('Failed to parse waypoint data:', e);
+    }
+  });
+  
+  // Subscribe to cancel
+  cancelSub = new _ROSLib.Topic({
+    ros: ros,
+    name: '/kiwi/cancel',
+    messageType: 'std_msgs/String'
+  });
+  
+  cancelSub.subscribe(function(message) {
+    addLogEntry('cancel', { msg: message.data });
+  });
+  
+  // Subscribe to distance data
+  disDataSub = new _ROSLib.Topic({
+    ros: ros,
+    name: '/dis_data',
+    messageType: 'std_msgs/String'
+  });
+  
+  disDataSub.subscribe(function(message) {
+    document.getElementById('disDataStatus').classList.add('active');
+    try {
+      const data = JSON.parse(message.data);
+      updateSensorData(data);
+    } catch (e) {
+      console.error('Failed to parse sensor data:', e);
+    }
+  });
+
+  // Subscribe to RGB camera
+  initCameraFeed(ros);
+
+  console.log('✅ Subscribed to ROS topics');
+  } catch(e) { console.warn('initTopics error:', e); }
+}
+
+// ========== CAMERA FEED ==========
+let cameraFrameCount = 0;
+let cameraFpsTimer   = null;
+let cameraActive     = false;
+
+function initCameraFeed(ros) {
+
+  // FPS counter
+  cameraFpsTimer = setInterval(() => {
+    const fps  = cameraFrameCount;
+    cameraFrameCount = 0;
+    const el = document.getElementById('cameraFps');
+    if (el) { el.textContent = fps + ' FPS'; el.className = fps > 0 ? 'camera-fps live' : 'camera-fps'; }
+  }, 1000);
+
+  // ── Strategy 1: try compressed topic first (JPEG → base64 → img src) ──
+  const compressedTopic = new _ROSLib.Topic({
+    ros: ros,
+    name: '/ascamera_hp60c/camera_publisher/rgb0/image/compressed',
+    messageType: 'sensor_msgs/CompressedImage'
+  });
+
+  let gotCompressed = false;
+
+  compressedTopic.subscribe(function(msg) {
+    gotCompressed = true;
+    // msg.data is already base64-encoded JPEG/PNG
+    const format = (msg.format || 'jpeg').split(';')[0].trim();
+    const src    = 'data:image/' + format + ';base64,' + msg.data;
+    updateCameraImg(src, null, null);
+  });
+
+  // ── Strategy 2: raw Image fallback (rgb8 / bgr8) ──
+  const rawTopic = new _ROSLib.Topic({
+    ros: ros,
+    name: '/ascamera_hp60c/camera_publisher/rgb0/image',
+    messageType: 'sensor_msgs/Image'
+  });
+
+  rawTopic.subscribe(function(msg) {
+    if (gotCompressed) return; // compressed is working, skip raw
+    renderRawFrame(msg);
+  });
+}
+
+// ── Update camera with an image src (compressed path) ──
+function updateCameraImg(src, width, height) {
+  const canvas = document.getElementById('cameraCanvas');
+  if (!canvas) return;
+
+  const img = new Image();
+  img.onload = function() {
+    const w = width  || img.naturalWidth;
+    const h = height || img.naturalHeight;
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width  = w;
+      canvas.height = h;
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+    onCameraFrame(w, h);
+  };
+  img.src = src;
+}
+
+// ── Render raw sensor_msgs/Image ──
+function renderRawFrame(msg) {
+  const canvas = document.getElementById('cameraCanvas');
+  if (!canvas) return;
+
+  const width    = msg.width;
+  const height   = msg.height;
+  const encoding = (msg.encoding || 'rgb8').toLowerCase();
+
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width  = width;
+    canvas.height = height;
+  }
+
+  const ctx = canvas.getContext('2d');
+
+  try {
+    // msg.data comes as base64 string from rosbridge
+    const b64  = msg.data;
+    const bin  = atob(b64);
+    const imgD = ctx.createImageData(width, height);
+    const px   = imgD.data;
+
+    const isBGR  = encoding === 'bgr8';
+    const isMono = encoding === 'mono8' || encoding === '8uc1';
+    const ch     = isMono ? 1 : 3;
+
+    for (let i = 0; i < width * height; i++) {
+      const s = i * ch;
+      const d = i * 4;
+      if (isMono) {
+        const v = bin.charCodeAt(s) & 0xff;
+        px[d] = px[d+1] = px[d+2] = v;
+      } else if (isBGR) {
+        px[d]   = bin.charCodeAt(s+2) & 0xff;
+        px[d+1] = bin.charCodeAt(s+1) & 0xff;
+        px[d+2] = bin.charCodeAt(s)   & 0xff;
+      } else {
+        px[d]   = bin.charCodeAt(s)   & 0xff;
+        px[d+1] = bin.charCodeAt(s+1) & 0xff;
+        px[d+2] = bin.charCodeAt(s+2) & 0xff;
+      }
+      px[d+3] = 255;
+    }
+
+    ctx.putImageData(imgD, 0, 0);
+    onCameraFrame(width, height);
+
+  } catch(e) {
+    console.error('Raw camera decode error:', e);
+  }
+}
+
+// ── Called every time a frame is successfully rendered ──
+function onCameraFrame(width, height) {
+  cameraFrameCount++;
+
+  if (!cameraActive) {
+    cameraActive = true;
+    const overlay = document.getElementById('cameraOverlay');
+    const badge   = document.getElementById('cameraBadge');
+    const resEl   = document.getElementById('cameraRes');
+    if (overlay) overlay.classList.add('hidden');
+    if (badge)   { badge.textContent = '● LIVE'; badge.className = 'camera-badge live'; }
+    if (resEl)   resEl.textContent = width + '×' + height;
+    console.log('📷 Camera live: ' + width + '×' + height);
+  }
+  markPublishingWithTimeout('camera');
+}
+
+// ========== ODOMETRY UPDATE ==========
+let currentYaw = 0;
+
+function updateOdometry(message) {
+  const x = message.pose.pose.position.x;
+  const y = message.pose.pose.position.y;
+  
+  // Convert quaternion to yaw
+  const qz = message.pose.pose.orientation.z;
+  const qw = message.pose.pose.orientation.w;
+  const yaw = Math.atan2(2 * (qw * qz), 1 - 2 * (qz * qz));
+  const yawDeg = (yaw * 180 / Math.PI).toFixed(0);
+  
+  currentYaw = yaw;
+  
+  document.getElementById('odomX').textContent = x.toFixed(2);
+  document.getElementById('odomY').textContent = y.toFixed(2);
+  document.getElementById('odomYaw').textContent = yawDeg + '°';
+  
+  drawBotOrientation();
+}
+
+// ========== SENSOR DATA UPDATE ==========
+function updateSensorData(data) {
+  const flEl = document.getElementById('sensorFL');
+  const frEl = document.getElementById('sensorFR');
+  const lEl = document.getElementById('sensorL');
+  const rEl = document.getElementById('sensorR');
+  
+  if (data.fl !== undefined) {
+    flEl.textContent = data.fl + ' cm';
+    flEl.className = 'value active';
+  }
+  if (data.fr !== undefined) {
+    frEl.textContent = data.fr + ' cm';
+    frEl.className = 'value active';
+  }
+  if (data.left !== undefined) {
+    lEl.textContent = data.left + ' cm';
+    lEl.className = 'value active';
+  }
+  if (data.right !== undefined) {
+    rEl.textContent = data.right + ' cm';
+    rEl.className = 'value active';
+  }
+  
+  drawSensorVisual(data);
+}
+
+// ========== DISCOVER TOPICS ==========
+function discoverTopics() {
+  ros.getTopics(function(topics) {
+    // Get publishers
+    const pubList = document.getElementById('publishingTopics');
+    pubList.innerHTML = '';
+    
+    topics.topics.slice(0, 10).forEach(topic => {
+      const item = document.createElement('div');
+      item.className = 'topic-item';
+      item.textContent = topic;
+      pubList.appendChild(item);
+    });
+    
+    // Get subscribers (same for now)
+    const subList = document.getElementById('subscribingTopics');
+    subList.innerHTML = '';
+    
+    ['/kiwi/waypoints', '/kiwi/cancel', '/odom', '/dis_data'].forEach(topic => {
+      const item = document.createElement('div');
+      item.className = 'topic-item';
+      item.textContent = topic;
+      subList.appendChild(item);
+    });
+  });
+}
+
+// ========== CANVAS DRAWING: SENSOR VISUAL ==========
+let sensorCanvas, sensorCtx, botCanvas, botCtx;
+
+function drawSensorVisual(data = {}) {
+  if (!sensorCtx) return;
+  
+  const ctx = sensorCtx;
+  const w = sensorCanvas.width;
+  const h = sensorCanvas.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  const centerX = w / 2;
+  const centerY = h / 2 + 10; // shift slightly down so triangle is centered visually
+  const triHalfW = 55;  // half-width of flat top (front)
+  const triTop = -45;   // y of top flat edge (front)
+  const triBot = 55;    // y of bottom tip
+
+  ctx.save();
+  ctx.translate(centerX, centerY);
+
+  // --- Triangle robot body ---
+  // Vertices: top-left, top-right, bottom-tip
+  const TLx = -triHalfW, TLy = triTop;
+  const TRx =  triHalfW, TRy = triTop;
+  const BTx = 0,         BTy = triBot;
+
+  ctx.beginPath();
+  ctx.moveTo(TLx, TLy);
+  ctx.lineTo(TRx, TRy);
+  ctx.lineTo(BTx, BTy);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(0, 212, 255, 0.12)';
+  ctx.fill();
+  ctx.strokeStyle = '#00d4ff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Thick front edge (top flat side = FRONT)
+  ctx.beginPath();
+  ctx.moveTo(TLx, TLy);
+  ctx.lineTo(TRx, TRy);
+  ctx.strokeStyle = '#ff6b35';
+  ctx.lineWidth = 6;
+  ctx.stroke();
+
+  // Center label
+  ctx.fillStyle = '#5a7a94';
+  ctx.font = 'bold 11px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('KIWI', 0, triTop + (triBot - triTop) * 0.45);
+
+  // --- Sensor positions ---
+  // FL and FR are above the top-left and top-right corners of the triangle
+  // L is to the left of the left edge midpoint, R to the right
+  const leftMidX = (TLx + BTx) / 2;
+  const leftMidY = (TLy + BTy) / 2;
+  const rightMidX = (TRx + BTx) / 2;
+  const rightMidY = (TRy + BTy) / 2;
+
+  const sensors = [
+    { label: 'FL', x: TLx - 10, y: TLy - 28, value: data.fl, edgeX: TLx, edgeY: TLy },
+    { label: 'FR', x: TRx + 10, y: TRy - 28, value: data.fr, edgeX: TRx, edgeY: TRy },
+    { label: 'L',  x: leftMidX  - 45, y: leftMidY,  value: data.left,  edgeX: leftMidX,  edgeY: leftMidY },
+    { label: 'R',  x: rightMidX + 45, y: rightMidY, value: data.right,  edgeX: rightMidX, edgeY: rightMidY }
+  ];
+
+  sensors.forEach(sensor => {
+    // Sensor box
+    ctx.fillStyle = 'rgba(30, 45, 61, 0.9)';
+    ctx.strokeStyle = sensor.value ? '#4dff91' : '#5a7a94';
+    ctx.lineWidth = 2;
+    ctx.fillRect(sensor.x - 15, sensor.y - 10, 30, 20);
+    ctx.strokeRect(sensor.x - 15, sensor.y - 10, 30, 20);
+
+    // Label
+    ctx.fillStyle = '#ddeeff';
+    ctx.font = '9px Consolas';
+    ctx.textAlign = 'center';
+    ctx.fillText(sensor.label, sensor.x, sensor.y + 4);
+
+    // Dashed beam line to triangle edge
+    if (sensor.value) {
+      ctx.beginPath();
+      ctx.setLineDash([3, 3]);
+      ctx.moveTo(sensor.edgeX, sensor.edgeY);
+      // Go toward sensor box center
+      const dx = sensor.x - sensor.edgeX;
+      const dy = sensor.y - sensor.edgeY;
+      const len = Math.sqrt(dx*dx + dy*dy);
+      ctx.lineTo(sensor.edgeX + dx * 0.65, sensor.edgeY + dy * 0.65);
+      ctx.strokeStyle = 'rgba(77, 255, 145, 0.35)';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  });
+
+  ctx.restore();
+}
+
+// ========== CANVAS DRAWING: BOT ORIENTATION ==========
+function drawBotOrientation() {
+  if (!botCtx) return;
+  
+  const ctx = botCtx;
+  const w = botCanvas.width;
+  const h = botCanvas.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  const centerX = w / 2;
+  const centerY = h / 2;
+  const radius = 120;
+  
+  // Draw compass circle
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+  ctx.strokeStyle = '#1e2d3d';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  
+  // Compass rings
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, radius - 20, 0, 2 * Math.PI);
+  ctx.strokeStyle = 'rgba(0, 212, 255, 0.15)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  
+  // Cardinal directions
+  const directions = [
+    { label: '0° N', angle: -Math.PI / 2, color: '#00d4ff' },
+    { label: '90° E', angle: 0, color: '#5a7a94' },
+    { label: '180° S', angle: Math.PI / 2, color: '#5a7a94' },
+    { label: '270° W', angle: Math.PI, color: '#5a7a94' }
+  ];
+  
+  directions.forEach(dir => {
+    const x = centerX + (radius + 30) * Math.cos(dir.angle);
+    const y = centerY + (radius + 30) * Math.sin(dir.angle);
+    
+    ctx.fillStyle = dir.color;
+    ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(dir.label, x, y + 5);
+    
+    // Tick marks
+    const tx1 = centerX + radius * Math.cos(dir.angle);
+    const ty1 = centerY + radius * Math.sin(dir.angle);
+    const tx2 = centerX + (radius - 10) * Math.cos(dir.angle);
+    const ty2 = centerY + (radius - 10) * Math.sin(dir.angle);
+    
+    ctx.beginPath();
+    ctx.moveTo(tx1, ty1);
+    ctx.lineTo(tx2, ty2);
+    ctx.strokeStyle = dir.color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  });
+  
+  // Draw triangle robot (flat top = front, tip at bottom)
+  const triSize = 42; // half-width of flat top edge
+  const triTopY = -triSize * 0.7;
+  const triBotY = triSize * 1.1;
+
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  ctx.rotate(currentYaw);
+
+  // Triangle body
+  ctx.beginPath();
+  ctx.moveTo(-triSize, triTopY);   // top-left
+  ctx.lineTo( triSize, triTopY);   // top-right
+  ctx.lineTo(0,        triBotY);   // bottom tip
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(0, 212, 255, 0.25)';
+  ctx.fill();
+  ctx.strokeStyle = '#00d4ff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Thick front edge (flat top = FRONT)
+  ctx.beginPath();
+  ctx.moveTo(-triSize, triTopY);
+  ctx.lineTo( triSize, triTopY);
+  ctx.strokeStyle = '#ff6b35';
+  ctx.lineWidth = 6;
+  ctx.stroke();
+
+  // Direction arrow pointing upward (front direction)
+  ctx.beginPath();
+  ctx.moveTo(0, triTopY);
+  ctx.lineTo(0, triTopY - 38);
+  ctx.strokeStyle = '#ff6b35';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  // Arrowhead
+  ctx.beginPath();
+  ctx.moveTo(0, triTopY - 38);
+  ctx.lineTo(-8, triTopY - 26);
+  ctx.lineTo( 8, triTopY - 26);
+  ctx.closePath();
+  ctx.fillStyle = '#ff6b35';
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// ========== INITIAL DRAWS ==========
+function initCanvases() {
+  sensorCanvas = document.getElementById('sensorVisual');
+  botCanvas = document.getElementById('botTfVisual');
+  
+  if (sensorCanvas) {
+    sensorCtx = sensorCanvas.getContext('2d');
+  }
+  if (botCanvas) {
+    botCtx = botCanvas.getContext('2d');
+  }
+
+  try { drawSensorVisual(); } catch(e) { console.error('sensor draw error:', e); }
+  try { drawBotOrientation(); } catch(e) { console.error('bot draw error:', e); }
+
+  setInterval(() => { try { drawBotOrientation(); } catch(e){} }, 100);
+}
+
+// Fire on DOMContentLoaded (doesn't wait for external scripts)
+document.addEventListener('DOMContentLoaded', initCanvases);
+// Also fire on full load as fallback
+window.addEventListener('load', function() {
+  if (!sensorCtx) initCanvases();
+});
+
+// ========== BOT STATUS MODAL ==========
+
+// Topic definitions — swap '—' for real topic names when ready
+const botStatusTopics = [
+  { id: 'fl',      name: 'Front Left Sensor',  topic: '—' },
+  { id: 'fr',      name: 'Front Right Sensor', topic: '—' },
+  { id: 'left',    name: 'Left Sensor',         topic: '—' },
+  { id: 'right',   name: 'Right Sensor',        topic: '—' },
+  { id: 'odom',    name: 'Odometry (X, Y)',     topic: '—' },
+  { id: 'imu',     name: 'IMU Yaw',             topic: '—' },
+  { id: 'camera',  name: 'Camera',              topic: '/ascamera_hp60c/camera_publisher/rgb0/image' },
+  { id: 'gripper', name: 'Gripper',             topic: '—' },
+];
+
+const publishingState = {
+  fl: false, fr: false, left: false, right: false,
+  odom: false, imu: false, camera: false, gripper: false
+};
+
+let gripperState = '—';
+
+// Timeout tracker — marks not-publishing if no message in 3s
+const _pubTimers = {};
+function markPublishing(id, isPublishing, extra) {
+  publishingState[id] = isPublishing;
+  if (id === 'gripper' && extra) gripperState = extra;
+  // Reset camera HUD when it goes offline
+  if (id === 'camera' && !isPublishing && cameraActive) {
+    cameraActive = false;
+    const overlay = document.getElementById('cameraOverlay');
+    const badge   = document.getElementById('cameraBadge');
+    const fpsEl   = document.getElementById('cameraFps');
+    if (overlay) overlay.classList.remove('hidden');
+    if (badge)   { badge.textContent = '● OFFLINE'; badge.className = 'camera-badge'; }
+    if (fpsEl)   { fpsEl.textContent = '0 FPS'; fpsEl.className = 'camera-fps'; }
+  }
+}
+
+function markPublishingWithTimeout(id, extra) {
+  markPublishing(id, true, extra);
+  clearTimeout(_pubTimers[id]);
+  _pubTimers[id] = setTimeout(() => markPublishing(id, false), 3000);
+}
+
+// Hook into existing sensor + odom update flows
+const _origUpdateOdometry = updateOdometry;
+updateOdometry = function(msg) {
+  markPublishingWithTimeout('odom');
+  _origUpdateOdometry(msg);
+};
+
+const _origUpdateSensorData = updateSensorData;
+updateSensorData = function(data) {
+  if (data.fl !== undefined) markPublishingWithTimeout('fl');
+  if (data.fr !== undefined) markPublishingWithTimeout('fr');
+  if (data.left  !== undefined) markPublishingWithTimeout('left');
+  if (data.right  !== undefined) markPublishingWithTimeout('right');
+  _origUpdateSensorData(data);
+};
+
+function refreshBotStatusUI() {
+  botStatusTopics.forEach(t => {
+    const row  = document.getElementById('status-' + t.id);
+    if (!row) return;
+    const pill = row.querySelector('.status-pill');
+    const icon = row.querySelector('.status-icon');
+    const sub  = row.querySelector('.topic-sub');
+    const pub  = publishingState[t.id];
+
+    row.className    = 'status-row ' + (pub ? 'publishing' : 'not-publishing');
+    pill.className   = 'status-pill ' + (pub ? 'publishing' : 'not-publishing');
+    pill.textContent = pub ? 'Publishing' : 'Not Publishing';
+    icon.textContent = pub ? '✓' : '✗';
+    icon.style.color = pub ? 'var(--green)' : 'var(--red)';
+
+    let subText = 'topic: ' + t.topic;
+    if (t.id === 'gripper') subText += '  |  state: ' + gripperState;
+    sub.textContent = subText;
+  });
+
+  document.getElementById('botStatusFooter').textContent =
+    'Last updated: ' + new Date().toLocaleTimeString();
+}
+
+function openBotStatus() {
+  document.getElementById('botStatusModal').classList.add('open');
+  refreshBotStatusUI();
+}
+
+function closeBotStatus() {
+  document.getElementById('botStatusModal').classList.remove('open');
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('botStatusModal')) closeBotStatus();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeBotStatus();
+});
+
+// Auto-refresh every second while modal is open
+setInterval(() => {
+  if (document.getElementById('botStatusModal').classList.contains('open')) {
+    refreshBotStatusUI();
+  }
+}, 1000);
+
+// ========== PRE-FLIGHT CHECKLIST ==========
+
+// --- Timer ---
+let timerSeconds = 0;
+let timerInterval = null;
+let timerRunning = false;
+
+function timerTick() {
+  timerSeconds++;
+  const h = String(Math.floor(timerSeconds / 3600)).padStart(2, '0');
+  const m = String(Math.floor((timerSeconds % 3600) / 60)).padStart(2, '0');
+  const s = String(timerSeconds % 60).padStart(2, '0');
+  const display = document.getElementById('cl-timer-display');
+  display.textContent = `${h}:${m}:${s}`;
+}
+
+function timerStartStop() {
+  const btn     = document.getElementById('cl-timer-start-btn');
+  const display = document.getElementById('cl-timer-display');
+  if (!timerRunning) {
+    timerInterval = setInterval(timerTick, 1000);
+    timerRunning = true;
+    btn.textContent = '⏸ Pause';
+    btn.className = 'cl-timer-btn pause';
+    display.className = 'cl-timer-display running';
+  } else {
+    clearInterval(timerInterval);
+    timerRunning = false;
+    btn.textContent = '▶ Resume';
+    btn.className = 'cl-timer-btn start';
+    display.className = 'cl-timer-display paused';
+  }
+}
+
+function timerReset() {
+  clearInterval(timerInterval);
+  timerRunning = false;
+  timerSeconds = 0;
+  const btn     = document.getElementById('cl-timer-start-btn');
+  const display = document.getElementById('cl-timer-display');
+  display.textContent = '00:00:00';
+  display.className   = 'cl-timer-display';
+  btn.textContent = '▶ Start';
+  btn.className   = 'cl-timer-btn start';
+}
+
+function timerFormatted() {
+  const h = String(Math.floor(timerSeconds / 3600)).padStart(2, '0');
+  const m = String(Math.floor((timerSeconds % 3600) / 60)).padStart(2, '0');
+  const s = String(timerSeconds % 60).padStart(2, '0');
+  return `${h}:${m}:${s}`;
+}
+
+// --- Mechanical checks ---
+const mechItems = ['motor-align', 'motor-shaft', 'power-wiring', 'sensor-wiring'];
+const mechState = {};
+mechItems.forEach(id => mechState[id] = null);
+
+function setMech(id, state) {
+  mechState[id] = state;
+  const row     = document.getElementById('cl-row-' + id);
+  const passBtn = document.getElementById('cl-pass-' + id);
+  const failBtn = document.getElementById('cl-fail-' + id);
+  row.className     = 'cl-mech-row ' + (state === 'pass' ? 'pass' : 'fail');
+  passBtn.className = 'cl-toggle-btn' + (state === 'pass' ? ' active-pass' : '');
+  failBtn.className = 'cl-toggle-btn' + (state === 'fail' ? ' active-fail' : '');
+}
+
+function openChecklist() {
+  document.getElementById('checklistModal').classList.add('open');
+}
+
+function closeChecklist() {
+  document.getElementById('checklistModal').classList.remove('open');
+}
+
+function handleChecklistOverlayClick(e) {
+  if (e.target === document.getElementById('checklistModal')) closeChecklist();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeBotStatus(); closeChecklist(); }
+});
+
+function generateReport() {
+  const report = {
+    generated_at: new Date().toISOString(),
+
+    preflight_checklist: {
+      battery: {
+        before: document.getElementById('cl-bat-before').value || '—',
+        after:  document.getElementById('cl-bat-after').value  || '—',
+      },
+      lap_battery: {
+        before: document.getElementById('cl-lap-before').value || '—',
+        after:  document.getElementById('cl-lap-after').value  || '—',
+      },
+      mechanical: {
+        motor_alignment:      mechState['motor-align']   || 'not checked',
+        motor_shaft:          mechState['motor-shaft']   || 'not checked',
+        power_wiring:         mechState['power-wiring']  || 'not checked',
+        sensor_wiring_routed: mechState['sensor-wiring'] || 'not checked',
+      },
+      session_timer: timerFormatted()
+    },
+
+    waypoint_session: {
+      total_entries: waypointLog.length,
+      entries: waypointLog
+    },
+
+    bot_status_snapshot: Object.fromEntries(
+      Object.entries(publishingState).map(([k, v]) => [k, v ? 'publishing' : 'not publishing'])
+    )
+  };
+
+  const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `kiwi_report_${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+// ========== EMERGENCY STOP ==========
+let estopActive = false;
+let estopTopic  = null;
+
+function getEStopTopic() {
+  if (!estopTopic) {
+    estopTopic = new _ROSLib.Topic({
+      ros: ros,
+      name: '/kiwi/estop',            // ← update this topic name when ready
+      messageType: 'std_msgs/Bool'
+    });
+  }
+  return estopTopic;
+}
+
+function triggerEStop() {
+  if (estopActive) return;
+  estopActive = true;
+
+  // Publish stop command
+  try {
+    getEStopTopic().publish({ data: true });
+    console.warn('🚨 EMERGENCY STOP TRIGGERED');
+  } catch(e) {
+    console.error('E-Stop publish error:', e);
+  }
+
+  // Update UI
+  const btn        = document.getElementById('estopBtn');
+  const statusDiv  = document.getElementById('estopStatus');
+  const statusText = document.getElementById('estopStatusText');
+  const resumeBtn  = document.getElementById('estopResumeBtn');
+
+  btn.classList.add('activated');
+  btn.querySelector('.estop-sub').textContent = 'BOT HALTED — MOVEMENT STOPPED';
+
+  statusDiv.className = 'estop-status stopped';
+  statusText.textContent = 'STOPPED';
+
+  resumeBtn.style.display = 'block';
+
+  // Flash the whole left section red briefly
+  const section = btn.closest('.section');
+  section.style.transition = 'box-shadow 0.1s';
+  section.style.boxShadow  = '0 0 40px rgba(255,0,0,0.6), inset 0 0 30px rgba(255,0,0,0.1)';
+  setTimeout(() => { section.style.boxShadow = ''; }, 800);
+}
+
+function resumeFromEStop() {
+  estopActive = false;
+
+  // Publish resume command
+  try {
+    getEStopTopic().publish({ data: false });
+    console.log('✅ E-Stop cleared — resuming operation');
+  } catch(e) {
+    console.error('E-Stop resume error:', e);
+  }
+
+  const btn        = document.getElementById('estopBtn');
+  const statusDiv  = document.getElementById('estopStatus');
+  const statusText = document.getElementById('estopStatusText');
+  const resumeBtn  = document.getElementById('estopResumeBtn');
+
+  btn.classList.remove('activated');
+  btn.querySelector('.estop-sub').textContent = 'TAP TO HALT ALL MOVEMENT';
+
+  statusDiv.className = 'estop-status';
+  statusText.textContent = 'READY';
+
+  resumeBtn.style.display = 'none';
+}
+
+</script>
+
+</body>
+</html>
