@@ -2133,7 +2133,7 @@ function updateWPList(){
     if(wp.type === 'ACTION'){
       const actionLabels = {detect_color: '🔍 Detect Colour'};
       const label = actionLabels[wp.node] || wp.node;
-      return `<div class="wp-item wp-action" data-idx="${i}" ondblclick="highlightWaypoint(${i})">
+      return `<div class="wp-item wp-action" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragend="onWpDragEnd(event)">
         <div class="wp-num" style="background:#9c27b0; color:#fff;">⚡</div>
         <div class="wp-body"><div class="wp-xy" style="color:#ce93d8;">${label}</div></div>
         <button class="wp-del" onclick="delWP(${i})">✕</button>
@@ -2141,7 +2141,7 @@ function updateWPList(){
     }
     // Anchor items render differently
     if(wp.type === 'ANCHOR'){
-      return `<div class="wp-item wp-anchor" data-idx="${i}" ondblclick="highlightWaypoint(${i})">
+      return `<div class="wp-item wp-anchor" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragend="onWpDragEnd(event)">
         <div class="wp-num" style="background:#2196F3; color:#fff;">📍</div>
         <div class="wp-body"><div class="wp-xy" style="color:#64b4ff;">${wp.anchor_name}</div><div class="wp-yaw" style="color:#ffb464;">${wp.direction.toUpperCase()} | fwd: ${wp.average.toFixed(4)}m | lat: ${wp.distance.toFixed(4)}m</div></div>
         <button class="wp-del" onclick="delWP(${i})">✕</button>
@@ -2152,7 +2152,7 @@ function updateWPList(){
     let circleColor = '#81C784'; // Default light green for 'wp'
     if (wp.createdFrom === 'MOVE') circleColor = '#FDD835'; // Light yellow for MOVE panel
     if (wp.createdFrom === 'P') circleColor = '#FFB74D'; // Light orange for P keypress mark
-    return `<div class="wp-item wp-${wp.type && wp.type.toLowerCase ? wp.type.toLowerCase() : 'wp'}" data-idx="${i}" ondblclick="highlightWaypoint(${i})">
+    return `<div class="wp-item wp-${wp.type && wp.type.toLowerCase ? wp.type.toLowerCase() : 'wp'}" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragend="onWpDragEnd(event)">
       <div class="wp-num" style="background:${circleColor}; color:#fff;">${wpNum}</div>
       <div class="wp-body"><div class="wp-xy">x:${wp.x_m} y:${wp.y_m} m</div><div class="wp-yaw">yaw:${wp.yaw_deg}°</div></div>
       <button class="wp-del" onclick="delWP(${i})">✕</button>
