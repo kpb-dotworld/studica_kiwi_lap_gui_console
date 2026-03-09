@@ -2083,6 +2083,7 @@ function executePressFunc() {
   }
   waypoints.push({
     id: waypoints.length + 1,
+    name: `WP ${waypoints.length + 1}`,
     x_m: _dupX,
     y_m: _dupY,
     yaw_deg: _dupYaw,
@@ -2666,15 +2667,18 @@ function addMoveAsWaypoint(){
   let yaw_deg = Math.round(finalYaw * 180 / Math.PI);
   if (yaw_deg === 360) yaw_deg = 0;
   
+  let moveName = moveDir === 'forward' ? 'FWD' : moveDir === 'backward' ? 'BWD' : moveDir === 'cw' ? 'CW ↻' : 'CCW ↺';
+  
   waypoints.push({
     id: waypoints.length + 1,
+    name: `${moveName} ${distance.toFixed(2)}m`,
     x_m: +finalX.toFixed(4),
     y_m: +finalY.toFixed(4),
     yaw_deg: yaw_deg,
     yaw_rad: finalYaw,
-    createdFrom: 'MOVE',
-    type: rotateMode ? (moveDir === 'cw' ? 'CW' : 'CCW') : (moveDir === 'forward' ? 'FWD' : 'BWD')
+    createdFrom: 'MOVE'
   });
+  console.log('[MOVE] Added waypoint:', moveName, {x: finalX, y: finalY, yaw: yaw_deg});
   showToast('✅ Move waypoint added to list');
   updateWPList();
   renderMap();
@@ -3176,12 +3180,12 @@ function addOriginAsWaypoint(){
   // Add to waypoint list
   waypoints.push({
     id: waypoints.length + 1,
+    name: `GOTO WP ${waypoints.length + 1}`,
     x_m: +x.toFixed(4),
     y_m: +y.toFixed(4),
     yaw_deg: Math.round(yaw),
     yaw_rad: yaw * Math.PI / 180,
-    createdFrom: 'GOTO',
-    type: 'GOTO'
+    createdFrom: 'GOTO'
   });
   
   showToast('✓ GO TO waypoint added');
@@ -4334,7 +4338,7 @@ function addSeqToConditionalCase(seqItem, wpIdx, dropZone) {
   
   const wp = {
     name: waypoints[wpIdx].name,
-    wpIdx: wpIdx,
+    wpId: waypoints[wpIdx].id,  // Store actual waypoint ID, not array index
     lat: waypoints[wpIdx].lat,
     lon: waypoints[wpIdx].lon
   };
@@ -4562,7 +4566,7 @@ function runMission(){
                 // Build sequence for this case
                 switchCases[caseObj.name] = caseObj.wps.map(wp => ({
                   node: 'goto',
-                  target: 'wp' + wp.wpIdx
+                  target: 'wp' + wp.wpId  // Use actual waypoint ID, not array index
                 }));
               }
             });
