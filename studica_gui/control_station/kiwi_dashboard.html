@@ -1052,8 +1052,20 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
     <div class="action-title">⚡ Add Action to Mission</div>
     <div class="action-list">
       <button class="action-item-btn" onclick="addAction('detect_color')">🔍 Detect Colour</button>
+      <button class="action-item-btn" onclick="openAnchorListPopup()">📍 Add Saved Anchor</button>
     </div>
     <button class="action-close-btn" onclick="closeActionPopup()">✕ Cancel</button>
+  </div>
+</div>
+
+<!-- ANCHOR LIST POPUP -->
+<div class="action-overlay" id="anchorListOverlay">
+  <div class="action-box" style="width:380px;max-height:400px;display:flex;flex-direction:column;">
+    <div class="action-title">📍 Saved Anchors</div>
+    <div style="flex:1;overflow-y:auto;margin-bottom:12px;" id="anchorListContainer">
+      <div style="text-align:center;color:var(--muted2);padding:20px;">Loading anchors...</div>
+    </div>
+    <button class="action-close-btn" onclick="closeAnchorListPopup()">✕ Close</button>
   </div>
 </div>
 
@@ -1834,6 +1846,13 @@ function connect(){
       }
       if(d.type==='map_saved'){ showToast('💾 Map saved: '+d.name); send({type:'list_maps'}); }
       if(d.type==='map_save_error') showToast('❌ Save error: '+d.msg);
+      if(d.type==='anchors_list') {
+        console.log('[ANCHOR] Received anchors_list:', d.anchors);
+        displayAnchorList(d.anchors);
+      }
+      if(d.type==='anchor_saved') {
+        showToast(`📍 Anchor saved: ${d.filename}`);
+      }
       if(d.type==='mission_status') updateMissionPanel(d);
       if(d.type==='camera_colour' || d.type==='camera_qr') {
         const cameraBox = document.getElementById('cameraOutput');
@@ -2082,6 +2101,14 @@ function updateWPList(){
         <button class="wp-del" onclick="delWP(${i})">✕</button>
       </div>`;
     }
+    // Anchor items render differently
+    if(wp.type === 'ANCHOR'){
+      return `<div class="wp-item wp-anchor" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragover="onWpDragOver(event)" ondrop="onWpDrop(event)" ondragend="onWpDragEnd(event)">
+        <div class="wp-num" style="background:#2196F3; color:#fff;">📍</div>
+        <div class="wp-body"><div class="wp-xy" style="color:#64b4ff;">${wp.anchor_name}</div><div class="wp-yaw" style="color:#ffb464;">${wp.direction.toUpperCase()} | fwd: ${wp.average.toFixed(4)}m | lat: ${wp.distance.toFixed(4)}m</div></div>
+        <button class="wp-del" onclick="delWP(${i})">✕</button>
+      </div>`;
+    }
     wpNum++;
     // Determine circle color based on creation source
     let circleColor = '#81C784'; // Default light green for 'wp'
@@ -2206,6 +2233,50 @@ function addAction(node){
   updateWPList();
   renderMap();
   showToast('⚡ Action added: ' + node);
+}
+
+// ── ANCHOR LIST POPUP ─────────────────────────────────────────────────────────
+function openAnchorListPopup(){
+  closeActionPopup();
+  document.getElementById('anchorListOverlay').classList.add('open');
+  // Request anchor list from server
+  send({type: 'list_anchors'});
+}
+
+function closeAnchorListPopup(){
+  document.getElementById('anchorListOverlay').classList.remove('open');
+}
+
+function displayAnchorList(anchors){
+  const container = document.getElementById('anchorListContainer');
+  
+  if(!anchors || anchors.length === 0){
+    container.innerHTML = '<div style="text-align:center;color:var(--muted2);padding:20px;">No saved anchors yet</div>';
+    return;
+  }
+  
+  let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+  anchors.forEach((anchor, idx) => {
+    const displayStr = `${anchor.direction.toUpperCase()} - Distance: ${anchor.distance.toFixed(4)}m, Avg: ${anchor.average.toFixed(4)}m`;
+    html += `<button class="action-item-btn" onclick="addAnchorToWaypoints('${anchor.name}', '${anchor.direction}', ${anchor.distance}, ${anchor.average})" style="text-align:left;">📍 ${anchor.name}<br><span style="font-size:9px;color:var(--muted2);">${displayStr}</span></button>`;
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function addAnchorToWaypoints(name, direction, distance, average){
+  waypoints.push({
+    id: waypoints.length + 1,
+    type: 'ANCHOR',
+    anchor_name: name,
+    direction: direction,
+    distance: distance,
+    average: average
+  });
+  closeAnchorListPopup();
+  updateWPList();
+  renderMap();
+  showToast(`📍 Anchor '${name}' added to waypoints`);
 }
 
 // ── SAVE ANCHOR POPUP ─────────────────────────────────────────────────────────
@@ -3898,6 +3969,9 @@ function runMission(){
   const children = waypoints.map(w => {
     if(w.type === 'ACTION'){
       return {node: w.node};
+    }
+    if(w.type === 'ANCHOR'){
+      return {node: 'anchor', forward: w.average, lateral: w.distance};
     }
     return {node: 'goto', x: w.x_m, y: w.y_m, yaw: w.yaw_deg};
   });

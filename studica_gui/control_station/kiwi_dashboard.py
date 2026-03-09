@@ -160,6 +160,8 @@ def _handle_ws(client: _WSClient):
                         _send_waypoints_data(client, msg.get("name",""))
                     elif t == "save_anchor":
                         _save_anchor_from_ws(msg)
+                    elif t == "list_anchors":
+                        _send_anchors_list(client)
                     elif t == "estop":
                         with state_lock:
                             shared_state["estop"] = bool(msg.get("data", False))
@@ -387,6 +389,7 @@ def _send_waypoints_data(client: _WSClient, name: str):
 # ═══════════════════════════════════════════════════════════════════════════════
 def _save_anchor_from_ws(msg):
     """Receive anchor data from browser and save to JSON file."""
+    import datetime
     try:
         direction = msg.get("direction", "unknown")
         distance = float(msg.get("distance", 0.0))
@@ -395,7 +398,6 @@ def _save_anchor_from_ws(msg):
         
         # If no filename provided, create one with timestamp
         if not filename:
-            import datetime
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"anchor_{direction}_{timestamp}"
         
