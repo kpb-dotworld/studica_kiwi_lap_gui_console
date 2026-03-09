@@ -1335,9 +1335,9 @@ function renderMap(){
     if (typeof missionCurrentIdx === 'number' && missionCurrentIdx < waypoints.length) {
       idx = missionCurrentIdx;
     }
-    // Find next spatial waypoint (skip ACTION nodes)
+    // Find next spatial waypoint (skip ACTION and ANCHOR nodes)
     let nextSpatialIdx = idx;
-    while (nextSpatialIdx < waypoints.length && waypoints[nextSpatialIdx].type === 'ACTION') {
+    while (nextSpatialIdx < waypoints.length && (waypoints[nextSpatialIdx].type === 'ACTION' || waypoints[nextSpatialIdx].type === 'ANCHOR')) {
       nextSpatialIdx++;
     }
     const rp = robotToCanvas();
@@ -1369,9 +1369,9 @@ function renderMap(){
       mctx.restore();
     }
   }
-  // Dotted lines between waypoints (skip ACTION nodes)
+  // Dotted lines between waypoints (skip ACTION and ANCHOR nodes)
   {
-    const spatialWPs = waypoints.filter(w => w.type !== 'ACTION');
+    const spatialWPs = waypoints.filter(w => w.type !== 'ACTION' && w.type !== 'ANCHOR');
     if (spatialWPs.length > 1) {
     mctx.save();
     mctx.setLineDash([7, 7]);
@@ -1415,7 +1415,7 @@ function renderMap(){
   // waypoints: draw robot model at each waypoint with reduced opacity and sequence number
   let mapWpNum = 0;
   waypoints.forEach((wp,i)=>{
-    if(wp.type === 'ACTION') return; // skip ACTION nodes on map
+    if(wp.type === 'ACTION' || wp.type === 'ANCHOR') return; // skip ACTION and ANCHOR nodes on map
     mapWpNum++;
     const p=wpToCanvas(wp); if(!p) return;
     // Draw robot model - screen heading = originYaw_rad - wp.yaw_rad (yaw CW positive)
@@ -2130,8 +2130,8 @@ function highlightWaypoint(idx) {
     highlightTimeout = null;
   }
   
-  if(waypoints[idx].type === 'ACTION') {
-    highlightedWpIdx = null; // Don't highlight ACTION nodes
+  if(waypoints[idx].type === 'ACTION' || waypoints[idx].type === 'ANCHOR') {
+    highlightedWpIdx = null; // Don't highlight ACTION or ANCHOR nodes
     highlightStartTime = null;
   } else {
     highlightedWpIdx = highlightedWpIdx === idx ? null : idx; // Toggle highlight
@@ -2430,7 +2430,7 @@ function saveAnchor(direction) {
 // Helper: find the last real spatial waypoint (skips ACTION nodes)
 function lastSpatialWP(){
   for(let i = waypoints.length - 1; i >= 0; i--){
-    if(waypoints[i].type !== 'ACTION') return waypoints[i];
+    if(waypoints[i].type !== 'ACTION' && waypoints[i].type !== 'ANCHOR') return waypoints[i];
   }
   return null;
 }
@@ -2876,7 +2876,7 @@ mapCanvas.addEventListener('dblclick', e=>{
   // Check if double-click is near any waypoint
   for(let i = 0; i < waypoints.length; i++){
     const wp = waypoints[i];
-    if(wp.type === 'ACTION') continue; // skip ACTION nodes
+    if(wp.type === 'ACTION' || wp.type === 'ANCHOR') continue; // skip ACTION and ANCHOR nodes
     const p = wpToCanvas(wp);
     console.log('[DBLCLICK] WP', i, 'canvas pos:', p ? `(${p.x.toFixed(1)},${p.y.toFixed(1)})` : 'null', 'odom:', wp.x_m.toFixed(2), wp.y_m.toFixed(2));
     if(!p) continue;
