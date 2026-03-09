@@ -40,6 +40,21 @@ header{display:flex;align-items:center;justify-content:space-between;padding:12p
 .ws-badge.conn{color:#ffcc00;border-color:#ffcc00;background:rgba(255,204,0,.07);}
 .hdr-btn{font-size:11px;padding:4px 12px;border:1px solid var(--accent2);color:var(--accent2);background:rgba(255,107,53,.08);cursor:pointer;border-radius:3px;font-family:inherit;letter-spacing:.5px;transition:all .15s;}
 .hdr-btn:hover{background:rgba(255,107,53,.2);}
+.estop-btn{font-size:13px;font-weight:700;padding:8px 20px;border:2px solid var(--red);color:#fff;background:var(--red);cursor:pointer;border-radius:4px;font-family:inherit;letter-spacing:1px;transition:all .15s;text-transform:uppercase;flex:0 0 auto;}
+.estop-btn:hover{background:rgba(255,68,85,.9);border-color:#fff;}
+.estop-btn.active{background:#8b0000;border-color:#8b0000;color:#fff;}
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.3; }
+}
+.estop-circle {
+  display: inline-block;
+  animation: none;
+}
+.estop-btn.active .estop-circle {
+  animation: blink 0.6s infinite;
+}
+.hdr-center{flex:1;display:flex;justify-content:center;align-items:center;}
 .p-tip{font-size:1em;color:var(--muted2);}
 .p-tip b{color:var(--accent2);}
 .dbg{padding:4px 18px;background:#060d16;border-bottom:1px solid var(--border);font-size:var(--font-size-small);color:var(--muted2);display:flex;gap:18px;flex-shrink:0;}
@@ -85,10 +100,12 @@ canvas{display:block;image-rendering:pixelated;max-width:100vw;max-height:90vh;}
 .leg{font-size:10px;color:var(--muted2);}.leg b{margin-right:4px;}
 
 /* ── RIGHT PANEL ── */
-.right{width:260px;background:var(--panel);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;}
+.right{width:260px;background:var(--panel);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;justify-content:flex-start;}
+.right > .sec:nth-child(-n+3){flex-shrink:0;}
+.right-spacer{flex:1;min-height:0;}
 .right::-webkit-scrollbar{width:3px;}.right::-webkit-scrollbar-thumb{background:var(--border);}
 .sec{padding:8px 10px;border-bottom:1px solid var(--border);}
-.sec-title{font-size:0.95em;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:7px;font-weight:700;}
+.sec-title{font-size:0.95em;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:7px;font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:8px;}
 .odom-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;}
 .obox{background:var(--panel2);border:1px solid var(--border);border-radius:4px;padding:5px 6px;text-align:center;}
 .obox .k{font-size:var(--font-size-tiny);color:var(--muted2);letter-spacing:.5px;}.obox .n{font-size:1.2em;color:var(--accent);font-weight:700;margin-top:2px;}
@@ -104,6 +121,10 @@ canvas{display:block;image-rendering:pixelated;max-width:100vw;max-height:90vh;}
 .rot-btn{width:44px;height:44px;border-radius:50%;background:var(--panel2);border:2px solid var(--border);color:var(--accent);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s;user-select:none;}
 .rot-btn:hover{border-color:var(--accent);background:rgba(0,212,255,.1);}
 .rot-btn:active,.rot-btn.held{background:rgba(0,212,255,.18);border-color:var(--accent);}
+.joy-toggle-btn{width:44px;height:44px;border-radius:50%;background:var(--panel2);border:2px solid var(--border);color:var(--accent);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s;user-select:none;position:absolute;bottom:8px;left:8px;}
+.joy-toggle-btn:hover{border-color:var(--accent);background:rgba(0,212,255,.1);}
+.joy-toggle-btn.disabled{color:var(--red);border-color:var(--muted2);background:rgba(255,68,85,.08);}
+.joy-toggle-btn.disabled:hover{border-color:var(--red);background:rgba(255,68,85,.15);}
 .rot-lbl{font-size:8px;color:var(--muted);letter-spacing:1px;}
 .spd-row{display:flex;align-items:center;gap:8px;margin-top:7px;}
 .spd-row label{font-size:9px;color:var(--muted2);white-space:nowrap;}
@@ -112,9 +133,12 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .cv-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:5px;}
 .cvbox{background:var(--panel2);border:1px solid var(--border);border-radius:3px;padding:4px 5px;text-align:center;}
 .cvbox .k{font-size:8px;color:var(--muted2);}.cvbox .n{font-size:12px;color:var(--accent2);font-weight:700;}
-.orig-btn{width:100%;padding:7px 10px;background:transparent;border:1px solid var(--border);color:var(--accent2);font-family:inherit;font-size:11px;cursor:pointer;border-radius:3px;transition:all .15s;text-align:left;}
+.orig-btn{width:100%;padding:7px 10px;background:transparent;border:1px solid var(--border);color:var(--accent2);font-family:inherit;font-size:11px;cursor:pointer;border-radius:3px;transition:all .15s;text-align:center;}
 .orig-btn:hover{border-color:var(--accent2);background:rgba(255,107,53,.08);}
 .orig-btn.on{border-color:var(--accent2);background:rgba(255,107,53,.16);color:#fff;}
+.reset-btn{padding:6px 14px;background:transparent;border:1.5px solid var(--red);color:var(--red);font-family:inherit;font-size:12px;cursor:pointer;border-radius:3px;transition:all .15s;text-align:center;letter-spacing:.5px;font-weight:600;white-space:nowrap;flex-shrink:0;}
+.reset-btn:hover{border-color:var(--red);background:rgba(255,68,85,.12);}
+.reset-btn:active{background:rgba(255,68,85,.25);}
 .orig-info{margin-top:5px;font-size:10px;color:var(--muted2);}.orig-info b{color:var(--accent2);}
 
 /* origin orientation selector */
@@ -124,14 +148,25 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .obtn{padding:5px 2px;background:var(--panel2);border:1px solid var(--border);color:var(--muted2);font-family:inherit;font-size:10px;cursor:pointer;border-radius:3px;text-align:center;transition:all .15s;line-height:1.3;}
 .obtn:hover{border-color:var(--accent2);color:var(--accent2);}
 .obtn.sel{background:rgba(255,107,53,.18);border-color:var(--accent2);color:var(--accent2);font-weight:700;}
-.wp-list{max-height:220px;overflow-y:auto;margin-top:2px;}
+.wp-list{max-height:none;flex:1;overflow-y:auto;margin-top:2px;}
 .wp-list::-webkit-scrollbar{width:3px;}.wp-list::-webkit-scrollbar-thumb{background:var(--border);}
 .wp-item{display:flex;align-items:center;gap:10px;padding:8px 12px;margin-bottom:6px;background:var(--panel2);border:1px solid var(--border);border-radius:4px;font-size:1em;}
 .wp-num{width:22px;height:22px;border-radius:50%;background:var(--accent2);color:#fff;font-size:1em;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.wp-item.wp-wp { background: #ff980022; border-color: #ff9800; }
-.wp-item.wp-move { background: #2196f322; border-color: #2196f3; }
-.wp-item.wp-wp .wp-num { background: #ff9800; }
-.wp-item.wp-move .wp-num { background: #2196f3; }
+
+/* Action button */
+.action-btn{font-size:13px;color:#9c27b0;background:none;border:1.2px solid #9c27b0;cursor:pointer;font-family:inherit;padding:5px 14px;border-radius:4px;transition:all .15s;letter-spacing:.5px;}
+.action-btn:hover{background:rgba(156,39,176,.12);}
+
+/* Action popup */
+.action-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1200;display:none;align-items:center;justify-content:center;}
+.action-overlay.open{display:flex;}
+.action-box{background:var(--panel);border:1px solid #9c27b0;border-radius:8px;padding:20px 24px;width:300px;box-shadow:0 4px 24px rgba(0,0,0,.7);text-align:center;}
+.action-title{font-size:12px;color:#9c27b0;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;font-weight:700;}
+.action-list{display:flex;flex-direction:column;gap:8px;}
+.action-item-btn{padding:12px 16px;font-family:inherit;font-size:12px;cursor:pointer;border-radius:4px;border:1px solid #9c27b0;background:rgba(156,39,176,.1);color:#ce93d8;font-weight:600;letter-spacing:.5px;transition:all .15s;text-align:left;}
+.action-item-btn:hover{background:rgba(156,39,176,.25);color:#fff;}
+.action-close-btn{margin-top:12px;padding:7px;background:transparent;border:1px solid var(--border);color:var(--muted2);font-family:inherit;font-size:11px;cursor:pointer;border-radius:3px;width:100%;}
+.action-close-btn:hover{border-color:var(--red);color:var(--red);}
 .wp-body{flex:1;}.wp-xy{color:var(--accent);font-size:1em;}.wp-yaw{font-size:1em;color:var(--green);}
 .wp-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1em;padding:2px 3px;transition:color .15s;}
 .wp-del:hover{color:var(--red);}
@@ -160,8 +195,21 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .mp-state.error   {color:var(--red);border:1px solid var(--red);background:rgba(255,68,85,.07);}
 .clr-btn{font-size:9px;color:var(--red);background:none;border:1px solid transparent;cursor:pointer;font-family:inherit;padding:2px 6px;border-radius:3px;transition:all .15s;}
 .clr-btn:hover{border-color:var(--red);background:rgba(255,68,85,.1);}
-.addwp-btn{font-size:13px;color:var(--green);background:none;border:1.2px solid var(--green);cursor:pointer;font-family:inherit;padding:5px 14px;border-radius:4px;transition:all .15s;letter-spacing:.5px;}
-.addwp-btn:hover{background:rgba(77,255,145,.12);}
+.addwp-btn{font-size:13px;color:var(--accent);background:none;border:1.2px solid var(--accent);cursor:pointer;font-family:inherit;padding:5px 14px;border-radius:4px;transition:all .15s;letter-spacing:.5px;}
+.addwp-btn:hover{background:rgba(0,212,255,.12);}
+/* Action button */
+.action-btn{font-size:13px;color:#9c27b0;background:none;border:1.2px solid #9c27b0;cursor:pointer;font-family:inherit;padding:5px 14px;border-radius:4px;transition:all .15s;letter-spacing:.5px;}
+.action-btn:hover{background:rgba(156,39,176,.12);}
+/* Action popup */
+.action-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1200;display:none;align-items:center;justify-content:center;}
+.action-overlay.open{display:flex;}
+.action-box{background:var(--panel);border:1px solid #9c27b0;border-radius:8px;padding:20px 24px;width:300px;box-shadow:0 4px 24px rgba(0,0,0,.7);text-align:center;}
+.action-title{font-size:12px;color:#9c27b0;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;font-weight:700;}
+.action-list{display:flex;flex-direction:column;gap:8px;}
+.action-item-btn{padding:12px 16px;font-family:inherit;font-size:12px;cursor:pointer;border-radius:4px;border:1px solid #9c27b0;background:rgba(156,39,176,.1);color:#ce93d8;font-weight:600;letter-spacing:.5px;transition:all .15s;text-align:left;}
+.action-item-btn:hover{background:rgba(156,39,176,.25);}
+.action-close-btn{margin-top:12px;padding:8px 16px;font-family:inherit;font-size:11px;cursor:pointer;border-radius:4px;border:1px solid #555;background:rgba(85,85,85,.1);color:#aaa;letter-spacing:.5px;transition:all .15s;}
+.action-close-btn:hover{background:rgba(85,85,85,.2);}
 /* WAYPOINT MODE CHOICE popup */
 .wpmode-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1200;display:none;align-items:center;justify-content:center;}
 .wpmode-overlay.open{display:flex;}
@@ -201,6 +249,38 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .popup-btn.close:hover{background:rgba(255,68,85,.18);}
 @keyframes pFlash{0%,100%{outline:none}40%{outline:3px solid var(--green);outline-offset:0px;}}
 .p-flash{animation:pFlash .45s ease;}
+
+/* Move Command Modal */
+.move-modal-overlay{position:fixed;right:10px;bottom:10px;background:transparent;z-index:1050;display:none;flex-direction:column;align-items:center;justify-content:center;width:240px;height:auto;}
+.move-modal-overlay.open{display:flex;}
+.move-modal-box{background:var(--panel);border:1px solid var(--accent);border-radius:8px;padding:14px;width:100%;box-shadow:0 4px 32px rgba(0,0,0,.8);position:relative;}
+
+/* Origin Modal */
+.origin-modal-overlay{position:fixed;right:10px;bottom:10px;background:transparent;z-index:1050;display:none;flex-direction:column;align-items:center;justify-content:center;width:240px;height:auto;}
+.origin-modal-overlay.open{display:flex;}
+.origin-modal-box{background:var(--panel);border:1px solid var(--accent2);border-radius:8px;padding:14px;width:100%;box-shadow:0 4px 32px rgba(0,0,0,.8);position:relative;}
+.origin-modal-title{font-size:13px;color:var(--accent2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;font-weight:700;}
+.origin-modal-close{position:absolute;top:8px;right:8px;background:none;border:none;color:var(--red);font-size:20px;cursor:pointer;padding:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;transition:color .15s;}
+.origin-modal-close:hover{color:#ff6655;}
+.origin-modal-content{background:var(--panel2);border:1px solid var(--border);border-radius:4px;padding:9px;text-align:left;margin-bottom:9px;}
+.origin-modal-input{display:flex;align-items:center;gap:4px;margin-bottom:8px;}
+.origin-modal-input label{font-size:9px;color:var(--muted2);width:50px;flex-shrink:0;}
+.origin-modal-input input{flex:1;background:#21262d;border:1px solid var(--border);color:var(--accent);font-family:inherit;font-size:11px;padding:4px 6px;border-radius:3px;min-width:0;}
+.origin-modal-actions{display:flex;gap:5px;}
+.origin-modal-actions button{flex:1;padding:7px;font-family:inherit;font-size:10px;cursor:pointer;border-radius:3px;border:1px solid var(--accent);background:rgba(0,212,255,.12);color:var(--accent);}
+
+.move-modal-close{position:absolute;top:8px;right:8px;background:none;border:none;color:var(--red);font-size:20px;cursor:pointer;padding:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;transition:color .15s;}
+.move-modal-close:hover{color:#ff6655;}
+.move-modal-title{font-size:13px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;font-weight:700;}
+.move-modal-buttons{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;margin-bottom:10px;}
+.move-modal-buttons .move-cmd-btn{padding:7px 5px;font-size:10px;}
+.move-modal-content{background:var(--panel2);border:1px solid var(--border);border-radius:4px;padding:9px;text-align:center;margin-bottom:9px;}
+.move-modal-dir{font-size:12px;color:var(--muted2);margin-bottom:6px;}
+.move-modal-input{display:flex;align-items:center;gap:4px;margin-bottom:6px;}
+.move-modal-input label{font-size:10px;color:var(--muted2);white-space:nowrap;flex-shrink:0;}
+.move-modal-input input{flex:1;background:#21262d;border:1px solid var(--border);color:var(--accent);font-family:inherit;font-size:14px;padding:6px 8px;border-radius:3px;min-width:0;}
+.move-modal-actions{display:flex;gap:5px;}
+.move-modal-actions button{flex:1;padding:10px;font-family:inherit;font-size:12px;cursor:pointer;border-radius:3px;border:1px solid var(--accent);background:rgba(0,212,255,.12);color:var(--accent);}
 
 /* ═══════════════════════════════════════════════
    MAP EDITOR MODAL
@@ -267,20 +347,34 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .dir-popup .dp-cancel{flex:1;padding:6px;background:transparent;border:1px solid var(--border);color:var(--muted2);font-family:inherit;font-size:11px;cursor:pointer;border-radius:3px;}
 .dir-popup .dp-cancel:hover{border-color:var(--red);color:var(--red);}
 
+/* Move command buttons - transparent by default, colored when active */
+.move-cmd-btn{background:transparent;border:1.5px solid var(--muted2);color:var(--muted2);padding:8px 12px;border-radius:4px;cursor:pointer;font-family:inherit;font-size:13px;transition:all .15s;}
+.move-cmd-btn:hover{border-color:var(--muted);color:var(--muted);}
+.move-cmd-btn.forward-active{background:rgba(0,212,255,.2);border-color:var(--accent);color:var(--accent);font-weight:700;}
+.move-cmd-btn.backward-active{background:rgba(0,212,255,.2);border-color:var(--accent);color:var(--accent);font-weight:700;}
+.move-cmd-btn.cw-active{background:rgba(0,212,255,.2);border-color:var(--accent);color:var(--accent);font-weight:700;}
+.move-cmd-btn.ccw-active{background:rgba(0,212,255,.2);border-color:var(--accent);color:var(--accent);font-weight:700;}
+
 /* anchor point dot */
 .anchor-hint{font-size:9px;color:var(--accent2);margin-top:4px;letter-spacing:.5px;}
+/* Right panel tabs */
+.right-tabbar{display:flex;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border);align-items:center}
+.tab-btn{flex:1;padding:6px;border-radius:4px;background:transparent;border:1px solid var(--border);color:var(--muted2);cursor:pointer;font-family:inherit}
+.tab-btn.active{background:var(--panel2);border-color:var(--accent);color:var(--accent);}
 </style>
 </head>
 <body>
 
 <!-- ═══ HEADER ═══════════════════════════════════════════════════════════════ -->
 <header>
-  <div class="logo">Cooper<b>Bot</b> Dashboard</div>
+  <div class="logo">Team India Dashboard</div>
+  <div class="hdr-center">
+    <button class="estop-btn" id="estopBtn" onclick="toggleEStop()"><span class="estop-circle">🔴</span> E - STOP</button>
+  </div>
   <div class="hdr-right">
     <button class="hdr-btn" onclick="openEditor()">🗺 Map Editor</button>
-    <button class="hdr-btn" style="margin-left:8px;" onclick="loadM1Map()">M1</button>
+    <button class="hdr-btn" style="margin-left:8px;" onclick="clearCache()">🗑 Clear</button>
     <div id="homeMapLibrary" style="margin-left:18px;"></div>
-    <div class="p-tip">Press <b>[P]</b> to mark waypoint</div>
     <div class="ws-badge off" id="wsBadge">● OFFLINE</div>
   </div>
 </header>
@@ -292,11 +386,21 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
   &nbsp;|&nbsp;map:<span id="dbgMap">none</span>
 </div>
 
-<!-- ═══ MAIN ══════════════════════════════════════════════════════════════════ -->
+<!-- ═══ MAIN LAYOUT ── -->
 <div class="main">
 
 
   <div class="wp-sidebar" style="width:240px;min-width:200px;max-width:280px;background:var(--panel2);display:flex;flex-direction:column;gap:0;box-shadow:1px 0 0 var(--border);">
+    <div class="sec" style="border:none;border-bottom:1px solid var(--border);background:var(--panel);">
+      <div class="sec-title">Map Origin (0,0)</div>
+      <button class="orig-btn" id="origBtn" onclick="toggleOrigin()">🎯 Set Origin</button>
+
+      <!-- orientation selector — shown after origin is set -->
+      <div class="orig-orient" id="origOrient" style="display:none">
+        <!-- Orientation selector removed: use IJKL or arrow keys to set direction -->
+      </div>
+    </div>
+
     <div class="sec" style="border:none;border-bottom:1px solid var(--border);background:var(--panel);">
       <div style="display:flex;align-items:center;justify-content:space-between;">
         <div style="font-size:1em;color:var(--accent2);font-weight:700;">Error: <input id="errorInput" type="number" step="0.001" value="0.000" style="width: 60px; text-align: center; background: var(--panel2); border: 1px solid var(--border); color: var(--accent); font-family: inherit; font-size: 1em; padding: 2px 4px; border-radius: 3px;"> m</div>
@@ -315,7 +419,6 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
         }
       }
       </script>
-      <div style="font-size:10px;color:var(--muted2);margin-top:2px;">Avg. odom error (X, 1m fwd/bwd)</div>
     </div>
 
     <script>
@@ -325,21 +428,21 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
       errorVal.textContent = parseFloat(errorInput.value).toFixed(3);
     }
     </script>
-    <div class="sec" style="border:none;border-bottom:1px solid var(--border);">
-      <div class="sec-title" style="margin:0;margin-bottom:8px;">Waypoints [P]</div>
-      <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
-        <button class="addwp-btn" onclick="selectWaypointMode()">WP</button>
-        <button class="addwp-btn" onclick="selectMoveMode()">MOVE</button>
-        <button class="addwp-btn" onclick="moveToOrigin()" style="background:var(--accent);color:#fff;">Origin</button>
-        <button class="clr-btn" onclick="clearWP()" style="margin-left:auto;">✕ Clear</button>
+    <div class="sec" style="border:none;border-bottom:1px solid var(--border);display:flex;flex-direction:column;min-height:0;">
+      <div class="sec-title" style="margin:0;margin-bottom:8px;">WAYPOINTS [P]</div>
+      <button class="action-btn" onclick="openActionPopup()" style="width:100%;margin-bottom:6px;">⚡ Action</button>
+      <button class="action-btn" onclick="openSaveAnchorPopup()" style="width:100%;margin-bottom:6px;color:#4dff91;border-color:#4dff91;">📍 Save Anchor</button>
+      <button class="addwp-btn" onclick="handleQKeyPress()" style="width:100%;margin-bottom:8px;">WP</button>
+      <div style="display:flex;gap:4px;align-items:center;justify-content:flex-end;margin-bottom:8px;">
+        <button class="clr-btn" onclick="clearWP()">✕ Clear</button>
       </div>
       <script>
       function moveToOrigin() {
         // Add a waypoint at (0,0,0) with conditional error logic
         const targetX = 0.0;
         let wpX = targetX;
-        // Get previous waypoint X if exists
-        const prevWpX = waypoints.length > 0 ? waypoints[waypoints.length - 1].x_m : null;
+        // Get previous spatial waypoint X if exists (skip ACTION nodes)
+        const _lsw = lastSpatialWP(); const prevWpX = _lsw ? _lsw.x_m : null;
         // If prevX < newX OR prevX < odom x, subtract error; otherwise add error
         if ((prevWpX !== null && (prevWpX < targetX || prevWpX < robot.x)) || (prevWpX === null && targetX < robot.x)) {
           wpX = targetX - globalErrorValue;
@@ -366,27 +469,21 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
         <div class="wp-empty">No waypoints.<br>Drive robot → press <b>[P]</b> or <b>ADD WP</b></div>
       </div>
     </div>
+    <div style="flex:1;"></div>
     <div class="sec" style="border:none;border-bottom:1px solid var(--border);">
       <button class="run-btn" id="runBtn" onclick="runMission()">▶ RUN WAYPOINTS</button>
-        <button class="run-btn" id="visualizeBtn" style="margin-top:7px;" onclick="startWaypointSimulation()">👁️ Visualize</button>
-        <button class="stop-btn" id="stopSimBtn" style="margin-top:7px;display:none;" onclick="stopWaypointSimulation()">⏹ Stop Simulation</button>
+        <button class="run-btn" id="visualizeBtn" style="margin-top:7px;background:rgba(0,212,255,.12);border-color:var(--accent);color:var(--accent);" onclick="toggleWaypointSimulation()">👁️ Visualize</button>
       <!-- Waypoint Simulation Logic -->
       <script>
       let simActive = false, simPaused = false, simIdx = 0, simRobot = null, simTimer = null;
+      let simEditMode = false;  // Edit mode while paused
 
       function toggleWaypointSimulation() {
         if (!simActive && !simPaused) {
           startWaypointSimulation();
-        } else if (simActive && !simPaused) {
-          // Pause immediately
-          simPaused = true;
-          if (simTimer) clearTimeout(simTimer);
-          document.getElementById('visualizeBtn').textContent = '▶ Resume';
-        } else if (simPaused) {
-          // Resume
-          simPaused = false;
-          document.getElementById('visualizeBtn').textContent = '⏸ Pause';
-          stepWaypointSimulation();
+        } else if (simActive) {
+          // Cancel and exit visualization
+          stopWaypointSimulation();
         }
       }
       function startWaypointSimulation() {
@@ -403,8 +500,10 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
           y: window._simWaypoints[0].y_m,
           yaw: window._simWaypoints[0].yaw_rad
         };
-        document.getElementById('visualizeBtn').textContent = '⏸ Pause';
-        document.getElementById('stopSimBtn').style.display = '';
+        document.getElementById('visualizeBtn').textContent = '✕ Cancel';
+        document.getElementById('visualizeBtn').style.background = 'rgba(255,68,85,.15)';
+        document.getElementById('visualizeBtn').style.borderColor = 'var(--red)';
+        document.getElementById('visualizeBtn').style.color = 'var(--red)';
         stepWaypointSimulation();
       }
       function stepWaypointSimulation() {
@@ -415,8 +514,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
             simActive = false;
             simPaused = false;
             simRobot = null;
-            document.getElementById('visualizeBtn').textContent = '👁️ Visualize';
-            document.getElementById('stopSimBtn').style.display = 'none';
+            resetVisualizeBtn();
             window._simWaypoints = null;
             renderMap();
           }
@@ -431,8 +529,8 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
         // Normalize angle to [-PI, PI]
         dyaw = Math.atan2(Math.sin(dyaw), Math.cos(dyaw));
         // Set speeds (m/s and rad/s)
-        const speed = 0.5; // m/s
-        const rotSpeed = Math.PI/2; // rad/s (90 deg/s)
+        const speed = 0.8; // m/s
+        const rotSpeed = 2*Math.PI/3; // rad/s (120 deg/s)
         const moveTime = dist / speed;
         const rotTime = Math.abs(dyaw) / rotSpeed;
         const fps = 30;
@@ -488,31 +586,28 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
       function stopWaypointSimulation() {
         simActive = false;
         simPaused = false;
+        simEditMode = false;
         simRobot = null;
         if (simTimer) clearTimeout(simTimer);
-        document.getElementById('visualizeBtn').textContent = '👁️ Visualize';
-        document.getElementById('stopSimBtn').style.display = 'none';
+        resetVisualizeBtn();
+        mapCanvas.style.cursor = 'default';
         window._simWaypoints = null;
         renderMap();
       }
+      function resetVisualizeBtn() {
+        const btn = document.getElementById('visualizeBtn');
+        btn.textContent = '👁️ Visualize';
+        btn.style.background = 'rgba(0,212,255,.12)';
+        btn.style.borderColor = 'var(--accent)';
+        btn.style.color = 'var(--accent)';
+      }
       </script>
-      <button class="stop-btn" id="stopBtn" onclick="cancelMission()">⏹ STOP MISSION</button>
-      <div class="mission-panel" id="missionPanel">
-        <div class="mp-row">
-          <span class="mp-label">STATE</span>
-          <span class="mp-state idle" id="mpState">IDLE</span>
-          <div style="flex:1"></div>
-          <span class="mp-val" id="mpStep">—</span>
-        </div>
-        <div class="mp-row">
-          <span class="mp-label">PROG</span>
-          <div class="mp-bar-wrap"><div class="mp-bar" id="mpBar"></div></div>
-        </div>
-        <div class="mp-msg" id="mpMsg">No mission running. Mark waypoints then press RUN.</div>
-      </div>
     </div>
     <div class="sec" style="border:none;">
-      <button class="exp-btn" onclick="exportWP()">⬇ Export Waypoints JSON</button>
+      <div style="display:flex;gap:6px;">
+        <button class="exp-btn" onclick="openSaveWPPopup()" style="flex:1;">💾 Save WP</button>
+        <button class="exp-btn" onclick="openImportWPPopup()" style="flex:1;">📂 Import WP</button>
+      </div>
     </div>
   </div>
 
@@ -546,19 +641,11 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
   <!-- ═══ RIGHT PANEL ═══════════════════════════════════════════════════════ -->
   <div class="right">
     <div class="sec">
-      <div class="sec-title">Map Origin (0,0)</div>
-      <button class="orig-btn" id="origBtn" onclick="toggleOrigin()">🎯 Click map to set origin</button>
-      <div class="orig-info" id="origInfo">Not set — click button then click on the map</div>
-
-      <!-- orientation selector — shown after origin is set -->
-      <div class="orig-orient" id="origOrient" style="display:none">
-        <!-- Orientation selector removed: use WASD or arrow keys to set direction -->
-      </div>
-    </div>
-
-    <div class="sec">
-      <div class="sec-title">Odometry  /odom
-        <span id="odomStatus" title="Odometry topic status" style="display:inline-block;width:13px;height:13px;border-radius:50%;background:#ff4455;border:1.5px solid #222;box-shadow:0 0 2px #000;vertical-align:middle;margin-left:8px;transition:background .3s;"></span>
+      <div class="sec-title">
+        <div style="display:flex;align-items:center;">Odometry  
+          <span id="odomStatus" title="Odometry topic status" style="display:inline-block;width:13px;height:13px;border-radius:50%;background:#ff4455;border:1.5px solid #222;box-shadow:0 0 2px #000;vertical-align:middle;margin-left:8px;transition:background .3s;"></span>
+        </div>
+        <button class="reset-btn" onclick="resetOdometry()" title="Reset odometry to (0,0)">⟲ RST</button>
       </div>
       <div class="odom-row">
         <div class="obox"><div class="k">X (m)</div><div class="n" id="oX">0.000</div></div>
@@ -568,7 +655,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
     </div>
 
     <div class="sec">
-      <div class="sec-title">cmd_vel (live)</div>
+      <div class="sec-title">cmd_vel</div>
       <div class="cv-row">
         <div class="cvbox"><div class="k">LIN.X</div><div class="n" id="cvLx">0.00</div></div>
         <div class="cvbox"><div class="k">LIN.Y</div><div class="n" id="cvLy">0.00</div></div>
@@ -577,26 +664,51 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
     </div>
 
     <div class="sec">
-      <div class="sec-title">Move Command</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
-        <button class="orig-btn" onclick="startMoveCommand('forward')" style="background:rgba(77,255,145,.15);border-color:var(--green);color:var(--green);">⬆ Forward</button>
-        <button class="orig-btn" onclick="startMoveCommand('backward')" style="background:rgba(255,107,53,.15);border-color:var(--accent2);color:var(--accent2);">⬇ Backward</button>
-        <button class="orig-btn" onclick="startRotateCommand('cw')" style="background:rgba(0,212,255,.15);border-color:var(--accent);color:var(--accent);">↻ CW</button>
-        <button class="orig-btn" onclick="startRotateCommand('ccw')" style="background:rgba(0,212,255,.15);border-color:var(--accent);color:var(--accent);">↺ CCW</button>
-      </div>
-      <div id="movePanel" style="display:none;background:var(--panel2);border:1px solid var(--border);padding:8px;border-radius:4px;text-align:center;">
-        <div style="font-size:10px;color:var(--muted2);margin-bottom:6px;" id="moveDir">Forward</div>
-        <div id="moveInputRow" style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
-          <label style="font-size:9px;color:var(--muted2);">Distance (m):</label>
-          <input type="number" id="moveDist" style="flex:1;background:#21262d;border:1px solid var(--border);color:var(--accent);font-size:11px;padding:4px;border-radius:3px;" value="1.0" min="0.1" step="0.1">
+      <button class="stop-btn" id="stopBtn" onclick="cancelMission()">⏹ STOP MISSION</button>
+      <div class="mission-panel" id="missionPanel">
+        <div class="mp-row">
+          <span class="mp-label">STATE</span>
+          <span class="mp-state idle" id="mpState">IDLE</span>
+          <div style="flex:1"></div>
+          <span class="mp-val" id="mpStep">—</span>
         </div>
-        <button class="run-btn" id="moveRunBtn" onclick="executeMoveCommand()" style="width:100%;margin-bottom:4px;">▶ RUN MOVE</button>
-        <button class="orig-btn" onclick="cancelMoveCommand()" style="width:100%;background:rgba(255,68,85,.1);border-color:var(--red);color:var(--red);">✕ Cancel</button>
+        <div class="mp-row">
+          <span class="mp-label">PROG</span>
+          <div class="mp-bar-wrap"><div class="mp-bar" id="mpBar"></div></div>
+        </div>
+      </div>
+
+      <div class="mission-panel" id="cameraPanel" style="margin-top:10px;">
+        <div class="mp-row">
+          <span class="mp-label">CAMERA</span>
+        </div>
+        <div style="padding:8px;">
+          <textarea id="cameraOutput" readonly style="width:100%;height:50px;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:4px;color:rgb(186, 194, 186);font-family:monospace;font-size:14px;padding:8px;resize:none;overflow:auto;text-align:left;line-height:1.4;word-wrap:break-word;"></textarea>
+        </div>
       </div>
     </div>
 
-    <div class="sec">
-      <div class="sec-title">Joystick → /cmd_vel</div>
+    <div class="right-spacer"></div>
+
+    <div class="right-tabbar" style="margin:6px 10px 0 10px;border-top:1px solid var(--border);border-bottom:none;">
+      <button class="tab-btn active" id="tabJoyBtn" onclick="showRightTab('joy')">Joystick</button>
+      <button class="tab-btn" id="tabMoveBtn" onclick="showRightTab('move')">Move</button>
+    </div>
+
+    <div class="sec" id="moveSection" style="display:none;height:200px;">
+      <div class="sec-title">Move Command</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <button class="move-cmd-btn" id="moveBtn_forward" onclick="startMoveCommand('forward')">⬆ Forward</button>
+        <button class="move-cmd-btn" id="moveBtn_backward" onclick="startMoveCommand('backward')">⬇ Backward</button>
+        <button class="move-cmd-btn" id="moveBtn_cw" onclick="startRotateCommand('cw')">↻ CW</button>
+        <button class="move-cmd-btn" id="moveBtn_ccw" onclick="startRotateCommand('ccw')">↺ CCW</button>
+        <button class="move-cmd-btn" onclick="openOriginPopup()" style="grid-column:1/-1;">📍 GO TO</button>
+        <button class="move-cmd-btn" onclick="markWP()" style="grid-column:1/-1;">📌 CURR POSE</button>
+      </div>
+    </div>
+
+    <div class="sec" id="joySection" style="height:200px;position:relative;">
+      <button class="joy-toggle-btn disabled" id="joyToggleBtn" onclick="toggleJoystick()" title="Toggle joystick control">🕹️</button>
       <div class="joy-area">
         <div class="joy-pad" id="joyPad">
           <div class="joy-ring"></div><div class="joy-cross-h"></div><div class="joy-cross-v"></div>
@@ -638,6 +750,25 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
   </div>
 </div>
 
+<!-- MOVE COMMAND MODAL -->
+<div class="move-modal-overlay" id="moveModalOverlay">
+  <div class="move-modal-box">
+    <button class="move-modal-close" onclick="closeMoveModal()">✕</button>
+    <div class="move-modal-title" id="moveModalTitle">Move Command</div>
+    <div class="move-modal-content">
+      <div class="move-modal-dir" id="moveModalDir">Forward</div>
+      <div class="move-modal-input">
+        <label>Distance (m):</label>
+        <input type="number" id="moveModalDist" value="1.0" min="0.1" step="0.1">
+      </div>
+      <div class="move-modal-actions">
+        <button class="run-btn" id="moveModalRunBtn" onclick="sendDirectMove()" style="margin:0; background-color: #4dff91; color: #000;">▶ RUN MOVE</button>
+        <button onclick="addMoveAsWaypoint()" style="padding:10px;background:rgba(0,212,255,.12);border:1px solid var(--accent);color:var(--accent);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;border-radius:3px;letter-spacing:2px;text-transform:uppercase;margin:0;">➕ ADD TO WP</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- WAYPOINT MODE CHOICE popup -->
 <div class="wpmode-overlay" id="wpmodeOverlay">
   <div class="wpmode-box">
@@ -653,7 +784,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
   </div>
 </div>
 
-<!-- ADD WAYPOINT MANUALLY popup -->
+<!-- ADD WP popup -->
 <div class="addwp-overlay" id="addWpOverlay">
   <div class="addwp-box">
     <div class="addwp-title" id="addwpTitle">➕ Add Waypoint</div>
@@ -687,6 +818,32 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
     <div class="addwp-btns">
       <button class="addwp-ok" onclick="confirmAddWP()">✔ Add</button>
       <button class="addwp-cancel" onclick="closeAddWP()">✕ Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ORIGIN POPUP -->
+<div class="origin-modal-overlay" id="originPopup">
+  <div class="origin-modal-box">
+    <button class="origin-modal-close" onclick="closeOriginPopup()">✕</button>
+    <div class="origin-modal-title">📍 GO TO</div>
+    <div class="origin-modal-content">
+      <div class="origin-modal-input">
+        <label>X (m):</label>
+        <input type="number" id="originX" value="0.0" step="0.1">
+      </div>
+      <div class="origin-modal-input">
+        <label>Y (m):</label>
+        <input type="number" id="originY" value="0.0" step="0.1">
+      </div>
+      <div class="origin-modal-input">
+        <label>Yaw (°):</label>
+        <input type="number" id="originYaw" value="0.0" step="1">
+      </div>
+      <div class="origin-modal-actions">
+        <button class="run-btn" onclick="sendOriginAsMove()" style="margin:0; background-color: #4dff91; color: #000;">▶ RUN MOVE</button>
+        <button onclick="addOriginAsWaypoint()" style="margin:0;padding:10px;background:rgba(0,212,255,.12);border:1px solid var(--accent);color:var(--accent);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;border-radius:3px;letter-spacing:2px;text-transform:uppercase;">+ ADD TO WP</button>
+      </div>
     </div>
   </div>
 </div>
@@ -795,7 +952,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
   </div>
 </div>
 
-<!-- ADD WAYPOINT MANUALLY popup -->
+<!-- ADD WP popup -->
 <div class="addwp-overlay" id="addWpOverlay">
   <div class="addwp-box">
     <div class="addwp-title" id="addwpTitle">➕ Add Waypoint</div>
@@ -833,31 +990,158 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
   </div>
 </div>
 
+<!-- ORIGIN POPUP -->
+<div class="origin-modal-overlay" id="originPopup">
+  <div class="origin-modal-box">
+    <button class="origin-modal-close" onclick="closeOriginPopup()">✕</button>
+    <div class="origin-modal-title">📍 GO TO</div>
+    <div class="origin-modal-content">
+      <div class="origin-modal-input">
+        <label>X (m):</label>
+        <input type="number" id="originX" value="0.0" step="0.1">
+      </div>
+      <div class="origin-modal-input">
+        <label>Y (m):</label>
+        <input type="number" id="originY" value="0.0" step="0.1">
+      </div>
+      <div class="origin-modal-input">
+        <label>Yaw (°):</label>
+        <input type="number" id="originYaw" value="0.0" step="1">
+      </div>
+      <div class="origin-modal-actions">
+        <button class="run-btn" onclick="sendOriginAsMove()" style="margin:0; background-color: #4dff91; color: #000;">▶ RUN MOVE</button>
+        <button onclick="addOriginAsWaypoint()" style="margin:0;padding:10px;background:rgba(0,212,255,.12);border:1px solid var(--accent);color:var(--accent);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;border-radius:3px;letter-spacing:2px;text-transform:uppercase;">+ ADD TO WP</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SAVE WAYPOINTS POPUP -->
+<div class="addwp-overlay" id="saveWPOverlay">
+  <div class="addwp-box" style="border-color:var(--green);">
+    <div class="addwp-title" style="color:var(--green);">💾 Save Waypoints</div>
+    <div class="addwp-row">
+      <label style="width:70px;">Filename:</label>
+      <input type="text" id="saveWPName" placeholder="my_waypoints" style="flex:1;background:#21262d;border:1px solid var(--border);color:var(--accent);font-family:inherit;font-size:13px;padding:5px 8px;border-radius:3px;">
+    </div>
+    <div class="addwp-hint">Waypoints will be saved to ~/kiwi_waypoints/</div>
+    <div class="addwp-btns">
+      <button class="addwp-ok" onclick="saveWaypoints()">💾 Save</button>
+      <button class="addwp-cancel" onclick="closeSaveWPPopup()">✕ Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT WAYPOINTS POPUP -->
+<div class="addwp-overlay" id="importWPOverlay">
+  <div class="addwp-box" style="border-color:var(--accent);width:300px;">
+    <div class="addwp-title" style="color:var(--accent);">📂 Import Waypoints</div>
+    <div class="addwp-hint">Select a saved waypoint file to load:</div>
+    <div id="wpFileList" style="max-height:200px;overflow-y:auto;margin-bottom:10px;">
+      <div style="text-align:center;color:var(--muted);padding:20px;">Loading...</div>
+    </div>
+    <div class="addwp-btns">
+      <button class="addwp-cancel" onclick="closeImportWPPopup()">✕ Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ACTION POPUP -->
+<div class="action-overlay" id="actionOverlay">
+  <div class="action-box">
+    <div class="action-title">⚡ Add Action to Mission</div>
+    <div class="action-list">
+      <button class="action-item-btn" onclick="addAction('detect_color')">🔍 Detect Colour</button>
+      <button class="action-item-btn" onclick="openAnchorListPopup()">📍 Add Saved Anchor</button>
+    </div>
+    <button class="action-close-btn" onclick="closeActionPopup()">✕ Cancel</button>
+  </div>
+</div>
+
+<!-- ANCHOR LIST POPUP -->
+<div class="action-overlay" id="anchorListOverlay">
+  <div class="action-box" style="width:380px;max-height:400px;display:flex;flex-direction:column;">
+    <div class="action-title">📍 Saved Anchors</div>
+    <div style="flex:1;overflow-y:auto;margin-bottom:12px;" id="anchorListContainer">
+      <div style="text-align:center;color:var(--muted2);padding:20px;">Loading anchors...</div>
+    </div>
+    <button class="action-close-btn" onclick="closeAnchorListPopup()">✕ Close</button>
+  </div>
+</div>
+
+<!-- SAVE ANCHOR POPUP -->
+<div class="action-overlay" id="saveAnchorOverlay">
+  <div class="action-box" style="width:340px;">
+    <div class="action-title">📍 Save Anchor</div>
+    <div style="background:var(--panel2);border:1px solid var(--border);border-radius:4px;padding:10px;margin-bottom:12px;text-align:left;">
+      <div style="font-size:10px;color:var(--muted2);margin-bottom:6px;letter-spacing:.5px;text-transform:uppercase;">Raw Data</div>
+      <div style="font-size:10px;color:var(--accent);word-break:break-all;font-family:var(--font-mono);line-height:1.6;margin-bottom:10px;" id="anchorDataDisplay">—</div>
+      <div style="font-size:9px;color:var(--muted2);margin-bottom:10px;line-height:1.5;" id="anchorParsedDisplay">—</div>
+      <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:8px;">
+        <div style="font-size:10px;color:var(--muted2);margin-bottom:8px;letter-spacing:.5px;text-transform:uppercase;">Calculated</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;" id="anchorCalculatedDisplay">
+          <div style="font-size:9px;color:#888;">—</div>
+          <div style="font-size:9px;color:#888;">—</div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:9px;color:var(--muted2);letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:6px;">File Name</label>
+      <input type="text" id="anchorFilenameInput" placeholder="e.g. left_anchor_1, right_anchor_2" style="width:100%;background:#21262d;border:1px solid var(--border);color:var(--accent);font-family:inherit;font-size:12px;padding:8px;border-radius:3px;outline:none;box-sizing:border-box;">
+      <div style="font-size:8px;color:var(--muted2);margin-top:4px;">Leave blank for auto timestamp</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
+      <button class="action-item-btn" onclick="saveAnchor('left')" style="flex:1;background:rgba(100,180,255,.15);border-color:#64b4ff;color:#64b4ff;">⬅️ Save Left</button>
+      <button class="action-item-btn" onclick="saveAnchor('right')" style="flex:1;background:rgba(255,180,100,.15);border-color:#ffb464;color:#ffb464;">Save Right ➡️</button>
+    </div>
+    <button class="action-close-btn" onclick="closeSaveAnchorPopup()">✕ Close</button>
+  </div>
+</div>
+
 <!-- ═══════════════════════════════════════════════════════════════════════════
      JAVASCRIPT
 ════════════════════════════════════════════════════════════════════════════ -->
 <script>
-// --- Origin orientation by WASD and keyboard arrows ---
-// --- Origin placement: WASD = move marker, Arrow keys = rotate orientation ---
+// --- Origin orientation by IJKL and keyboard arrows ---
+// --- Origin placement: IJKL = move marker, Arrow keys = rotate orientation ---
 document.addEventListener('keydown', function(e) {
   if (settingOrig) {
     // Arrow keys: rotate orientation by ±45°
     if (e.key === 'ArrowRight') {
-      originYaw = (originYaw + 45) % 360;
+      originYaw = (originYaw - 45) % 360;
       renderMap();
       e.preventDefault();
     }
     else if (e.key === 'ArrowLeft') {
-      originYaw = (originYaw + 315) % 360; // -45 mod 360
+      originYaw = (originYaw + 45) % 360; // -45 mod 360
       renderMap();
       e.preventDefault();
     }
-    // WASD: move marker (handled by interval, but prevent default to avoid scrolling)
-    else if (["w","a","s","d","W","A","S","D"].includes(e.key)) {
+    // IJKL: move marker (handled by interval, but prevent default to avoid scrolling)
+    else if (["i","j","k","l","I","J","K","L"].includes(e.key)) {
       e.preventDefault();
     }
   }
+  // Q key: open waypoint mode (same as WP button) - double-press required
+  if ((e.key === 'w' || e.key === 'W') && !e.target.matches('input,textarea')) {
+    handleQKeyPress();
+    e.preventDefault();
+  }
 });
+// Clear all cache and reload page
+function clearCache() {
+  localStorage.clear();
+  sessionStorage.clear();
+  // Clear IndexedDB if needed
+  if(window.indexedDB) {
+    indexedDB.databases().then(dbs => {
+      dbs.forEach(db => indexedDB.deleteDatabase(db.name));
+    });
+  }
+  // Reload page
+  window.location.reload(true);
+}
+
 // Load the map named 'actual_map' when M1 is pressed
 function loadM1Map() {
   send({type:'load_map', name:'actual_map'});
@@ -878,22 +1162,60 @@ let waypoints=[];
 let missionCurrentIdx = 0;
 let missionState = 'idle';
 
+// Camera data storage
+let lastCameraColour = null;
+let lastCameraQR = null;
+let lastCameraSource = null;  // 'colour' or 'qr' or null
+
 // ── MAP CANVAS INIT ──────────────────────────────────────────────────────────
 const mapCanvas = document.getElementById('mapCanvas');
-const mctx      = mapCanvas.getContext('2d');
+const mctx      = mapCanvas ? mapCanvas.getContext('2d') : null;
+
+console.log('[INIT] mapCanvas exists:', !!mapCanvas);
+console.log('[INIT] mctx exists:', !!mctx);
+
+if(!mapCanvas) {
+  console.error('[INIT] ERROR: mapCanvas element not found! Map display will not work.');
+}
+if(!mctx) {
+  console.error('[INIT] ERROR: 2D context not available! Map display will not work.');
+}
 
 function initCanvas(){
-  if(!mapW || !mapH){ mapCanvas.width=400; mapCanvas.height=400; mctx.fillStyle='#0a1520'; mctx.fillRect(0,0,400,400); return; }
+  console.log('[CANVAS] initCanvas called:', {mapW, mapH, mapRes, mapPixels: mapPixels ? 'exists' : 'null'});
+  
+  if(!mapCanvas) {
+    console.error('[CANVAS] ERROR: mapCanvas is null!');
+    return;
+  }
+  
+  if(!mctx) {
+    console.error('[CANVAS] ERROR: mctx is null!');
+    return;
+  }
+  
+  if(!mapW || !mapH){ 
+    console.warn('[CANVAS] mapW or mapH missing, drawing placeholder');
+    mapCanvas.width=400; mapCanvas.height=400; mctx.fillStyle='#0a1520'; mctx.fillRect(0,0,400,400); return; 
+  }
   const avail = Math.min(window.innerHeight-200, window.innerWidth-340);
   SC = Math.max(4, Math.min(20, Math.floor(avail / Math.max(mapW,mapH))));
+  console.log('[CANVAS] Canvas dimensions:', {mapW, mapH, avail, SC, canvasWidth: mapW * SC, canvasHeight: mapH * SC});
   mapCanvas.width  = mapW * SC;
   mapCanvas.height = mapH * SC;
+  console.log('[CANVAS] Set canvas size:', {actualWidth: mapCanvas.width, actualHeight: mapCanvas.height});
   drawRulerX(); drawRulerY(); renderMap();
-  document.getElementById('legRes').textContent = `${(mapRes/100).toFixed(2)} m/cell · ${mapW}×${mapH}`;
+  const legRes = document.getElementById('legRes');
+  if(legRes) legRes.textContent = `${(mapRes/100).toFixed(2)} m/cell · ${mapW}×${mapH}`;
 }
 
 function drawRulerX(){
-  const c=document.getElementById('rulerX'); c.width=mapW*SC; c.height=26;
+  const c=document.getElementById('rulerX'); 
+  if(!c) {
+    console.warn('[RULER] rulerX element not found');
+    return;
+  }
+  c.width=mapW*SC; c.height=26;
   if(!mapW)return;
   const g=c.getContext('2d'); g.fillStyle='#0f1824'; g.fillRect(0,0,c.width,26);
   g.font='8px Courier New'; g.textAlign='center';
@@ -905,7 +1227,12 @@ function drawRulerX(){
   }
 }
 function drawRulerY(){
-  const c=document.getElementById('rulerY'); c.width=26; c.height=mapH*SC;
+  const c=document.getElementById('rulerY'); 
+  if(!c) {
+    console.warn('[RULER] rulerY element not found');
+    return;
+  }
+  c.width=26; c.height=mapH*SC;
   if(!mapH)return;
   const g=c.getContext('2d'); g.fillStyle='#0f1824'; g.fillRect(0,0,26,c.height);
   for(let i=0;i<=mapH;i++){
@@ -917,14 +1244,34 @@ function drawRulerY(){
 }
 
 function renderMap(){
+  if(!mctx) {
+    console.error('[RENDER] ERROR: mctx is null! Cannot render map.');
+    return;
+  }
+  
+  if(!mapCanvas) {
+    console.error('[RENDER] ERROR: mapCanvas is null! Cannot render map.');
+    return;
+  }
+  
+  console.log('[RENDER] renderMap called:', {mapW, mapH, mapPixels: mapPixels ? `Uint8Array(${mapPixels.length})` : 'null', canvasWidth: mapCanvas.width, canvasHeight: mapCanvas.height});
+  
   mctx.clearRect(0,0,mapCanvas.width,mapCanvas.height);
-  if(!mapPixels){ mctx.fillStyle='#0a1520'; mctx.fillRect(0,0,mapCanvas.width,mapCanvas.height); return; }
+  if(!mapPixels){ 
+    console.warn('[RENDER] mapPixels is null, drawing placeholder');
+    mctx.fillStyle='#0a1520'; mctx.fillRect(0,0,mapCanvas.width,mapCanvas.height); 
+    return; 
+  }
 
   // draw cells
+  console.log('[RENDER] Drawing', mapW * mapH, 'cells...');
   for(let r=0;r<mapH;r++) for(let c=0;c<mapW;c++){
-    mctx.fillStyle = mapPixels[r*mapW+c]===0 ? '#0e1e30' : '#bdd0dc';
+    const idx = r*mapW+c;
+    const val = mapPixels[idx];
+    mctx.fillStyle = val===0 ? '#0e1e30' : '#bdd0dc';
     mctx.fillRect(c*SC, r*SC, SC, SC);
   }
+  console.log('[RENDER] Finished drawing cells');
 
   // grid lines
   for(let i=0;i<=mapW;i++){
@@ -988,12 +1335,18 @@ function renderMap(){
     if (typeof missionCurrentIdx === 'number' && missionCurrentIdx < waypoints.length) {
       idx = missionCurrentIdx;
     }
+    // Find next spatial waypoint (skip ACTION and ANCHOR nodes)
+    let nextSpatialIdx = idx;
+    while (nextSpatialIdx < waypoints.length && (waypoints[nextSpatialIdx].type === 'ACTION' || waypoints[nextSpatialIdx].type === 'ANCHOR')) {
+      nextSpatialIdx++;
+    }
     const rp = robotToCanvas();
-    const wp1 = wpToCanvas(waypoints[idx]);
+    const wp1 = (nextSpatialIdx < waypoints.length) ? wpToCanvas(waypoints[nextSpatialIdx]) : null;
     if (rp && wp1) {
+      const isHighlighted = (highlightedWpIdx === nextSpatialIdx);
       mctx.save();
       mctx.setLineDash([7, 7]);
-      mctx.strokeStyle = '#ff6b35';
+      mctx.strokeStyle = isHighlighted ? '#FFD700' : '#ff6b35';
       mctx.lineWidth = 2;
       mctx.beginPath();
       mctx.moveTo(rp.x, rp.y);
@@ -1010,22 +1363,31 @@ function renderMap(){
       mctx.lineTo(wp1.x - len * Math.cos(angle + Math.PI/7), wp1.y - len * Math.sin(angle + Math.PI/7));
       mctx.lineTo(wp1.x, wp1.y);
       mctx.closePath();
-      mctx.fillStyle = '#ff6b35';
+      mctx.fillStyle = isHighlighted ? '#000000' : '#ff6b35';
       mctx.fill();
       mctx.setLineDash([]);
       mctx.restore();
     }
   }
-  // Dotted lines between waypoints
-  if (waypoints.length > 1) {
+  // Dotted lines between waypoints (skip ACTION and ANCHOR nodes)
+  {
+    const spatialWPs = waypoints.filter(w => w.type !== 'ACTION' && w.type !== 'ANCHOR');
+    if (spatialWPs.length > 1) {
     mctx.save();
     mctx.setLineDash([7, 7]);
-    mctx.strokeStyle = '#ff6b35';
     mctx.lineWidth = 2;
-    for (let i = 0; i < waypoints.length - 1; i++) {
-      const p1 = wpToCanvas(waypoints[i]);
-      const p2 = wpToCanvas(waypoints[i+1]);
+    for (let i = 0; i < spatialWPs.length - 1; i++) {
+      const p1 = wpToCanvas(spatialWPs[i]);
+      const p2 = wpToCanvas(spatialWPs[i+1]);
       if (p1 && p2) {
+        // Find original waypoint indices for highlight check
+        const wpIdx1 = waypoints.indexOf(spatialWPs[i]);
+        const wpIdx2 = waypoints.indexOf(spatialWPs[i+1]);
+        const isHighlighted = (highlightedWpIdx === wpIdx1 || highlightedWpIdx === wpIdx2);
+        
+        // Use yellow for highlighted arrows, orange for normal
+        mctx.strokeStyle = isHighlighted ? '#FFD700' : '#ff6b35';
+        
         mctx.beginPath();
         mctx.moveTo(p1.x, p1.y);
         mctx.lineTo(p2.x, p2.y);
@@ -1041,50 +1403,57 @@ function renderMap(){
         mctx.lineTo(p2.x - len * Math.cos(angle + Math.PI/7), p2.y - len * Math.sin(angle + Math.PI/7));
         mctx.lineTo(p2.x, p2.y);
         mctx.closePath();
-        mctx.fillStyle = '#ff6b35';
+        mctx.fillStyle = isHighlighted ? '#000000' : '#ff6b35';
         mctx.fill();
         mctx.setLineDash([7, 7]);
       }
     }
     mctx.setLineDash([]);
     mctx.restore();
+    }
   }
-  // waypoints: draw small upward-facing triangle marker with facing direction
+  // waypoints: draw robot model at each waypoint with reduced opacity and sequence number
+  let mapWpNum = 0;
   waypoints.forEach((wp,i)=>{
+    if(wp.type === 'ACTION' || wp.type === 'ANCHOR') return; // skip ACTION and ANCHOR nodes on map
+    mapWpNum++;
     const p=wpToCanvas(wp); if(!p) return;
-    // Small triangle (like a dot), facing in the direction of wp.yaw_rad (black base = back)
-    drawSmallTriangle(mctx, p.x, p.y, wp.yaw_rad, SC*2.3, '#ff6b35');
-    // ...existing code...
-// Show saved maps in header and allow loading
-function showHomeMapLibrary(maps) {
-  const el = document.getElementById('homeMapLibrary');
-  if (!el) return;
-  if (!maps || !maps.length) {
-    el.innerHTML = '<span style="color:var(--muted2);font-size:11px;">No maps</span>';
-    return;
-  }
-  el.innerHTML = maps.map(m =>
-    `<button class="eh-btn" style="margin-right:4px;font-size:11px;padding:3px 10px;" onclick="loadMapByName('${m.name}')">${m.name}</button>`
-  ).join('');
-}
-
-function loadMapByName(name) {
-  send({type:'load_map', name});
-  showToast('Loading map: '+name);
-}
-    function selectWaypointMode() {
-      // Open the add waypoint popup or activate waypoint marking mode
-      openAddWP();
+    // Draw robot model - screen heading = originYaw_rad - wp.yaw_rad (yaw CW positive)
+    const originYaw_rad = originYaw * Math.PI / 180;
+    const screenYaw = originYaw_rad - wp.yaw_rad;
+    mctx.save();
+    mctx.globalAlpha = 0.2;
+    drawTriangle(mctx, p.x, p.y, screenYaw, SC*.7, '#ff6b35');
+    mctx.globalAlpha = 1.0;
+    mctx.restore();
+    // Draw sequence number in a circle
+    const seqNum = mapWpNum;
+    mctx.save();
+    mctx.beginPath();
+    mctx.arc(p.x, p.y, 12, 0, Math.PI * 2);
+    if(highlightedWpIdx === i) {
+      mctx.fillStyle = '#FFD700'; // Inverted: gold background
+      mctx.fill();
+      mctx.strokeStyle = '#000'; // Inverted: black stroke
+    } else {
+      mctx.fillStyle = 'rgba(255,107,53,0.9)'; // Normal: orange background
+      mctx.fill();
+      mctx.strokeStyle = '#fff'; // Normal: white stroke
     }
-    function selectMoveMode() {
-      // Activate move mode (user should implement move logic if needed)
-      alert('Move mode selected. Implement move logic as needed.');
-    }
+    mctx.lineWidth = 1.5;
+    mctx.stroke();
+    // Make font bolder if highlighted
+    mctx.font = highlightedWpIdx === i ? 'bold 13px Arial' : 'bold 11px Arial';
+    mctx.fillStyle = highlightedWpIdx === i ? '#000' : '#fff'; // Inverted text color when highlighted
+    mctx.textAlign = 'center';
+    mctx.textBaseline = 'middle';
+    mctx.fillText(seqNum.toString(), p.x, p.y);
+    mctx.restore();
     // Draw coordinates label
     mctx.save(); mctx.font='8px Courier New';
     const lbl=`(${wp.x_m.toFixed(2)},${wp.y_m.toFixed(2)})`, tw=mctx.measureText(lbl).width;
-    mctx.fillStyle='rgba(10,14,23,.85)'; mctx.fillRect(p.x+9,p.y-15,tw+4,11);
-    mctx.fillStyle='#00d4ff'; mctx.textAlign='left'; mctx.textBaseline='alphabetic'; mctx.fillText(lbl,p.x+11,p.y-6); mctx.restore();
+    mctx.fillStyle='rgba(10,14,23,.85)'; mctx.fillRect(p.x+14,p.y-15,tw+4,11);
+    mctx.fillStyle='#00d4ff'; mctx.textAlign='left'; mctx.textBaseline='alphabetic'; mctx.fillText(lbl,p.x+16,p.y-6); mctx.restore();
   });
 // Draw a small triangle (like a dot) with a black base, facing up at yaw=0
 function drawSmallTriangle(ctx, cx, cy, yaw, sz, col) {
@@ -1119,7 +1488,10 @@ function drawSmallTriangle(ctx, cx, cy, yaw, sz, col) {
   if (simActive && simRobot) {
     const rp = odomToCanvas(simRobot.x, simRobot.y);
     if (rp) {
-      drawTriangle(mctx, rp.x, rp.y, -simRobot.yaw, SC*.85, '#00d4ff');
+      // Screen heading = originYaw - robot yaw (yaw CW positive)
+      const originYaw_rad = originYaw * Math.PI / 180;
+      const screenYaw = originYaw_rad - simRobot.yaw;
+      drawTriangle(mctx, rp.x, rp.y, screenYaw, SC*.85, '#00d4ff');
       mctx.save(); mctx.font='8px Courier New'; mctx.fillStyle='rgba(0,212,255,.8)';
       mctx.textAlign='left'; mctx.textBaseline='alphabetic';
       mctx.fillText(`SIM x:${simRobot.x.toFixed(2)} y:${simRobot.y.toFixed(2)}`, rp.x+SC, rp.y-4); mctx.restore();
@@ -1127,8 +1499,10 @@ function drawSmallTriangle(ctx, cx, cy, yaw, sz, col) {
   } else {
     const rp=robotToCanvas();
     if(rp){
+      // Screen heading = originYaw - robot yaw (yaw CW positive)
       const originYaw_rad = originYaw * Math.PI / 180;
-      drawTriangle(mctx,rp.x,rp.y, -robot.yaw + originYaw_rad, SC*.85,'#00d4ff');
+      const screenYaw = originYaw_rad - robot.yaw;
+      drawTriangle(mctx,rp.x,rp.y, screenYaw, SC*.85,'#00d4ff');
       mctx.save(); mctx.font='8px Courier New'; mctx.fillStyle='rgba(0,212,255,.8)';
       mctx.textAlign='left'; mctx.textBaseline='alphabetic';
       mctx.fillText(`x:${robot.x.toFixed(2)} y:${robot.y.toFixed(2)}`,rp.x+SC,rp.y-4); mctx.restore();
@@ -1141,10 +1515,11 @@ function drawSmallTriangle(ctx, cx, cy, yaw, sz, col) {
     const displayY = wpSelectedY !== null ? wpSelectedY : wpHoverY;
     const wp = odomToCanvas(displayX, displayY);
     if(wp){
+      // Screen heading = originYaw - wpOrientation (yaw CW positive)
       const originYaw_rad = originYaw * Math.PI / 180;
+      const screenYaw = originYaw_rad - wpOrientation;
       const color = wpSelectedX !== null ? '#4dff91' : '#00d4ff';  // green if selected, cyan while hovering
-      // Invert yaw for waypoint orientation to match robot model
-      drawTriangle(mctx, wp.x, wp.y, -wpOrientation + originYaw_rad, SC*.85, color);
+      drawTriangle(mctx, wp.x, wp.y, screenYaw, SC*.85, color);
       mctx.save(); mctx.font='10px Courier New'; mctx.fillStyle=color;
       mctx.textAlign='left'; mctx.textBaseline='alphabetic';
       mctx.fillText(`x:${displayX.toFixed(2)} y:${displayY.toFixed(2)} yaw:${Math.round(wpOrientation*180/Math.PI)}°`, wp.x+SC, wp.y-4); 
@@ -1159,8 +1534,9 @@ function drawSmallTriangle(ctx, cx, cy, yaw, sz, col) {
     const px = dispPixelX * SC + SC/2;
     const py = dispPixelY * SC + SC/2;
     const color = selectedMarkerPixelX !== null ? '#ff9900' : '#ff6b35';  // brighter if selected
-    // Use originYaw for orientation during origin placement
-    drawTriangle(mctx, px, py, originYaw * Math.PI / 180, SC*.85, color);
+    // Origin itself faces originYaw direction on screen (screen heading = originYaw)
+    const screenYaw = originYaw * Math.PI / 180;
+    drawTriangle(mctx, px, py, screenYaw, SC*.85, color);
     mctx.save(); mctx.font='10px Courier New'; mctx.fillStyle=color;
     mctx.textAlign='left'; mctx.textBaseline='alphabetic';
     mctx.fillText(`origin @ px(${Math.round(dispPixelX)},${Math.round(dispPixelY)})`, px+SC, py-4); 
@@ -1171,7 +1547,8 @@ function drawSmallTriangle(ctx, cx, cy, yaw, sz, col) {
   if(!originPx && robot.x !== undefined){
     const canvasCenterX = mapCanvas.width / 2;
     const canvasCenterY = mapCanvas.height / 2;
-    drawTriangle(mctx, canvasCenterX, canvasCenterY, -robot.yaw, SC*.85,'#00d4ff');
+    // Without origin, just show yaw directly (assume 0° = RIGHT)
+    drawTriangle(mctx, canvasCenterX, canvasCenterY, robot.yaw, SC*.85,'#00d4ff');
     mctx.save(); mctx.font='8px Courier New'; mctx.fillStyle='rgba(0,212,255,.8)';
     mctx.textAlign='left'; mctx.textBaseline='alphabetic';
     mctx.fillText(`(no origin set)`, canvasCenterX+SC, canvasCenterY-4); 
@@ -1182,30 +1559,26 @@ function drawSmallTriangle(ctx, cx, cy, yaw, sz, col) {
 }
 
 // ── COORDINATE TRANSFORM ──────────────────────────────────────────────────────
-// originYaw tells us which direction the robot's odom-X axis points on the canvas.
-//   0°   → robot forward = RIGHT  on canvas (+canvasX)
-//   90°  → robot forward = UP     on canvas (-canvasY)   ← default old behaviour
-//   180° → robot forward = LEFT   on canvas (-canvasX)
-//   270° → robot forward = DOWN   on canvas (+canvasY)
-//
-// General formula:
-//   world_forward_angle_on_canvas = -(originYaw * PI/180)   [canvas Y is inverted]
-//   canvasFwd = unit vector in that canvas direction
-//   canvasLeft = canvasFwd rotated +90° (robot's left = odom +Y)
+// Convention (ROS-like):
+//   originYaw = angle of origin's forward direction on screen
+//             measured CCW from screen RIGHT (0°=RIGHT, 90°=UP, 180°=LEFT, 270°=DOWN)
+//   +X odom = forward (direction originYaw points)
+//   +Y odom = left (90° CCW from forward)
+//   robot.yaw = heading relative to odom +X, CCW positive
 //
 // robot position in canvas pixels relative to origin:
 //   Δcanvas = robot.x * canvasFwd  +  robot.y * canvasLeft
-//   (odom.x = forward, odom.y = left strafe)
 
 function odomToCanvas(ox_m, oy_m){
   if(!originPx) return null;
-  const ang   = -(originYaw * Math.PI / 180); // canvas angle for robot forward
-  // forward unit vector on canvas
+  // originYaw CCW from screen right, but canvas Y is down so forward Y is negated
+  const ang   = originYaw * Math.PI / 180;
+  // forward unit vector on canvas: (cos(ang), -sin(ang)) because canvas Y is inverted
   const fwdX  =  Math.cos(ang);
-  const fwdY  =  Math.sin(ang);
-  // left unit vector on canvas (rotate fwd by +90° in canvas space)
-  const lftX  = -fwdY;
-  const lftY  =  fwdX;
+  const fwdY  = -Math.sin(ang);
+  // left unit vector on canvas: 90° CCW from forward (Y inverted for user request)
+  const lftX  =  Math.sin(ang);
+  const lftY  =  Math.cos(ang);
   // cells from origin
   const cells = 100 / mapRes;   // pixels per metre in cells
   const dx = (ox_m * fwdX + oy_m * lftX) * cells;
@@ -1224,16 +1597,16 @@ function wpToCanvas(wp){
 }
 function canvasToOdom(canvasCellX, canvasCellY){
   if(!originPx) return null;
-  const ang   = -(originYaw * Math.PI / 180);
+  const ang   = originYaw * Math.PI / 180;
   const fwdX  =  Math.cos(ang);
-  const fwdY  =  Math.sin(ang);
-  const lftX  = -fwdY;
-  const lftY  =  fwdX;
+  const fwdY  = -Math.sin(ang);
+  const lftX  =  Math.sin(ang);
+  const lftY  =  Math.cos(ang);
   const cells = 100 / mapRes;
   // Vector from origin to clicked cell
   const dxCell = canvasCellX - originPx.x;
   const dyCell = canvasCellY - originPx.y;
-  // Project onto forward and left axes
+  // Project onto forward and left axes (dot product)
   const fwdDist = dxCell * fwdX + dyCell * fwdY;
   const lftDist = dxCell * lftX + dyCell * lftY;
   // Convert back to odom coordinates
@@ -1242,7 +1615,8 @@ function canvasToOdom(canvasCellX, canvasCellY){
   return { x: ox_m, y: oy_m };
 }
 function drawTriangle(ctx,cx,cy,yaw,sz,col){
-  // Black side is the front: rotate so black side points in yaw direction, but rotated 90deg right
+  // yaw = screen heading angle (CCW from screen right), ctx.rotate is CW positive
+  // so we negate yaw, and add π/2 to orient triangle graphic (black side at front)
   ctx.save(); ctx.translate(cx,cy); ctx.rotate(-yaw + Math.PI/2);
   
   // Convert robot dimensions from cm to pixels
@@ -1322,9 +1696,9 @@ function toggleOrigin(){
   const btn=document.getElementById('origBtn');
   btn.classList.toggle('on',settingOrig);
   btn.textContent=settingOrig?'⏳ Click on the map to set origin…'
-    :(originPx?'🎯 Origin set — click to move it':'🎯 Click map to set origin');
+    :(originPx?'🎯 Reset Origin':'🎯 Set Origin');
   if(settingOrig){
-    showToast('🎯 Click map to place → WASD adjust position • ENTER save • ESC cancel');
+    showToast('🎯 Click map to place → IJKL adjust position • ENTER save • ESC cancel');
   }
 }
 mapCanvas.addEventListener('click',e=>{
@@ -1336,7 +1710,7 @@ mapCanvas.addEventListener('click',e=>{
   // Set the origin marker at clicked position
   selectedMarkerPixelX = mx;
   selectedMarkerPixelY = my;
-  showToast('✅ Position set! WASD to adjust • ENTER save • ESC cancel');
+  showToast('✅ Position set! IJKL to adjust • ENTER save • ESC cancel');
   renderMap();
 });
 
@@ -1377,11 +1751,13 @@ function confirmOrigin(){
   
   const btn=document.getElementById('origBtn');
   btn.classList.remove('on');
-  btn.textContent='🎯 Origin set — click to move it';
-  document.getElementById('origInfo').innerHTML=`Origin px(${originPx.x},${originPx.y}) → <b>world(0,0)</b>`;
+  btn.textContent='🎯 Reset Origin';
   document.getElementById('origOrient').style.display='block';
   renderMap();
   showToast('✅ Origin saved at pixel('+originPx.x+','+originPx.y+')');
+  
+  // Automatically open waypoint mode after origin is set
+  selectWaypointMode();
 }
 
 function cancelOrigin(){
@@ -1390,7 +1766,7 @@ function cancelOrigin(){
   selectedMarkerPixelY = null;
   const btn=document.getElementById('origBtn');
   btn.classList.remove('on');
-  btn.textContent='🎯 Click map to set origin';
+  btn.textContent=(originPx?'🎯 Reset Origin':'🎯 Set Origin');
   renderMap();
   showToast('❌ Origin setting cancelled');
 }
@@ -1410,13 +1786,14 @@ function connect(){
   document.getElementById('dbgUrl').textContent=wsUrl();
   setBadge('c');
   try{ ws=new WebSocket(wsUrl()); }catch(e){ retry(); return; }
-  ws.onopen=()=>{ retries=0; document.getElementById('dbgRetry').textContent='0'; setBadge('on'); send({type:'list_maps'}); };
+  ws.onopen=()=>{ retries=0; document.getElementById('dbgRetry').textContent='0'; setBadge('on'); send({type:'list_maps'}); send({type:'load_map', name:'actual_map'}); };
   ws.onclose=()=>{ setBadge('off'); retry(); };
   ws.onerror=()=>console.warn('[WS] error');
   ws.onmessage=e=>{
     rxCount++; document.getElementById('dbgRx').textContent=rxCount;
     try{
       const d=JSON.parse(e.data);
+      console.log('[WS] Received:', d.type, d);  // Log all incoming messages
       if(d.type==='odom'){
         odomCount++; document.getElementById('dbgOdom').textContent=odomCount;
         robot.x=d.x; robot.y=d.y; robot.yaw=d.yaw;
@@ -1444,26 +1821,92 @@ function connect(){
         document.getElementById('cvLy').textContent=d.linear_y.toFixed(2);
         document.getElementById('cvAz').textContent=d.angular_z.toFixed(2);
       }
-      if(d.type==='dis_data') document.getElementById('sDisData').textContent=d.data;
+      if(d.type==='dis_data') {
+        // Format array data as string for display
+        if(Array.isArray(d.data)) {
+          window.lastDisDataArray = d.data;  // Store raw array
+          document.getElementById('sDisData').textContent = '[' + d.data.map(v => v.toFixed(3)).join(', ') + ']';
+        } else {
+          window.lastDisDataArray = null;
+          document.getElementById('sDisData').textContent = d.data;
+        }
+      }
       if(d.type==='map_list') {
+        console.log('[MAP] Received map_list:', d.maps);
         refreshMapLibrary(d.maps);
         showHomeMapLibrary(d.maps);
       }
-      if(d.type==='map_data') loadMapData(d);
+      if(d.type==='map_data') {
+        console.log('[MAP] Received map_data:', {name: d.name, cols: d.cols, rows: d.rows, resolution: d.resolution, pixelsLength: d.pixels ? d.pixels.length : 'undefined'});
+        loadMapData(d);
+      }
+      if(d.type==='map_load_error') {
+        console.error('[MAP] Load error:', d.error);
+        showToast('❌ Map load error: ' + d.error);
+      }
       if(d.type==='map_saved'){ showToast('💾 Map saved: '+d.name); send({type:'list_maps'}); }
       if(d.type==='map_save_error') showToast('❌ Save error: '+d.msg);
+      if(d.type==='anchors_list') {
+        console.log('[ANCHOR] Received anchors_list:', d.anchors);
+        displayAnchorList(d.anchors);
+      }
+      if(d.type==='anchor_saved') {
+        showToast(`📍 Anchor saved: ${d.filename}`);
+      }
       if(d.type==='mission_status') updateMissionPanel(d);
-    }catch(_){}
+      if(d.type==='camera_colour' || d.type==='camera_qr') {
+        const cameraBox = document.getElementById('cameraOutput');
+        if(cameraBox) {
+          if(d.type==='camera_colour') {
+            lastCameraColour = d.data;
+            lastCameraSource = 'colour';
+          } else if(d.type==='camera_qr') {
+            lastCameraQR = d.data;
+            lastCameraSource = 'qr';
+          }
+          // Display heading and data based on source
+          if(lastCameraSource === 'colour') {
+            cameraBox.value = `colour\n${lastCameraColour}`;
+          } else if(lastCameraSource === 'qr') {
+            cameraBox.value = `qr\n${lastCameraQR}`;
+          } else {
+            cameraBox.value = 'none';
+          }
+        }
+      }
+      // Waypoints handlers
+      if(d.type==='waypoints_list') {
+        console.log('[WP] Received waypoints_list:', d.waypoints);
+        renderWPFileList(d.waypoints);
+      }
+      if(d.type==='waypoints_data') {
+        console.log('[WP] Received waypoints_data:', d.name);
+        applyLoadedWaypoints(d.data);
+      }
+      if(d.type==='waypoints_saved') {
+        showToast('💾 Waypoints saved: ' + d.name);
+      }
+      if(d.type==='waypoints_save_error') {
+        showToast('❌ Waypoints save error: ' + d.msg);
+      }
+      if(d.type==='waypoints_load_error') {
+        showToast('❌ Waypoints load error: ' + d.error);
+      }
+    }catch(err){
+      console.error('[WS] Error processing message:', err, 'Raw:', e.data);
+      showToast('❌ Message error: ' + err.message);
+    }
   };
 }
 function retry(){ retries++; document.getElementById('dbgRetry').textContent=retries; setTimeout(connect,Math.min(500*Math.pow(2,Math.min(retries-1,4)),8000)); }
-function send(obj){ if(ws&&ws.readyState===WebSocket.OPEN) try{ws.send(JSON.stringify(obj));}catch(_){} }
+function send(obj){ if(ws&&ws.readyState===WebSocket.OPEN) try{ console.log('[WS] Sending:', obj); ws.send(JSON.stringify(obj));}catch(_){} }
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&(!ws||ws.readyState>1)) connect(); });
 connect();
 
 // ── JOYSTICK ──────────────────────────────────────────────────────────────────
 const joyPad=document.getElementById('joyPad'), joyKnob=document.getElementById('joyKnob');
-let joyActive=false, jLX=0, jLY=0, jAZ=0, maxSpd=0.3;
+let joyActive=false, jLX=0, jLY=0, jAZ=0, maxSpd=0.6;
+let joystickEnabled=false;  // Toggle state for joystick (starts disabled)
 function setKnob(dx,dy){
   const R=joyPad.offsetWidth/2-20, dist=Math.sqrt(dx*dx+dy*dy);
   const cl=Math.min(dist,R), ang=Math.atan2(dy,dx);
@@ -1471,23 +1914,26 @@ function setKnob(dx,dy){
   joyKnob.style.left=(50+kx/R*50)+'%'; joyKnob.style.top=(50+ky/R*50)+'%';
   jLX=(kx/R)*maxSpd; jLY=-(ky/R)*maxSpd; updateCV();
 }
-function joyStart(e){ joyActive=true; joyMove(e); }
-function joyMove(e){ if(!joyActive) return; const r=joyPad.getBoundingClientRect(); const pt=e.touches?e.touches[0]:e; setKnob(pt.clientX-r.left-r.width/2,pt.clientY-r.top-r.height/2); }
+function joyStart(e){ if(!joystickEnabled) return; joyActive=true; joyMove(e); }
+function joyMove(e){ if(!joyActive||!joystickEnabled) return; const r=joyPad.getBoundingClientRect(); const pt=e.touches?e.touches[0]:e; setKnob(pt.clientX-r.left-r.width/2,pt.clientY-r.top-r.height/2); }
 function joyEnd(){ joyActive=false; jLX=0; jLY=0; joyKnob.style.left='50%'; joyKnob.style.top='50%'; updateCV(); }
 joyPad.addEventListener('mousedown',joyStart); window.addEventListener('mousemove',joyMove); window.addEventListener('mouseup',joyEnd);
 joyPad.addEventListener('touchstart',e=>{e.preventDefault();joyStart(e);},{passive:false});
 window.addEventListener('touchmove',e=>joyMove(e),{passive:false}); window.addEventListener('touchend',joyEnd);
+function toggleJoystick(){ joystickEnabled=!joystickEnabled; const btn=document.getElementById('joyToggleBtn'); btn.classList.toggle('disabled'); if(!joystickEnabled) joyEnd(); }
 function startRot(d){ jAZ=d*maxSpd*1.5; document.getElementById(d>0?'rotL':'rotR').classList.add('held'); updateCV(); }
 function stopRot(){ jAZ=0; document.getElementById('rotL').classList.remove('held'); document.getElementById('rotR').classList.remove('held'); updateCV(); }
 function onSpdChange(){ maxSpd=parseFloat(document.getElementById('spdSlider').value); document.getElementById('spdVal').textContent=maxSpd.toFixed(2); }
+let estopActive=false;
+function toggleEStop(){ estopActive=!estopActive; const btn=document.getElementById('estopBtn'); btn.classList.toggle('active'); send({type:'estop', data:estopActive}); }
 function updateCV(){
   document.getElementById('cvLx').textContent=jLY.toFixed(2);
   document.getElementById('cvLy').textContent=(-jLX).toFixed(2);
   document.getElementById('cvAz').textContent=jAZ.toFixed(2);
 }
-// ── WASD CONTROL FOR WAYPOINT & ORIGIN MODES ──────────────────────────────────
-let wasdKeys = {w:false, a:false, s:false, d:false, q:false, e:false};
-let wasdSpeed = 0.3;  // m/s for movement
+// ── IJKL CONTROL FOR WAYPOINT & ORIGIN MODES ──────────────────────────────────
+let ijklKeys = {i:false, j:false, k:false, l:false, q:false, e:false};
+let ijklSpeed = 0.1;  // m/s for movement
 let selectedMarkerX = null;  // temp marker position during adjustment (odom coords for waypoint)
 let selectedMarkerY = null;
 let selectedMarkerYaw = 0;
@@ -1496,34 +1942,34 @@ let selectedMarkerPixelY = null;
 
 window.addEventListener('keydown', e=>{
   const key = e.key.toLowerCase();
-  if(key==='w') wasdKeys.w=true;
-  if(key==='a') wasdKeys.a=true;
-  if(key==='s') wasdKeys.s=true;
-  if(key==='d') wasdKeys.d=true;
-  if(key==='q') wasdKeys.q=true;
-  if(key==='e') wasdKeys.e=true;
+  if(key==='i') ijklKeys.i=true;
+  if(key==='j') ijklKeys.j=true;
+  if(key==='k') ijklKeys.k=true;
+  if(key==='l') ijklKeys.l=true;
+  if(key==='q') ijklKeys.q=true;
+  if(key==='e') ijklKeys.e=true;
 });
 
 window.addEventListener('keyup', e=>{
   const key = e.key.toLowerCase();
-  if(key==='w') wasdKeys.w=false;
-  if(key==='a') wasdKeys.a=false;
-  if(key==='s') wasdKeys.s=false;
-  if(key==='d') wasdKeys.d=false;
-  if(key==='q') wasdKeys.q=false;
-  if(key==='e') wasdKeys.e=false;
+  if(key==='i') ijklKeys.i=false;
+  if(key==='j') ijklKeys.j=false;
+  if(key==='k') ijklKeys.k=false;
+  if(key==='l') ijklKeys.l=false;
+  if(key==='q') ijklKeys.q=false;
+  if(key==='e') ijklKeys.e=false;
 });
 
-// Update marker position with WASD during origin/waypoint modes
+// Update marker position with IJKL during origin/waypoint modes
 setInterval(()=>{
   // Adjust marker position if one is selected in waypoint mode
   if(wpMapClickActive && wpSelectedX !== null){
     let moveX = 0, moveY = 0;
     
-    if(wasdKeys.w) moveX += wasdSpeed * 0.1;  // scaled for 100ms interval
-    if(wasdKeys.s) moveX -= wasdSpeed * 0.1;
-    if(wasdKeys.a) moveY += wasdSpeed * 0.1;
-    if(wasdKeys.d) moveY -= wasdSpeed * 0.1;
+    if(ijklKeys.i) moveX += ijklSpeed * 0.1;  // scaled for 100ms interval
+    if(ijklKeys.k) moveX -= ijklSpeed * 0.1;
+    if(ijklKeys.j) moveY -= ijklSpeed * 0.1;
+    if(ijklKeys.l) moveY += ijklSpeed * 0.1;
     
     if(moveX !== 0 || moveY !== 0){
       wpSelectedX += moveX;
@@ -1537,13 +1983,13 @@ setInterval(()=>{
   if(settingOrig && selectedMarkerPixelX !== null){
     let moveX = 0, moveY = 0;
     
-    // Convert WASD to pixel movement (scale based on SC)
-    const pixelSpeed = wasdSpeed * 10 / SC;  // adjust for canvas scale
+    // Convert IJKL to pixel movement (scale based on SC)
+    const pixelSpeed = ijklSpeed * 10 / SC;  // adjust for canvas scale
     
-    if(wasdKeys.w) moveY -= pixelSpeed;
-    if(wasdKeys.s) moveY += pixelSpeed;
-    if(wasdKeys.a) moveX -= pixelSpeed;
-    if(wasdKeys.d) moveX += pixelSpeed;
+    if(ijklKeys.i) moveY -= pixelSpeed;
+    if(ijklKeys.k) moveY += pixelSpeed;
+    if(ijklKeys.j) moveX -= pixelSpeed;
+    if(ijklKeys.l) moveX += pixelSpeed;
     
     if(moveX !== 0 || moveY !== 0){
       selectedMarkerPixelX = Math.max(0, Math.min(mapW-1, selectedMarkerPixelX + moveX));
@@ -1553,22 +1999,24 @@ setInterval(()=>{
   }
 }, 100);
 
-// Send cmd_vel based on joystick, but NOT during origin/waypoint placement
+// Send cmd_vel ONLY when joystick or rotation buttons are active
 setInterval(()=>{
   // If in waypoint marking or setting origin mode, DO NOT send cmd_vel
-  if (wpMapClickActive || settingOrig) {
-    // Only move the marker visually, do not send any movement commands
-    return;
-  }
+  if (wpMapClickActive || settingOrig) return;
+  // Only send if joystick is being touched or rotation is active
+  if (!joyActive && jAZ === 0) return;
   let sendLinX = jLY, sendLinY = -jLX, sendAngZ = jAZ;
   send({type:'cmd_vel', linear_x:sendLinX, linear_y:sendLinY, angular_z:sendAngZ});
 }, 100);
 
-document.addEventListener('keydown',e=>{ if((e.key==='p'||e.key==='P')&&!e.target.matches('input,textarea')) markWP(); });
-function markWP(){
+// Double-press tracking for 'P' key / CURR POSE button
+let pPressCount = 0;
+let pPressTimeout = null;
+
+function executePressFunc() {
   let wpX = robot.x;
-  // Get previous waypoint X if exists
-  const prevWpX = waypoints.length > 0 ? waypoints[waypoints.length - 1].x_m : null;
+  // Get previous spatial waypoint X if exists (skip ACTION nodes)
+  const _lsw = lastSpatialWP(); const prevWpX = _lsw ? _lsw.x_m : null;
   // If prevX < newX OR prevX < odom x, subtract error; otherwise add error
   if ((prevWpX !== null && (prevWpX < robot.x || prevWpX < robot.x)) || (prevWpX === null && robot.x < robot.x)) {
     wpX = wpX - globalErrorValue;
@@ -1588,18 +2036,119 @@ function markWP(){
   setTimeout(()=>document.body.classList.remove('p-flash'),500);
   updateWPList(); renderMap();
 }
+
+function markWP() {
+  pPressCount++;
+  
+  // Clear existing timeout
+  if (pPressTimeout) clearTimeout(pPressTimeout);
+  
+  if (pPressCount === 1) {
+    // First press: show toast indicator
+    showToast('Press again to mark waypoint');
+    // Reset counter after 500ms if second press doesn't happen
+    pPressTimeout = setTimeout(() => {
+      pPressCount = 0;
+      pPressTimeout = null;
+    }, 500);
+  } else if (pPressCount === 2) {
+    // Second press: execute the function
+    pPressCount = 0;
+    pPressTimeout = null;
+    executePressFunc();
+  }
+}
+
+// Double-press tracking for 'Q' key
+let qPressCount = 0;
+let qPressTimeout = null;
+
+function handleQKeyPress() {
+  qPressCount++;
+  
+  // Clear existing timeout
+  if (qPressTimeout) clearTimeout(qPressTimeout);
+  
+  if (qPressCount === 1) {
+    // First press: show toast indicator
+    showToast('Press again to open Waypoint Mode');
+    // Reset counter after 500ms if second press doesn't happen
+    qPressTimeout = setTimeout(() => {
+      qPressCount = 0;
+      qPressTimeout = null;
+    }, 500);
+  } else if (qPressCount === 2) {
+    // Second press: execute the function
+    qPressCount = 0;
+    qPressTimeout = null;
+    selectWaypointMode();
+  }
+}
+
+document.addEventListener('keydown',e=>{ if((e.key==='p'||e.key==='P')&&!e.target.matches('input,textarea')) markWP(); });
 function updateWPList(){
   const el=document.getElementById('wpList');
   if(!waypoints.length){ el.innerHTML='<div class="wp-empty">No waypoints.<br>Drive robot → press <b>[P]</b></div>'; return; }
+  let wpNum = 0;
   el.innerHTML = waypoints.map((wp, i) => {
-    let circleColor = '#4caf50'; // Default green for WP
-    if (wp.createdFrom === 'MOVE') circleColor = '#ff9800'; // Orange for MOVE
-    return `<div class="wp-item wp-${wp.type && wp.type.toLowerCase ? wp.type.toLowerCase() : 'wp'}" draggable="true" data-idx="${i}" ondragstart="onWpDragStart(event)" ondragover="onWpDragOver(event)" ondrop="onWpDrop(event)" ondragend="onWpDragEnd(event)">
-      <div class="wp-num" onclick="editWpNum(${i})" style="cursor:pointer; background:${circleColor}; color:#fff;" title="Click to edit order">${i + 1}</div>
+    // Action items render differently
+    if(wp.type === 'ACTION'){
+      const actionLabels = {detect_color: '🔍 Detect Colour'};
+      const label = actionLabels[wp.node] || wp.node;
+      return `<div class="wp-item wp-action" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragover="onWpDragOver(event)" ondrop="onWpDrop(event)" ondragend="onWpDragEnd(event)">
+        <div class="wp-num" style="background:#9c27b0; color:#fff;">⚡</div>
+        <div class="wp-body"><div class="wp-xy" style="color:#ce93d8;">${label}</div></div>
+        <button class="wp-del" onclick="delWP(${i})">✕</button>
+      </div>`;
+    }
+    // Anchor items render differently
+    if(wp.type === 'ANCHOR'){
+      return `<div class="wp-item wp-anchor" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragover="onWpDragOver(event)" ondrop="onWpDrop(event)" ondragend="onWpDragEnd(event)">
+        <div class="wp-num" style="background:#2196F3; color:#fff;">📍</div>
+        <div class="wp-body"><div class="wp-xy" style="color:#64b4ff;">${wp.anchor_name}</div><div class="wp-yaw" style="color:#ffb464;">${wp.direction.toUpperCase()} | fwd: ${wp.average.toFixed(4)}m | lat: ${wp.distance.toFixed(4)}m</div></div>
+        <button class="wp-del" onclick="delWP(${i})">✕</button>
+      </div>`;
+    }
+    wpNum++;
+    // Determine circle color based on creation source
+    let circleColor = '#81C784'; // Default light green for 'wp'
+    if (wp.createdFrom === 'MOVE') circleColor = '#FDD835'; // Light yellow for MOVE panel
+    if (wp.createdFrom === 'P') circleColor = '#FFB74D'; // Light orange for P keypress mark
+    return `<div class="wp-item wp-${wp.type && wp.type.toLowerCase ? wp.type.toLowerCase() : 'wp'}" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragover="onWpDragOver(event)" ondrop="onWpDrop(event)" ondragend="onWpDragEnd(event)">
+      <div class="wp-num" style="background:${circleColor}; color:#fff;">${wpNum}</div>
       <div class="wp-body"><div class="wp-xy">x:${wp.x_m} y:${wp.y_m} m</div><div class="wp-yaw">yaw:${wp.yaw_deg}°</div></div>
       <button class="wp-del" onclick="delWP(${i})">✕</button>
     </div>`;
   }).join('');
+}
+
+// Highlight waypoint on double-click
+function highlightWaypoint(idx) {
+  // Clear any existing timeout
+  if(highlightTimeout !== null) {
+    clearTimeout(highlightTimeout);
+    highlightTimeout = null;
+  }
+  
+  if(waypoints[idx].type === 'ACTION' || waypoints[idx].type === 'ANCHOR') {
+    highlightedWpIdx = null; // Don't highlight ACTION or ANCHOR nodes
+    highlightStartTime = null;
+  } else {
+    highlightedWpIdx = highlightedWpIdx === idx ? null : idx; // Toggle highlight
+    if(highlightedWpIdx !== null) {
+      highlightStartTime = Date.now();
+      // Auto-clear highlight after 3 seconds
+      highlightTimeout = setTimeout(() => {
+        highlightedWpIdx = null;
+        highlightStartTime = null;
+        highlightTimeout = null;
+        renderMap();
+      }, 1000);
+    } else {
+      highlightStartTime = null;
+    }
+  }
+  renderMap();
 }
 
 // Drag-and-drop handlers for waypoint reordering
@@ -1665,35 +2214,410 @@ function editWpNum(idx) {
   input.select();
 }
 function delWP(i){ waypoints.splice(i,1); waypoints.forEach((w,j)=>w.id=j+1); updateWPList(); renderMap(); }
-function clearWP(){ if(!waypoints.length)return; if(confirm('Clear all waypoints?')){ waypoints=[]; updateWPList(); renderMap(); } }
+function clearWP(){ if(!waypoints.length)return; waypoints=[]; updateWPList(); renderMap(); }
+
+// ── ACTION POPUP ──────────────────────────────────────────────────────────────
+function openActionPopup(){
+  document.getElementById('actionOverlay').classList.add('open');
+}
+function closeActionPopup(){
+  document.getElementById('actionOverlay').classList.remove('open');
+}
+function addAction(node){
+  waypoints.push({
+    id: waypoints.length + 1,
+    type: 'ACTION',
+    node: node
+  });
+  closeActionPopup();
+  updateWPList();
+  renderMap();
+  showToast('⚡ Action added: ' + node);
+}
+
+// ── ANCHOR LIST POPUP ─────────────────────────────────────────────────────────
+function openAnchorListPopup(){
+  closeActionPopup();
+  document.getElementById('anchorListOverlay').classList.add('open');
+  // Request anchor list from server
+  send({type: 'list_anchors'});
+}
+
+function closeAnchorListPopup(){
+  document.getElementById('anchorListOverlay').classList.remove('open');
+}
+
+function displayAnchorList(anchors){
+  const container = document.getElementById('anchorListContainer');
+  
+  if(!anchors || anchors.length === 0){
+    container.innerHTML = '<div style="text-align:center;color:var(--muted2);padding:20px;">No saved anchors yet</div>';
+    return;
+  }
+  
+  let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+  anchors.forEach((anchor, idx) => {
+    const displayStr = `${anchor.direction.toUpperCase()} - Distance: ${anchor.distance.toFixed(4)}m, Avg: ${anchor.average.toFixed(4)}m`;
+    html += `<button class="action-item-btn" onclick="addAnchorToWaypoints('${anchor.name}', '${anchor.direction}', ${anchor.distance}, ${anchor.average})" style="text-align:left;">📍 ${anchor.name}<br><span style="font-size:9px;color:var(--muted2);">${displayStr}</span></button>`;
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function addAnchorToWaypoints(name, direction, distance, average){
+  waypoints.push({
+    id: waypoints.length + 1,
+    type: 'ANCHOR',
+    anchor_name: name,
+    direction: direction,
+    distance: distance,
+    average: average
+  });
+  closeAnchorListPopup();
+  updateWPList();
+  renderMap();
+  showToast(`📍 Anchor '${name}' added to waypoints`);
+}
+
+// ── SAVE ANCHOR POPUP ─────────────────────────────────────────────────────────
+let currentAnchorRawData = null;
+let currentAnchorRawArray = null;  // Store raw array data from server
+let currentAnchorParsedData = null;
+
+function parseDisData(data) {
+  try {
+    // If it's already an array, return it
+    if (Array.isArray(data)) {
+      return data.map(x => parseFloat(x));
+    }
+    // If it's a string, try to parse as JSON array
+    if (typeof data === 'string') {
+      if (data.startsWith('[') && data.endsWith(']')) {
+        return JSON.parse(data);
+      }
+      // Try to parse as comma-separated values
+      const parts = data.split(',').map(x => parseFloat(x.trim())).filter(x => !isNaN(x));
+      return parts.length > 0 ? parts : null;
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function openSaveAnchorPopup(){
+  const disDataElement = document.getElementById('sDisData');
+  const disDataValue = disDataElement ? disDataElement.textContent : '—';
+  currentAnchorRawData = disDataValue;
+  
+  // Also get the raw array if available (from window.lastDisDataArray set by WebSocket handler)
+  if (window.lastDisDataArray !== undefined) {
+    currentAnchorRawArray = window.lastDisDataArray;
+  }
+  
+  // Display raw data
+  document.getElementById('anchorDataDisplay').textContent = disDataValue;
+  
+  // Parse the data - prefer raw array if available
+  if (disDataValue === '—') {
+    document.getElementById('anchorParsedDisplay').innerHTML = '<span style="color:var(--red);">⚠️ No data available</span>';
+    document.getElementById('anchorCalculatedDisplay').innerHTML = '<span style="color:var(--red);">Cannot calculate</span>';
+    currentAnchorParsedData = null;
+  } else {
+    const parsed = parseDisData(currentAnchorRawArray || disDataValue);
+    currentAnchorParsedData = parsed;
+    
+    if (parsed && parsed.length >= 4) {
+      // Display parsed values
+      const parsedHTML = `data[0]: <span style="color:var(--green);">${parsed[0].toFixed(4)}</span><br>` +
+        `data[1]: <span style="color:var(--accent);">${parsed[1].toFixed(4)}</span><br>` +
+        `data[2]: <span style="color:var(--accent);">${parsed[2].toFixed(4)}</span><br>` +
+        `data[3]: <span style="color:var(--accent2);">${parsed[3].toFixed(4)}</span>`;
+      document.getElementById('anchorParsedDisplay').innerHTML = parsedHTML;
+      
+      // Calculate and display anchor values
+      const average = (parsed[1] + parsed[2]) / 2;
+      const leftValue = -parsed[0];
+      const rightValue = parsed[3];
+      
+      const calcHTML = `<span style="color:#64b4ff;font-family:var(--font-mono);">LEFT: ${leftValue.toFixed(4)}<br>avg: ${average.toFixed(4)}</span>` +
+        `<span style="color:#ffb464;font-family:var(--font-mono);">RIGHT: ${rightValue.toFixed(4)}<br>avg: ${average.toFixed(4)}</span>`;
+      document.getElementById('anchorCalculatedDisplay').innerHTML = calcHTML;
+    } else {
+      document.getElementById('anchorParsedDisplay').innerHTML = '<span style="color:var(--red);">Format: needs ≥4 values</span>';
+      document.getElementById('anchorCalculatedDisplay').innerHTML = '<span style="color:var(--red);">Invalid</span>';
+    }
+  }
+  
+  document.getElementById('saveAnchorOverlay').classList.add('open');
+}
+
+function closeSaveAnchorPopup(){
+  document.getElementById('saveAnchorOverlay').classList.remove('open');
+  currentAnchorRawData = null;
+  currentAnchorRawArray = null;
+  currentAnchorParsedData = null;
+}
+
+function saveAnchor(direction) {
+  if (!currentAnchorParsedData || currentAnchorParsedData.length < 4) {
+    showToast('❌ Invalid anchor data');
+    return;
+  }
+  
+  // Get filename from input
+  const filenameInput = document.getElementById('anchorFilenameInput');
+  let filename = filenameInput ? filenameInput.value.trim() : '';
+  
+  // Validate filename
+  if (filename && !/^[a-zA-Z0-9_\-]+$/.test(filename)) {
+    showToast('❌ Filename can only contain letters, numbers, - and _');
+    return;
+  }
+  
+  if (!filename) {
+    // Generate default name from direction + timestamp
+    const now = new Date();
+    const ts = now.getFullYear().toString().slice(2) + 
+               String(now.getMonth() + 1).padStart(2, '0') +
+               String(now.getDate()).padStart(2, '0') + '_' +
+               String(now.getHours()).padStart(2, '0') +
+               String(now.getMinutes()).padStart(2, '0') +
+               String(now.getSeconds()).padStart(2, '0');
+    filename = `anchor_${direction}_${ts}`;
+  }
+  
+  const data = currentAnchorParsedData;
+  const average = (data[1] + data[2]) / 2;
+  
+  let anchorValue = 0;
+  if (direction === 'left') {
+    anchorValue = -data[0];
+  } else if (direction === 'right') {
+    anchorValue = data[3];
+  }
+  
+  const anchorData = {
+    direction: direction,
+    distance: anchorValue,
+    average: average,
+    raw_data: currentAnchorRawData,
+    timestamp: new Date().toISOString()
+  };
+  
+  // Send to server via WebSocket
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      type: 'save_anchor',
+      direction: direction,
+      distance: anchorValue,
+      average: average,
+      filename: filename
+    }));
+    
+    showToast(`📍 Anchor saved: ${filename}`);
+    closeSaveAnchorPopup();
+    
+    // Also save to localStorage for reference
+    const anchors = JSON.parse(localStorage.getItem('robot_anchors') || '[]');
+    anchors.push(anchorData);
+    localStorage.setItem('robot_anchors', JSON.stringify(anchors));
+  } else {
+    showToast('❌ WebSocket not connected');
+  }
+}
+
+// Helper: find the last real spatial waypoint (skips ACTION nodes)
+function lastSpatialWP(){
+  for(let i = waypoints.length - 1; i >= 0; i--){
+    if(waypoints[i].type !== 'ACTION' && waypoints[i].type !== 'ANCHOR') return waypoints[i];
+  }
+  return null;
+}
 
 // ── MOVE COMMAND ───────────────────────────────────────────────────────────────
 let moveDir = null;  // 'forward', 'backward', 'cw', 'ccw'
 let rotateMode = false;
 
+function openMoveModal(){
+  document.getElementById('moveModalOverlay').classList.add('open');
+}
+
+function closeMoveModal(){
+  document.getElementById('moveModalOverlay').classList.remove('open');
+}
+
 function startMoveCommand(dir){
   moveDir = dir;
   rotateMode = false;
-  document.getElementById('moveDir').textContent = dir.charAt(0).toUpperCase() + dir.slice(1);
-  document.getElementById('movePanel').style.display = 'block';
-  document.getElementById('moveInputRow').style.display = '';
-  document.getElementById('moveRunBtn').textContent = '▶ RUN MOVE';
-  document.getElementById('moveDist').focus();
+  const dirDisplay = dir.charAt(0).toUpperCase() + dir.slice(1);
+  document.getElementById('moveModalDir').textContent = dirDisplay;
+  document.getElementById('moveModalDist').style.display = '';
+  document.getElementById('moveModalRunBtn').textContent = '▶ RUN MOVE';
+  openMoveModal();
+  
+  // Update button states
+  document.getElementById('moveModalBtn_forward').classList.toggle('forward-active', dir === 'forward');
+  document.getElementById('moveModalBtn_backward').classList.toggle('backward-active', dir === 'backward');
+  document.getElementById('moveModalBtn_cw').classList.remove('cw-active');
+  document.getElementById('moveModalBtn_ccw').classList.remove('ccw-active');
 }
 
 function startRotateCommand(rotDir){
   moveDir = rotDir;
   rotateMode = true;
-  document.getElementById('moveDir').textContent = rotDir === 'cw' ? 'Rotate CW (↻)' : 'Rotate CCW (↺)';
-  document.getElementById('movePanel').style.display = 'block';
-  document.getElementById('moveInputRow').style.display = 'none';
-  document.getElementById('moveRunBtn').textContent = '▶ RUN ROTATE';
+  document.getElementById('moveModalDir').textContent = rotDir === 'cw' ? 'Rotate CW (↻)' : 'Rotate CCW (↺)';
+  document.getElementById('moveModalDist').style.display = 'none';
+  document.getElementById('moveModalRunBtn').textContent = '▶ RUN ROTATE';
+  openMoveModal();
+  
+  // Update button states
+  document.getElementById('moveModalBtn_forward').classList.remove('forward-active');
+  document.getElementById('moveModalBtn_backward').classList.remove('backward-active');
+  document.getElementById('moveModalBtn_cw').classList.toggle('cw-active', rotDir === 'cw');
+  document.getElementById('moveModalBtn_ccw').classList.toggle('ccw-active', rotDir === 'ccw');
 }
 
 function cancelMoveCommand(){
   moveDir = null;
   rotateMode = false;
-  document.getElementById('movePanel').style.display = 'none';
+  closeMoveModal();
+}
+
+function sendDirectMove(){
+  if(!moveDir) return;
+  
+  let waypoint;
+  if(rotateMode){
+    // Rotate 90° CW or CCW
+    let newYaw = robot.yaw;
+    if(moveDir === 'cw'){
+      newYaw += Math.PI/2;
+    } else if(moveDir === 'ccw'){
+      newYaw -= Math.PI/2;
+    }
+    newYaw = Math.atan2(Math.sin(newYaw), Math.cos(newYaw));
+    waypoint = {x: robot.x, y: robot.y, yaw: Math.round(newYaw * 180 / Math.PI)};
+  } else {
+    // Move forward/backward
+    const distance = parseFloat(document.getElementById('moveModalDist').value);
+    if(isNaN(distance) || distance <= 0) { showToast('❌ Invalid distance'); return; }
+    const forward = moveDir === 'forward' ? distance : -distance;
+    const dx = forward * Math.cos(robot.yaw);
+    const dy = forward * Math.sin(robot.yaw);
+    const newX = robot.x + dx;
+    const newY = robot.y + dy;
+    waypoint = {x: newX, y: newY, yaw: Math.round(robot.yaw * 180 / Math.PI)};
+  }
+  
+  // Close modal first
+  closeMoveModal();
+  
+  // Send using unified tree format
+  const payload = {
+    type: 'run_mission',
+    tree: {
+      type: 'sequence',
+      children: [
+        {
+          node: 'goto',
+          x: waypoint.x,
+          y: waypoint.y,
+          yaw: waypoint.yaw
+        }
+      ]
+    }
+  };
+  send(payload);
+  
+  // Update UI to show running status
+  _missionRunning = true;
+  document.getElementById('runBtn').textContent = '⏹ CANCEL MISSION';
+  document.getElementById('runBtn').style.background = '#f44336';
+  document.getElementById('stopBtn').style.display = 'none';
+  updateMissionPanel({state:'running', current:0, total:1, msg:'Executing direct move command…'});
+  
+  cancelMoveCommand();
+}
+
+function addMoveAsWaypoint(){
+  if(!moveDir){
+    showToast('❌ Please select Forward, Backward, CW, or CCW first');
+    return;
+  }
+  
+  const distance = parseFloat(document.getElementById('moveModalDist').value);
+  if(isNaN(distance) || distance <= 0) { showToast('❌ Invalid distance'); return; }
+  
+  // Get reference from previous spatial waypoint or current robot position (skip ACTION nodes)
+  const refWp = lastSpatialWP();
+  const baseX = refWp ? refWp.x_m : robot.x;
+  const baseY = refWp ? refWp.y_m : robot.y;
+  const baseYaw = refWp ? (refWp.yaw_rad) : robot.yaw;
+  
+  let finalX, finalY, finalYaw;
+  
+  if(rotateMode){
+    // Rotate 90° CW or CCW - keep x, y same, only change yaw
+    finalX = baseX;
+    finalY = baseY;
+    finalYaw = baseYaw;
+    if(moveDir === 'cw'){
+      finalYaw += Math.PI/2;
+    } else if(moveDir === 'ccw'){
+      finalYaw -= Math.PI/2;
+    }
+  } else {
+    // Move forward/backward - transform relative movement using base yaw
+    const dx = moveDir === 'forward' ? distance : -distance;
+    const dy = 0;  // no lateral movement
+    
+    // Transform relative movement (dx, dy) from robot frame to world frame using yaw
+    // Robot frame: dx is forward (along robot's heading), dy is left strafe
+    // World frame: X is forward at baseYaw=0, Y is left at baseYaw=0
+    const worldDx = dx * Math.cos(baseYaw) - dy * Math.sin(baseYaw);
+    const worldDy = dx * Math.sin(baseYaw) + dy * Math.cos(baseYaw);
+    
+    finalX = baseX + worldDx;
+    finalY = baseY + worldDy;
+    finalYaw = baseYaw;
+  }
+  
+  // Apply global error value to finalX with conditional logic
+  // Get previous spatial waypoint X if exists (skip ACTION nodes)
+  const prevWpX = (lastSpatialWP() || {}).x_m ?? null;
+  // If prevX < newX OR prevX < odom x, subtract error; otherwise add error
+  if ((prevWpX !== null && (prevWpX < finalX || prevWpX < robot.x)) || (prevWpX === null && finalX < robot.x)) {
+    finalX = finalX - globalErrorValue;
+  } else {
+    finalX = finalX + globalErrorValue;
+  }
+  
+  if(isNaN(finalX) || isNaN(finalY)){
+    showToast('❌ Invalid coordinates');
+    return;
+  }
+  
+  // Normalize yaw to [0, 2π)
+  finalYaw = finalYaw % (2 * Math.PI);
+  if(finalYaw < 0) finalYaw += 2 * Math.PI;
+  
+  let yaw_deg = Math.round(finalYaw * 180 / Math.PI);
+  if (yaw_deg === 360) yaw_deg = 0;
+  
+  waypoints.push({
+    id: waypoints.length + 1,
+    x_m: +finalX.toFixed(4),
+    y_m: +finalY.toFixed(4),
+    yaw_deg: yaw_deg,
+    yaw_rad: finalYaw,
+    createdFrom: 'MOVE',
+    type: rotateMode ? (moveDir === 'cw' ? 'CW' : 'CCW') : (moveDir === 'forward' ? 'FWD' : 'BWD')
+  });
+  showToast('✅ Move waypoint added to list');
+  updateWPList();
+  renderMap();
+  closeMoveModal();
 }
 
 function executeMoveCommand(){
@@ -1709,8 +2633,8 @@ function executeMoveCommand(){
     // Normalize yaw to [-π, π]
     newYaw = Math.atan2(Math.sin(newYaw), Math.cos(newYaw));
     let wpX = robot.x;
-    // Get previous waypoint X if exists
-    const prevWpX = waypoints.length > 0 ? waypoints[waypoints.length - 1].x_m : null;
+    // Get previous spatial waypoint X if exists (skip ACTION nodes)
+    const _lsw = lastSpatialWP(); const prevWpX = _lsw ? _lsw.x_m : null;
     // If prevX < newX OR prevX < odom x, subtract error; otherwise add error
     if ((prevWpX !== null && (prevWpX < robot.x || prevWpX < robot.x)) || (prevWpX === null && robot.x < robot.x)) {
       wpX = wpX - globalErrorValue;
@@ -1735,7 +2659,7 @@ function executeMoveCommand(){
     return;
   }
   // Move forward/backward
-  const distance = parseFloat(document.getElementById('moveDist').value);
+  const distance = parseFloat(document.getElementById('moveModalDist').value);
   if(isNaN(distance) || distance <= 0) { showToast('❌ Invalid distance'); return; }
   const forward = moveDir === 'forward' ? distance : -distance;
   const dx = forward * Math.cos(robot.yaw);
@@ -1743,8 +2667,8 @@ function executeMoveCommand(){
   let newX = robot.x + dx;
   const newY = robot.y + dy;
   
-  // Get previous waypoint X if exists
-  const prevWpX = waypoints.length > 0 ? waypoints[waypoints.length - 1].x_m : null;
+  // Get previous spatial waypoint X if exists (skip ACTION nodes)
+  const _lsw = lastSpatialWP(); const prevWpX = _lsw ? _lsw.x_m : null;
   // If prevX < newX OR prevX < odom x, subtract error; otherwise add error
   if ((prevWpX !== null && (prevWpX < newX || prevWpX < robot.x)) || (prevWpX === null && newX < robot.x)) {
     newX = newX - globalErrorValue;
@@ -1772,6 +2696,9 @@ function executeMoveCommand(){
 let wpModeSelection = null;  // 'waypoint' or 'move'
 let wpMapClickActive = false;
 let wpOrientation = 0;       // in radians for waypoint mode
+let highlightedWpIdx = null; // Index of waypoint to highlight on map
+let highlightStartTime = null; // Timestamp when highlight was started
+let highlightTimeout = null; // Timeout ID for auto-clear
 
 function openAddWP(){
   document.getElementById('wpmodeOverlay').classList.add('open');
@@ -1802,11 +2729,11 @@ function selectMoveMode(){
   document.getElementById('awY').value = '0.00';
   document.getElementById('awYaw').value = '0';
   
-  // Show last waypoint as reference
-  const lastWp = waypoints.length ? waypoints[waypoints.length-1] : null;
+  // Show last spatial waypoint as reference (skip ACTION nodes)
+  const lastWp = lastSpatialWP();
   const refX = lastWp ? lastWp.x_m : robot.x;
   const refY = lastWp ? lastWp.y_m : robot.y;
-  const refYaw = lastWp ? (refWp.yaw_rad) : robot.yaw;
+  const refYaw = lastWp ? (lastWp.yaw_rad) : robot.yaw;
   
   document.getElementById('awCurX').textContent = refX.toFixed(3);
   document.getElementById('awCurY').textContent = refY.toFixed(3);
@@ -1824,6 +2751,11 @@ function updateWaypointDisplay(){
 let wpSelectedX = null, wpSelectedY = null;
 let wpHoverX = null, wpHoverY = null;  // cursor hover position
 let hoverPixelX = null, hoverPixelY = null;  // cursor hover position in pixel coords (for origin mode)
+
+// Waypoint editor state
+let wpEditMode = false;
+let wpEditIndex = -1;  // index of waypoint being edited
+let wpDragging = false;  // is user dragging the waypoint?
 
 // Mouse move for waypoint preview
 mapCanvas.addEventListener('mousemove', e=>{
@@ -1844,6 +2776,12 @@ mapCanvas.addEventListener('mousemove', e=>{
     if(pos){
       wpHoverX = pos.x;
       wpHoverY = pos.y;
+      // If dragging in edit mode, update the selected position
+      if(wpEditMode && wpDragging){
+        wpSelectedX = pos.x;
+        wpSelectedY = pos.y;
+        updateWaypointDisplay();
+      }
       renderMap();
     }
   }
@@ -1862,7 +2800,38 @@ mapCanvas.addEventListener('mouseleave', e=>{
   wpHoverY = null;
   hoverPixelX = null;
   hoverPixelY = null;
+  wpDragging = false;  // Stop dragging if mouse leaves canvas
   renderMap();
+});
+
+// Mouse down to start dragging in edit mode
+mapCanvas.addEventListener('mousedown', e=>{
+  if(!wpMapClickActive || !wpEditMode) return;
+  if(wpSelectedX === null) return;
+  
+  const r = mapCanvas.getBoundingClientRect();
+  const cssScaleX = mapCanvas.width / r.width;
+  const cssScaleY = mapCanvas.height / r.height;
+  const clickX = (e.clientX - r.left) * cssScaleX;
+  const clickY = (e.clientY - r.top) * cssScaleY;
+  
+  // Check if clicking on the robot model
+  const wp = odomToCanvas(wpSelectedX, wpSelectedY);
+  if(wp){
+    const dist = Math.sqrt(Math.pow(clickX - wp.x, 2) + Math.pow(clickY - wp.y, 2));
+    if(dist < 50){  // Within robot model area
+      wpDragging = true;
+      mapCanvas.style.cursor = 'grabbing';
+    }
+  }
+});
+
+// Mouse up to stop dragging
+mapCanvas.addEventListener('mouseup', e=>{
+  if(wpDragging){
+    wpDragging = false;
+    mapCanvas.style.cursor = wpMapClickActive ? 'crosshair' : 'default';
+  }
 });
 
 mapCanvas.addEventListener('click', e=>{
@@ -1883,39 +2852,103 @@ mapCanvas.addEventListener('click', e=>{
   }
 });
 
+// Double-click on waypoint to edit it
+mapCanvas.addEventListener('dblclick', e=>{
+  console.log('[DBLCLICK] Event fired, wpMapClickActive:', wpMapClickActive, 'settingOrig:', settingOrig, 'simEditMode:', simEditMode);
+  // Allow edit in simEditMode (paused visualization) or normal mode
+  if(settingOrig) return;  // Don't allow edit while setting origin
+  if(wpMapClickActive && !simEditMode) return;  // Don't allow if already in waypoint mode (unless sim edit)
+  
+  const r = mapCanvas.getBoundingClientRect();
+  // Use the same coordinate system as single click but without dividing by SC
+  const clickX = e.clientX - r.left;
+  const clickY = e.clientY - r.top;
+  
+  // If CSS is scaling the canvas, we need to account for that
+  const cssScaleX = mapCanvas.width / r.width;
+  const cssScaleY = mapCanvas.height / r.height;
+  const scaledClickX = clickX * cssScaleX;
+  const scaledClickY = clickY * cssScaleY;
+  
+  console.log('[DBLCLICK] Raw click:', clickX, clickY, 'CSS scale:', cssScaleX.toFixed(2), cssScaleY.toFixed(2), 'Scaled:', scaledClickX.toFixed(1), scaledClickY.toFixed(1));
+  console.log('[DBLCLICK] Waypoints count:', waypoints.length);
+  
+  // Check if double-click is near any waypoint
+  for(let i = 0; i < waypoints.length; i++){
+    const wp = waypoints[i];
+    if(wp.type === 'ACTION' || wp.type === 'ANCHOR') continue; // skip ACTION and ANCHOR nodes
+    const p = wpToCanvas(wp);
+    console.log('[DBLCLICK] WP', i, 'canvas pos:', p ? `(${p.x.toFixed(1)},${p.y.toFixed(1)})` : 'null', 'odom:', wp.x_m.toFixed(2), wp.y_m.toFixed(2));
+    if(!p) continue;
+    
+    // Check if click is within detection radius of waypoint center
+    const dist = Math.sqrt(Math.pow(scaledClickX - p.x, 2) + Math.pow(scaledClickY - p.y, 2));
+    console.log('[DBLCLICK] Distance to WP', i, ':', dist.toFixed(1));
+    if(dist < 40){
+      // Enter waypoint edit mode
+      wpEditMode = true;
+      wpEditIndex = i;
+      wpMapClickActive = true;
+      wpSelectedX = wp.x_m;
+      wpSelectedY = wp.y_m;
+      wpOrientation = wp.yaw_rad;
+      mapCanvas.style.cursor = 'crosshair';
+      renderMap();
+      showToast(`📝 Editing WP ${i+1} — drag to move, arrows to rotate, ENTER to save, ESC to cancel`);
+      return;
+    }
+  }
+  // If we get here, no waypoint was close enough
+  console.log('[DBLCLICK] No waypoint found near click');
+});
+
 // Handle arrow keys for waypoint orientation
 document.addEventListener('keydown', e=>{
   // Waypoint orientation mode
   if(wpMapClickActive) {
-    // Only allow 0, 90, 180, 270 degrees
-    const allowedAngles = [0, Math.PI/2, Math.PI, -Math.PI/2];
-    let idx = allowedAngles.findIndex(a => Math.abs(a - wpOrientation) < 0.01);
-    if(idx === -1) idx = 0;
-    if(e.key === 'ArrowLeft') {
-      // Rotate left (CCW): next higher index
-      idx = (idx + 1) % allowedAngles.length;
-      wpOrientation = allowedAngles[idx];
+    // Arrow keys set the SCREEN direction the robot should face
+    // Screen angles: RIGHT=0, UP=π/2, LEFT=π, DOWN=-π/2 (CCW from right)
+    // wpOrientation = originYaw - screen_direction (yaw increases CW/rightward)
+    const originYaw_rad = originYaw * Math.PI / 180;
+    if(e.key === 'ArrowRight') {
+      // Face right on screen: screen_angle = 0
+      wpOrientation = originYaw_rad - 0;
       updateWaypointDisplay(); renderMap();
     }
-    else if(e.key === 'ArrowRight') {
-      // Rotate right (CW): next lower index
-      idx = (idx - 1 + allowedAngles.length) % allowedAngles.length;
-      wpOrientation = allowedAngles[idx];
+    else if(e.key === 'ArrowLeft') {
+      // Face left on screen: screen_angle = π
+      wpOrientation = originYaw_rad - Math.PI;
       updateWaypointDisplay(); renderMap();
     }
     else if(e.key === 'ArrowUp') {
-      wpOrientation = Math.PI/2; updateWaypointDisplay(); renderMap();
+      // Face up on screen: screen_angle = π/2
+      wpOrientation = originYaw_rad - Math.PI/2;
+      updateWaypointDisplay(); renderMap();
     }
     else if(e.key === 'ArrowDown') {
-      wpOrientation = -Math.PI/2; updateWaypointDisplay(); renderMap();
+      // Face down on screen: screen_angle = -π/2
+      wpOrientation = originYaw_rad + Math.PI/2;
+      updateWaypointDisplay(); renderMap();
     }
-    else if(e.key === 'Enter') { confirmAddWP(); }  // Confirm waypoint with Enter
-    else if(e.key === 'Escape') { closeAddWP(); }   // Cancel with Escape
+    else if(e.key === 'Enter') {
+      if(wpEditMode) {
+        confirmWPEdit();  // Confirm waypoint edit
+      } else {
+        confirmAddWP();  // Confirm new waypoint
+      }
+    }
+    else if(e.key === 'Escape') {
+      if(wpEditMode) {
+        cancelWPEdit();  // Cancel waypoint edit
+      } else {
+        closeAddWP();   // Cancel with Escape
+      }
+    }
     return;
   }
   // Origin setting mode
   if(settingOrig && selectedMarkerPixelX !== null) {
-    const step = 15; // degrees
+    const step = 45; // degrees
     if(e.key === 'ArrowRight') {
       originYaw = (originYaw - step + 360) % 360;
       setOriginYaw(originYaw);
@@ -1955,8 +2988,165 @@ function closeAddWP(){
   wpSelectedY = null;
   selectedMarkerX = null;
   selectedMarkerY = null;
+  wpEditMode = false;
+  wpEditIndex = -1;
+  wpDragging = false;
   mapCanvas.style.cursor = 'default';
   renderMap();
+}
+
+// Confirm waypoint edit - update the existing waypoint
+function confirmWPEdit(){
+  if(wpEditIndex < 0 || wpEditIndex >= waypoints.length) {
+    showToast('❌ Invalid waypoint index');
+    cancelWPEdit();
+    return;
+  }
+  
+  if(wpSelectedX === null || wpSelectedY === null){
+    showToast('❌ No position selected');
+    return;
+  }
+  
+  // Normalize yaw to [0, 2π)
+  let finalYaw = wpOrientation % (2 * Math.PI);
+  if(finalYaw < 0) finalYaw += 2 * Math.PI;
+  
+  let yaw_deg = Math.round(finalYaw * 180 / Math.PI);
+  if (yaw_deg === 360) yaw_deg = 0;
+  
+  // Update the waypoint
+  waypoints[wpEditIndex].x_m = +wpSelectedX.toFixed(4);
+  waypoints[wpEditIndex].y_m = +wpSelectedY.toFixed(4);
+  waypoints[wpEditIndex].yaw_deg = yaw_deg;
+  waypoints[wpEditIndex].yaw_rad = finalYaw;
+  
+  const wpNum = wpEditIndex + 1;
+  showToast(`✅ WP ${wpNum} updated (${wpSelectedX.toFixed(2)}, ${wpSelectedY.toFixed(2)}, ${yaw_deg}°)`);
+  
+  // Exit edit mode but stay in simEditMode if visualizing
+  wpEditMode = false;
+  wpEditIndex = -1;
+  wpDragging = false;
+  wpMapClickActive = simEditMode;  // Stay active if in sim edit mode
+  wpSelectedX = null;
+  wpSelectedY = null;
+  mapCanvas.style.cursor = simEditMode ? 'crosshair' : 'default';
+  
+  updateWPList();
+  renderMap();
+}
+
+// Cancel waypoint edit
+function cancelWPEdit(){
+  showToast('Edit cancelled');
+  wpEditMode = false;
+  wpEditIndex = -1;
+  wpDragging = false;
+  wpMapClickActive = simEditMode;  // Stay active if in sim edit mode
+  wpSelectedX = null;
+  wpSelectedY = null;
+  mapCanvas.style.cursor = simEditMode ? 'crosshair' : 'default';
+  renderMap();
+}
+
+function openOriginPopup(){
+  // Reset input fields to default values
+  document.getElementById('originX').value = '0.0';
+  document.getElementById('originY').value = '0.0';
+  document.getElementById('originYaw').value = '0.0';
+  document.getElementById('originPopup').classList.add('open');
+}
+
+function closeOriginPopup(){
+  document.getElementById('originPopup').classList.remove('open');
+}
+
+function sendOriginAsMove(){
+  const x = parseFloat(document.getElementById('originX').value);
+  const y = parseFloat(document.getElementById('originY').value);
+  const yaw = parseFloat(document.getElementById('originYaw').value);
+  
+  if(isNaN(x) || isNaN(y) || isNaN(yaw)){
+    showToast('❌ Invalid X, Y, or Yaw values');
+    return;
+  }
+  
+  // Close modal
+  closeOriginPopup();
+  
+  // Send using unified tree format
+  const payload = {
+    type: 'run_mission',
+    tree: {
+      type: 'sequence',
+      children: [
+        {
+          node: 'goto',
+          x: x,
+          y: y,
+          yaw: Math.round(yaw)
+        }
+      ]
+    }
+  };
+  send(payload);
+  
+  // Update UI to show running status
+  _missionRunning = true;
+  document.getElementById('runBtn').textContent = '⏹ CANCEL MISSION';
+  document.getElementById('runBtn').style.background = '#f44336';
+  document.getElementById('stopBtn').style.display = 'none';
+  updateMissionPanel({state:'running', current:0, total:1, msg:'Executing GO TO command…'});
+  
+  showToast('▶ Moving to (' + x.toFixed(2) + ', ' + y.toFixed(2) + ', ' + yaw.toFixed(1) + '°)');
+}
+
+function addOriginAsWaypoint(){
+  const x = parseFloat(document.getElementById('originX').value);
+  const y = parseFloat(document.getElementById('originY').value);
+  const yaw = parseFloat(document.getElementById('originYaw').value);
+  
+  if(isNaN(x) || isNaN(y) || isNaN(yaw)){
+    showToast('❌ Invalid X, Y, or Yaw values');
+    return;
+  }
+  
+  // Add to waypoint list
+  waypoints.push({
+    id: waypoints.length + 1,
+    x_m: +x.toFixed(4),
+    y_m: +y.toFixed(4),
+    yaw_deg: Math.round(yaw),
+    yaw_rad: yaw * Math.PI / 180,
+    createdFrom: 'GOTO',
+    type: 'GOTO'
+  });
+  
+  showToast('✓ GO TO waypoint added');
+  updateWPList();
+  renderMap();
+  closeOriginPopup();
+}
+
+function applyOrigin(){
+  const x = parseFloat(document.getElementById('originX').value);
+  const y = parseFloat(document.getElementById('originY').value);
+  const yaw = parseFloat(document.getElementById('originYaw').value);
+  
+  if(isNaN(x) || isNaN(y) || isNaN(yaw)){
+    showToast('❌ Invalid values');
+    return;
+  }
+  
+  // Set robot position to the origin values
+  robot.x = x;
+  robot.y = y;
+  robot.yaw = yaw * Math.PI / 180;  // Convert degrees to radians
+  
+  showToast('✔ Origin set: (' + x.toFixed(2) + ', ' + y.toFixed(2) + ', ' + yaw.toFixed(1) + '°)');
+  renderMap();
+  closeOriginPopup();
 }
 
 function confirmAddWP(){
@@ -1977,8 +3167,8 @@ function confirmAddWP(){
     const dy = parseFloat(document.getElementById('awY').value) || 0;
     const dyaw = parseFloat(document.getElementById('awYaw').value) || 0;
     
-    // Use last waypoint or current robot position if no waypoints yet
-    const refWp = waypoints.length ? waypoints[waypoints.length-1] : null;
+    // Use last spatial waypoint or current robot position (skip ACTION nodes)
+    const refWp = lastSpatialWP();
     const baseX = refWp ? refWp.x_m : robot.x;
     const baseY = refWp ? refWp.y_m : robot.y;
     const baseYaw = refWp ? (refWp.yaw_rad) : robot.yaw;
@@ -1995,8 +3185,8 @@ function confirmAddWP(){
   }
   
   // Apply global error value to finalX with conditional logic
-  // Get previous waypoint X if exists
-  const prevWpX = waypoints.length > 0 ? waypoints[waypoints.length - 1].x_m : null;
+  // Get previous spatial waypoint X if exists (skip ACTION nodes)
+  const prevWpX = (lastSpatialWP() || {}).x_m ?? null;
   // If prevX < newX OR prevX < odom x, subtract error; otherwise add error
   if ((prevWpX !== null && (prevWpX < finalX || prevWpX < robot.x)) || (prevWpX === null && finalX < robot.x)) {
     finalX = finalX - globalErrorValue;
@@ -2024,8 +3214,19 @@ function confirmAddWP(){
     createdFrom: wpModeSelection === 'waypoint' ? 'WP' : 'MOVE'
   });
   
-  updateWPList(); renderMap(); closeAddWP();
-  showToast(`✅ WP ${waypoints.length} added (${finalX.toFixed(2)}, ${finalY.toFixed(2)}, ${Math.round(finalYaw*180/Math.PI)}°)`);
+  updateWPList(); renderMap();
+  
+  if(wpModeSelection === 'waypoint') {
+    // Stay in waypoint mode - reset selection for next waypoint
+    wpSelectedX = null;
+    wpSelectedY = null;
+    wpOrientation = robot.yaw;
+    showToast(`✅ WP ${waypoints.length} added — click map again or press ESC to exit`);
+  } else {
+    // Close move mode after adding waypoint
+    closeAddWP();
+    showToast(`✅ WP ${waypoints.length} added (${finalX.toFixed(2)}, ${finalY.toFixed(2)}, ${Math.round(finalYaw*180/Math.PI)}°)`);
+  }
 }
 
 // Event listeners for waypoint dialogs
@@ -2056,9 +3257,252 @@ function showPopup(txt){
   document.body.appendChild(div);
 }
 
+// ── SAVE/IMPORT WAYPOINTS ─────────────────────────────────────────────────────
+function openSaveWPPopup() {
+  if(!waypoints.length){ alert('No waypoints to save.'); return; }
+  document.getElementById('saveWPName').value = '';
+  document.getElementById('saveWPOverlay').classList.add('open');
+  document.getElementById('saveWPName').focus();
+}
+
+function closeSaveWPPopup() {
+  document.getElementById('saveWPOverlay').classList.remove('open');
+}
+
+function saveWaypoints() {
+  const name = document.getElementById('saveWPName').value.trim();
+  if(!name){ alert('Please enter a filename.'); return; }
+  if(!waypoints.length){ alert('No waypoints to save.'); return; }
+  if(!originPx){ alert('Origin not set. Please set origin first.'); return; }
+  
+  // Convert waypoints to map pixel coordinates
+  const waypointsInMapPixels = waypoints.map(w => {
+    if(w.type === 'ACTION'){
+      return { id: w.id, type: 'ACTION', node: w.node };
+    }
+    const mapPx = odomToMapPixel(w.x_m, w.y_m);
+    const mapYaw = odomYawToMapYaw(w.yaw_deg);
+    return {
+      id: w.id,
+      x_px: mapPx ? +mapPx.x.toFixed(4) : 0,
+      y_px: mapPx ? +mapPx.y.toFixed(4) : 0,
+      yaw_deg: mapYaw,
+      createdFrom: w.createdFrom,
+      type: w.type
+    };
+  });
+  
+  const msg = {
+    type: 'save_waypoints',
+    name: name,
+    map_info: { width: mapW, height: mapH, resolution_cm: mapRes },
+    waypoints: waypointsInMapPixels
+  };
+  
+  if(ws && ws.readyState === 1) {
+    ws.send(JSON.stringify(msg));
+    showToast('Saving waypoints...');
+    closeSaveWPPopup();
+  } else {
+    alert('WebSocket not connected.');
+  }
+}
+
+// Convert odom coordinates to map pixel coordinates (bottom-left = 0,0, y increases upward)
+function odomToMapPixel(ox_m, oy_m) {
+  if(!originPx) return null;
+  const ang = originYaw * Math.PI / 180;
+  const fwdX = Math.cos(ang);
+  const fwdY = -Math.sin(ang);
+  const lftX = Math.sin(ang);
+  const lftY = Math.cos(ang);
+  const cells = 100 / mapRes; // cells per metre
+  const dx = (ox_m * fwdX + oy_m * lftX) * cells;
+  const dy = (ox_m * fwdY + oy_m * lftY) * cells;
+  
+  // Canvas cell coordinates (top-left = 0,0)
+  const canvasCellX = originPx.x + dx;
+  const canvasCellY = originPx.y + dy;
+  
+  // Convert to map pixel coordinates (bottom-left = 0,0, Y increases upward)
+  const mapPixelX = canvasCellX;
+  const mapPixelY = (mapH - 1) - canvasCellY;
+  
+  return { x: mapPixelX, y: mapPixelY };
+}
+
+// Convert odom yaw to map yaw (0=up, 90=right, CW from up)
+// Takes into account the origin's orientation to get absolute map direction
+function odomYawToMapYaw(odom_yaw_deg) {
+  // odom yaw is relative to origin's forward direction
+  // Get absolute screen direction: screen 0=right, 90=up, CCW positive
+  const absoluteScreenYaw = (originYaw + odom_yaw_deg + 360) % 360;
+  // Map convention: 0=up, 90=right, CW from up
+  // Conversion: screen 0(right)->map 90, screen 90(up)->map 0
+  let mapYaw = (90 - absoluteScreenYaw + 360) % 360;
+  return Math.round(mapYaw);
+}
+
+// Convert map pixel coordinates to odom coordinates
+function mapPixelToOdom(mapPixelX, mapPixelY) {
+  if(!originPx) return null;
+  // Convert from map pixel (bottom-left = 0,0) to canvas cell (top-left = 0,0)
+  const canvasCellX = mapPixelX;
+  const canvasCellY = (mapH - 1) - mapPixelY;
+  
+  const ang = originYaw * Math.PI / 180;
+  const fwdX = Math.cos(ang);
+  const fwdY = -Math.sin(ang);
+  const lftX = Math.sin(ang);
+  const lftY = Math.cos(ang);
+  const cells = 100 / mapRes;
+  
+  const dxCell = canvasCellX - originPx.x;
+  const dyCell = canvasCellY - originPx.y;
+  
+  // Project onto forward and left axes
+  const fwdDist = dxCell * fwdX + dyCell * fwdY;
+  const lftDist = dxCell * lftX + dyCell * lftY;
+  
+  const ox_m = fwdDist / cells;
+  const oy_m = lftDist / cells;
+  
+  return { x: ox_m, y: oy_m };
+}
+
+// Convert map yaw to odom yaw
+// Takes into account the origin's orientation to get odom-relative direction
+function mapYawToOdomYaw(map_yaw_deg) {
+  // map: 0=up, 90=right (CW from up)
+  // screen: 0=right, 90=up (CCW from right)
+  // Reverse: map 0(up)->screen 90, map 90(right)->screen 0
+  const absoluteScreenYaw = (90 - map_yaw_deg + 360) % 360;
+  // Convert to odom yaw (relative to current origin's forward direction)
+  let odomYaw = (absoluteScreenYaw - originYaw + 360) % 360;
+  return Math.round(odomYaw);
+}
+
+function openImportWPPopup() {
+  // Check if origin is set first
+  if(!originPx) {
+    alert('Origin not set. Please set origin first, then import waypoints.');
+    return;
+  }
+  
+  document.getElementById('importWPOverlay').classList.add('open');
+  document.getElementById('wpFileList').innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;">Loading...</div>';
+  // Request waypoints list from server
+  if(ws && ws.readyState === 1) {
+    ws.send(JSON.stringify({ type: 'list_waypoints' }));
+  } else {
+    document.getElementById('wpFileList').innerHTML = '<div style="text-align:center;color:var(--red);padding:20px;">WebSocket not connected</div>';
+  }
+}
+
+function closeImportWPPopup() {
+  document.getElementById('importWPOverlay').classList.remove('open');
+}
+
+function renderWPFileList(files) {
+  const el = document.getElementById('wpFileList');
+  if(!files || !files.length) {
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;">No saved waypoints found.<br>Save some waypoints first.</div>';
+    return;
+  }
+  el.innerHTML = files.map(f => `
+    <div class="map-item" onclick="loadWaypoints('${f.name}')" style="cursor:pointer;">
+      <div class="mn">${f.name}</div>
+      <div class="ms">${f.count} WP</div>
+    </div>
+  `).join('');
+}
+
+function loadWaypoints(name) {
+  if(ws && ws.readyState === 1) {
+    ws.send(JSON.stringify({ type: 'load_waypoints', name: name }));
+    showToast('Loading waypoints...');
+  }
+}
+
+function applyLoadedWaypoints(data) {
+  if(!data || !data.waypoints) {
+    alert('Invalid waypoint data.');
+    return;
+  }
+  
+  // Must have origin set to convert coordinates
+  if(!originPx) {
+    alert('Origin not set. Please set origin first, then import waypoints.');
+    closeImportWPPopup();
+    return;
+  }
+  
+  // Clear current waypoints
+  waypoints.length = 0;
+  
+  // Load waypoints - convert from map pixel coordinates to odom coordinates
+  data.waypoints.forEach(w => {
+    // ACTION nodes have no spatial data
+    if(w.type === 'ACTION'){
+      waypoints.push({ id: w.id, type: 'ACTION', node: w.node });
+      return;
+    }
+    // Check if this is new format (x_px, y_px) or old format (x_m, y_m)
+    let ox_m, oy_m, odom_yaw_deg;
+    
+    if(w.x_px !== undefined && w.y_px !== undefined) {
+      // New format: map pixel coordinates
+      const odomCoords = mapPixelToOdom(w.x_px, w.y_px);
+      ox_m = odomCoords ? +odomCoords.x.toFixed(4) : 0;
+      oy_m = odomCoords ? +odomCoords.y.toFixed(4) : 0;
+      odom_yaw_deg = mapYawToOdomYaw(w.yaw_deg);
+    } else {
+      // Old format: odom coordinates (for backward compatibility)
+      ox_m = w.x_m;
+      oy_m = w.y_m;
+      odom_yaw_deg = w.yaw_deg;
+    }
+    
+    waypoints.push({
+      id: w.id,
+      x_m: ox_m,
+      y_m: oy_m,
+      yaw_deg: odom_yaw_deg,
+      yaw_rad: odom_yaw_deg * Math.PI / 180,
+      createdFrom: w.createdFrom || 'WP',
+      type: w.type || 'WP'
+    });
+  });
+  
+  updateWPList();
+  renderMap();
+  closeImportWPPopup();
+  showToast(`Loaded ${waypoints.length} waypoints from "${data.name}"`);
+}
+
+// Event listeners for save/import popups
+document.getElementById('saveWPOverlay').addEventListener('click', e => {
+  if(e.target === document.getElementById('saveWPOverlay')) closeSaveWPPopup();
+});
+document.getElementById('saveWPOverlay').addEventListener('keydown', e => {
+  if(e.key === 'Enter') saveWaypoints();
+  if(e.key === 'Escape') closeSaveWPPopup();
+});
+document.getElementById('importWPOverlay').addEventListener('click', e => {
+  if(e.target === document.getElementById('importWPOverlay')) closeImportWPPopup();
+});
+document.getElementById('importWPOverlay').addEventListener('keydown', e => {
+  if(e.key === 'Escape') closeImportWPPopup();
+});
+
 // ── TOAST ─────────────────────────────────────────────────────────────────────
 function showToast(msg, dur=2800){
-  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  const t=document.getElementById('toast'); 
+  if(!t) {
+    console.warn('[TOAST] toast element not found, message:', msg);
+    return;
+  }
+  t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), dur);
 }
 
@@ -2400,7 +3844,6 @@ function editorFillBorder(){
 }
 function editorClearAll(){
   if(!eGrid) return;
-  if(!confirm('Clear all walls?')) return;
   eGrid.fill(0); eAnchor=null; closeDirPopup(); drawEditor();
 }
 
@@ -2454,39 +3897,113 @@ function useSelectedMap(){
 }
 
 function loadMapData(d){
+  console.log('[LOAD] loadMapData called with:', d);
+  
+  if(!d.cols || !d.rows || !d.pixels) {
+    console.error('[LOAD] ERROR - Missing required map data:', {cols: d.cols, rows: d.rows, pixelsExists: !!d.pixels});
+    showToast('❌ Map data incomplete - missing cols, rows, or pixels');
+    return;
+  }
+  
+  console.log('[LOAD] Setting mapW =', d.cols, ', mapH =', d.rows);
   mapW    = d.cols;
   mapH    = d.rows;
   mapRes  = Math.round(d.resolution * 100);  // m → cm
-  mapPixels = new Uint8Array(d.pixels);
+  
+  console.log('[LOAD] Creating Uint8Array from', d.pixels.length, 'pixels');
+  // Handle both Uint8Array and regular arrays
+  if(d.pixels instanceof Uint8Array) {
+    mapPixels = d.pixels;
+    console.log('[LOAD] pixels is already Uint8Array');
+  } else if(Array.isArray(d.pixels)) {
+    console.log('[LOAD] Converting array to Uint8Array');
+    mapPixels = new Uint8Array(d.pixels);
+  } else {
+    console.error('[LOAD] ERROR - pixels is not array or Uint8Array:', typeof d.pixels);
+    showToast('❌ Map pixels data format invalid');
+    return;
+  }
+  
+  console.log('[LOAD] mapPixels set:', {length: mapPixels.length, first5: Array.from(mapPixels.slice(0, 5))});
+  
   originPx  = null;   // reset origin — user must set it
-  document.getElementById('origBtn').textContent='🎯 Click map to set origin';
-  document.getElementById('origInfo').textContent='Map loaded — set origin by clicking button then map';
-  document.getElementById('dbgMap').textContent=d.name;
+  const origBtn = document.getElementById('origBtn');
+  if(origBtn) origBtn.textContent='🎯 Click map to set origin';
+  const dbgMap = document.getElementById('dbgMap');
+  if(dbgMap) dbgMap.textContent=d.name;
+  
+  console.log('[LOAD] Calling initCanvas()');
   initCanvas();
+  console.log('[LOAD] Successfully loaded:', {name: d.name, width: mapW, height: mapH, resolution: mapRes});
   showToast(`✅ Map "${d.name}" loaded  (${mapW}×${mapH})`);
+  
+  // Automatically enter origin-setting mode
+  settingOrig = true;
+  const origBtn2 = document.getElementById('origBtn');
+  if(origBtn2) {
+    origBtn2.classList.add('on');
+    origBtn2.textContent = '⏳ Click on the map to set origin…';
+  }
+  showToast('🎯 Click map to place origin → WASD adjust • ENTER save • ESC cancel');
 }
 
 // ── MISSION CONTROL ───────────────────────────────────────────────────────────
+let _missionRunning = false;
 function runMission(){
+  // If mission is running, cancel it
+  if(_missionRunning){
+    send({type:'cancel_mission'});
+    _missionRunning = false;
+    const rb = document.getElementById('runBtn');
+    rb.textContent = '▶ RUN WAYPOINTS';
+    rb.style.background = '';
+    rb.style.borderColor = '';
+    rb.style.color = '';
+    rb.disabled = false;
+    updateMissionPanel({state:'cancelled', msg:'Cancel signal sent…'});
+    return;
+  }
   if(!waypoints.length){ alert('No waypoints marked.\nDrive robot and press [P] to mark waypoints first.'); return; }
-  if(!confirm(`Send ${waypoints.length} waypoint(s) to robot and start mission?`)) return;
+
+  // Build behavior tree from waypoints list
+  const children = waypoints.map(w => {
+    if(w.type === 'ACTION'){
+      return {node: w.node};
+    }
+    if(w.type === 'ANCHOR'){
+      return {node: 'anchor', forward: w.average, lateral: w.distance};
+    }
+    return {node: 'goto', x: w.x_m, y: w.y_m, yaw: w.yaw_deg};
+  });
 
   const payload = {
-    type: 'run_waypoints',
-    waypoints: waypoints.map(w=>({x:w.x_m, y:w.y_m, yaw:w.yaw_deg}))
+    type: 'run_mission',
+    tree: {
+      type: 'sequence',
+      children: children
+    }
   };
   send(payload);
 
   // optimistic UI update
-  document.getElementById('runBtn').disabled = true;
-  document.getElementById('stopBtn').style.display = 'block';
+  _missionRunning = true;
+  const runb = document.getElementById('runBtn');
+  runb.textContent = '⏹ CANCEL MISSION';
+  runb.style.background = '#f44336';
+  runb.style.borderColor = '#f44336';
+  runb.style.color = '#fff';
+  document.getElementById('stopBtn').style.display = 'none';
   updateMissionPanel({state:'running', current:0, total:waypoints.length, msg:'Sending mission to robot…'});
 }
 
 function cancelMission(){
-  if(!confirm('Stop the mission? Robot will stop after current waypoint.')) return;
   send({type:'cancel_mission'});
   updateMissionPanel({state:'cancelled', msg:'Cancel signal sent…'});
+}
+
+function resetOdometry(){
+  send({type:'reset_odom'});
+  showToast('Odometry reset signal sent');
 }
 
 function updateMissionPanel(d){
@@ -2523,8 +4040,16 @@ function updateMissionPanel(d){
 
   // button visibility
   const isDone = state==='done'||state==='cancelled'||state==='error'||state==='idle';
-  document.getElementById('runBtn').disabled      = !isDone;
-  document.getElementById('stopBtn').style.display = isDone ? 'none' : 'block';
+  if(isDone){
+    _missionRunning = false;
+    const rb = document.getElementById('runBtn');
+    rb.textContent = '▶ RUN WAYPOINTS';
+    rb.style.background = '';
+    rb.style.borderColor = '';
+    rb.style.color = '';
+    rb.disabled = false;
+  }
+  document.getElementById('stopBtn').style.display = 'none';
 
   // toast for key events
   if(state==='done') {
@@ -2535,7 +4060,20 @@ function updateMissionPanel(d){
     renderMap();
   }
   if(state==='error')     showToast('❌ Mission error — check status');
-  if(state==='cancelled') showToast('⏹ Mission cancelled');
+  if(state==='cancelled') {
+    showToast('⏹ Mission cancelled');
+    // Clear waypoints when mission is cancelled
+    waypoints = [];
+    updateWPList();
+    renderMap();
+  }
+  if(state==='success') {
+    showToast('✅ Mission successful!');
+    // Clear waypoints when mission is successful
+    waypoints = [];
+    updateWPList();
+    renderMap();
+  }
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
@@ -2549,6 +4087,25 @@ document.addEventListener('keydown', function(e) {
     e.preventDefault();
   }
 });
+</script>
+<script>
+// Right-panel tab switching
+function showRightTab(tab){
+  const m = document.getElementById('moveSection');
+  const j = document.getElementById('joySection');
+  const bJoy = document.getElementById('tabJoyBtn');
+  const bMove = document.getElementById('tabMoveBtn');
+  if(!m||!j||!bJoy||!bMove) return;
+  if(tab==='move'){
+    m.style.display=''; j.style.display='none';
+    bMove.classList.add('active'); bJoy.classList.remove('active');
+  } else {
+    m.style.display='none'; j.style.display='';
+    bJoy.classList.add('active'); bMove.classList.remove('active');
+  }
+}
+// default to joystick
+document.addEventListener('DOMContentLoaded', ()=> showRightTab('joy'));
 </script>
 </body>
 </html>
