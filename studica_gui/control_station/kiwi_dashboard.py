@@ -135,11 +135,22 @@ def _handle_ws(client: _WSClient):
                     elif t == "run_waypoints":
                         wps = msg.get("waypoints", [])
                         with state_lock:
-                            shared_state["pending_mission"] = {"waypoints": wps}
+                            # Convert to new format
+                            mission = normalize_mission({"waypoints": wps})
+                            shared_state["pending_mission"] = mission
                     elif t == "run_mission":
-                        tree = msg.get("tree", {})
-                        with state_lock:
-                            shared_state["pending_mission"] = {"tree": tree}
+                        mission_data = msg.get("data")
+                        mission_seq = msg.get("sequence")
+                        if mission_data and mission_seq:
+                            # Already in new format
+                            with state_lock:
+                                shared_state["pending_mission"] = {"data": mission_data, "sequence": mission_seq}
+                        else:
+                            # Try old format
+                            tree = msg.get("tree", {})
+                            with state_lock:
+                                mission = normalize_mission({"tree": tree})
+                                shared_state["pending_mission"] = mission
                     elif t == "cancel_mission":
                         with state_lock:
                             shared_state["cancel_mission"] = True
@@ -302,6 +313,71 @@ def _send_map_data(client: _WSClient, name: str):
             "name": name,
             "error": str(e)
         }))
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MISSION FORMAT NORMALIZATION
+# ═══════════════════════════════════════════════════════════════════════════════
+def normalize_mission(msg):
+    """
+    Convert any mission format to the new format: {"data": {...}, "sequence": [...]}
+    Supports:
+      - New format: {"data": {...}, "sequence": [...]}
+      - Tree format: {"tree": {"type": "sequence", "children": [...]}}
+      - Flat waypoint format: {"waypoints": [...]}
+    """
+    # Already in new format
+    if "data" in msg and "sequence" in msg:
+        return msg
+    
+    # Tree format: convert children to sequence
+    if "tree" in msg:
+        tree = msg["tree"]
+        if tree.get("type") == "sequence":
+            children = tree.get("children", [])
+            data = {}
+            sequence = []
+            wp_counter = 1
+            anchor_counter = 1
+            for child in children:
+                if child.get("node") == "goto":
+                    wp_id = f"wp{wp_counter}"
+                    data[wp_id] = {
+                        "x": child.get("x", 0.0),
+                        "y": child.get("y", 0.0),
+                        "yaw": child.get("yaw", 0.0)
+                    }
+                    sequence.append(wp_id)
+                    wp_counter += 1
+                elif child.get("node") == "anchor":
+                    anchor_id = f"anchor{anchor_counter}"
+                    data[anchor_id] = {
+                        "forward": child.get("forward", 0.0),
+                        "lateral": child.get("lateral", 0.0)
+                    }
+                    sequence.append(anchor_id)
+                    anchor_counter += 1
+                else:
+                    sequence.append(child)
+            return {"data": data, "sequence": sequence}
+    
+    # Flat waypoint format: convert to new format
+    if "waypoints" in msg:
+        waypoints = msg["waypoints"]
+        data = {}
+        sequence = []
+        for i, wp in enumerate(waypoints):
+            wp_id = f"wp{i+1}"
+            data[wp_id] = {
+                "x": wp.get("x", 0.0),
+                "y": wp.get("y", 0.0),
+                "yaw": wp.get("yaw", 0.0)
+            }
+            sequence.append(wp_id)
+        return {"data": data, "sequence": sequence}
+    
+    # Unknown format, return as-is
+    return msg
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
