@@ -16,7 +16,7 @@
   --font-size-small:11px;
   --font-size-tiny:9.5px;
 }
-*{margin:0;padding:0;box-sizing:border-box;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;}
 html,body{height:100%;overflow:hidden;}
 body{
   background:var(--bg);
@@ -100,23 +100,23 @@ canvas{display:block;image-rendering:pixelated;max-width:100vw;max-height:90vh;}
 .leg{font-size:10px;color:var(--muted2);}.leg b{margin-right:4px;}
 
 /* ── RIGHT PANEL ── */
-.right{width:260px;background:var(--panel);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;justify-content:flex-start;}
+.right{width:260px;background:var(--panel);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;justify-content:flex-start;}
 .right > .sec:nth-child(-n+3){flex-shrink:0;}
 .right-spacer{flex:1;min-height:0;}
 .right::-webkit-scrollbar{width:3px;}.right::-webkit-scrollbar-thumb{background:var(--border);}
-.sec{padding:8px 10px;border-bottom:1px solid var(--border);}
-.sec-title{font-size:0.95em;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:7px;font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.sec{padding:6px 8px;border-bottom:1px solid var(--border);}
+.sec-title{font-size:0.85em;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:5px;font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:8px;}
 .odom-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;}
 .obox{background:var(--panel2);border:1px solid var(--border);border-radius:4px;padding:5px 6px;text-align:center;}
 .obox .k{font-size:var(--font-size-tiny);color:var(--muted2);letter-spacing:.5px;}.obox .n{font-size:1.2em;color:var(--accent);font-weight:700;margin-top:2px;}
-.joy-area{display:flex;justify-content:center;align-items:center;gap:18px;padding:8px 0;}
-.joy-pad{width:140px;height:140px;border-radius:50%;background:radial-gradient(circle at 50% 50%,#0f1e30,#070c14);border:2px solid var(--border);position:relative;cursor:pointer;touch-action:none;flex-shrink:0;}
+.joy-area{display:flex;justify-content:center;align-items:center;gap:14px;padding:4px 0;}
+.joy-pad{width:120px;height:120px;border-radius:50%;background:radial-gradient(circle at 50% 50%,#0f1e30,#070c14);border:2px solid var(--border);position:relative;cursor:pointer;touch-action:none;flex-shrink:0;}
 .joy-pad:hover{border-color:var(--accent);}
 .joy-ring{position:absolute;inset:12px;border-radius:50%;border:1px solid rgba(0,212,255,.12);pointer-events:none;}
 .joy-cross-h,.joy-cross-v{position:absolute;background:rgba(0,212,255,.1);pointer-events:none;}
 .joy-cross-h{left:0;right:0;height:1px;top:50%;margin-top:-.5px;}
 .joy-cross-v{top:0;bottom:0;width:1px;left:50%;margin-left:-.5px;}
-.joy-knob{position:absolute;width:36px;height:36px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#ff8c5a,#c03010);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 0 14px rgba(255,107,53,.6);}
+.joy-knob{position:absolute;width:30px;height:30px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#ff8c5a,#c03010);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 0 14px rgba(255,107,53,.6);}
 .rot-col{display:flex;flex-direction:column;gap:10px;align-items:center;}
 .rot-btn{width:44px;height:44px;border-radius:50%;background:var(--panel2);border:2px solid var(--border);color:var(--accent);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s;user-select:none;}
 .rot-btn:hover{border-color:var(--accent);background:rgba(0,212,255,.1);}
@@ -238,6 +238,17 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .addwp-ok:hover{background:rgba(77,255,145,.25);}
 .addwp-cancel{flex:1;padding:7px;background:transparent;border:1px solid var(--border);color:var(--muted2);font-family:inherit;font-size:11px;cursor:pointer;border-radius:3px;}
 .addwp-cancel:hover{border-color:var(--red);color:var(--red);}
+
+/* SEQUENCE PANEL */
+.seq-list{display:flex;flex-direction:column;gap:4px;padding:4px;background:var(--panel2);border:1px solid var(--border);border-radius:3px;min-height:60px;}
+.seq-item{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--panel);border:1px solid var(--border);border-radius:3px;cursor:grab;transition:all 0.2s;user-select:none;}
+.seq-item:hover{background:var(--panel2);border-color:var(--accent);}
+.seq-item:active{cursor:grabbing;}
+.seq-item.dragging{opacity:0.6;background:var(--panel2);}
+.seq-label{font-size:12px;color:var(--accent);font-weight:600;letter-spacing:0.5px;}
+.seq-remove{background:none;border:none;color:var(--muted);cursor:pointer;padding:2px 6px;border-radius:2px;font-size:12px;transition:color 0.2s;font-family:inherit;}
+.seq-remove:hover{color:var(--red);}
+.seq-empty{color:var(--muted);text-align:center;padding:20px 8px;font-size:11px;line-height:1.6;pointer-events:none;}
 .popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1000;display:flex;align-items:center;justify-content:center;}
 .popup{background:var(--panel);border:1px solid var(--accent);border-radius:6px;padding:16px;width:480px;max-width:94vw;display:flex;flex-direction:column;gap:10px;}
 .popup-title{color:var(--accent);font-size:12px;font-weight:700;letter-spacing:1px;}
@@ -387,10 +398,10 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 </div>
 
 <!-- ═══ MAIN LAYOUT ── -->
-<div class="main">
+  <div class="main">
 
-
-  <div class="wp-sidebar" style="width:240px;min-width:200px;max-width:280px;background:var(--panel2);display:flex;flex-direction:column;gap:0;box-shadow:1px 0 0 var(--border);">
+    <!-- LEFT SIDEBAR -->
+    <div class="wp-sidebar" style="width:240px;min-width:200px;max-width:280px;background:var(--panel2);display:flex;flex-direction:column;gap:0;box-shadow:1px 0 0 var(--border);">
     <div class="sec" style="border:none;border-bottom:1px solid var(--border);background:var(--panel);">
       <div class="sec-title">Map Origin (0,0)</div>
       <button class="orig-btn" id="origBtn" onclick="toggleOrigin()">🎯 Set Origin</button>
@@ -421,55 +432,49 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
       </script>
     </div>
 
-    <script>
-    function updateErrorValue() {
-      const errorInput = document.getElementById('errorInput');
-      const errorVal = document.getElementById('errorVal');
-      errorVal.textContent = parseFloat(errorInput.value).toFixed(3);
-    }
-    </script>
-    <div class="sec" style="border:none;border-bottom:1px solid var(--border);display:flex;flex-direction:column;min-height:0;">
-      <div class="sec-title" style="margin:0;margin-bottom:8px;">WAYPOINTS [P]</div>
-      <button class="action-btn" onclick="openActionPopup()" style="width:100%;margin-bottom:6px;">⚡ Action</button>
-      <button class="action-btn" onclick="openSaveAnchorPopup()" style="width:100%;margin-bottom:6px;color:#4dff91;border-color:#4dff91;">📍 Save Anchor</button>
-      <button class="addwp-btn" onclick="handleQKeyPress()" style="width:100%;margin-bottom:8px;">WP</button>
-      <div style="display:flex;gap:4px;align-items:center;justify-content:flex-end;margin-bottom:8px;">
-        <button class="clr-btn" onclick="clearWP()">✕ Clear</button>
-      </div>
-      <script>
-      function moveToOrigin() {
-        // Add a waypoint at (0,0,0) with conditional error logic
-        const targetX = 0.0;
-        let wpX = targetX;
-        // Get previous spatial waypoint X if exists (skip ACTION nodes)
-        const _lsw = lastSpatialWP(); const prevWpX = _lsw ? _lsw.x_m : null;
-        // If prevX < newX OR prevX < odom x, subtract error; otherwise add error
-        if ((prevWpX !== null && (prevWpX < targetX || prevWpX < robot.x)) || (prevWpX === null && targetX < robot.x)) {
-          wpX = targetX - globalErrorValue;
-        } else {
-          wpX = targetX + globalErrorValue;
+    <div style="display:flex;flex:1;gap:0;overflow:hidden;border-bottom:1px solid var(--border);">
+      <!-- WP DATA PANEL -->
+      <div class="sec" style="border:none;display:flex;flex-direction:column;min-height:0;flex:1;border-right:1px solid var(--border);">
+        <div class="sec-title" style="margin:0;margin-bottom:8px;">WP DATA [P]</div>
+        <button class="action-btn" onclick="openActionPopup()" style="width:100%;margin-bottom:6px;">⚡ Action</button>
+        <button class="addwp-btn" onclick="handleQKeyPress()" style="width:100%;margin-bottom:8px;">WP</button>
+        <div style="display:flex;gap:4px;align-items:center;justify-content:flex-end;margin-bottom:8px;">
+          <button class="clr-btn" onclick="clearWP()">✕ Clear</button>
+        </div>
+        <script>
+        function moveToOrigin() {
+          // Add a waypoint at (0,0,0) with conditional error logic
+          const targetX = 0.0;
+          let wpX = targetX;
+          // Get previous spatial waypoint X if exists (skip ACTION nodes)
+          const _lsw = lastSpatialWP(); const prevWpX = _lsw ? _lsw.x_m : null;
+          // If prevX < newX OR prevX < odom x, subtract error; otherwise add error
+          if ((prevWpX !== null && (prevWpX < targetX || prevWpX < robot.x)) || (prevWpX === null && targetX < robot.x)) {
+            wpX = targetX - globalErrorValue;
+          } else {
+            wpX = targetX + globalErrorValue;
+          }
+          
+          waypoints.length = 0;
+          waypoints.push({
+            id: 1,
+            x_m: +wpX.toFixed(4),
+            y_m: 0.0,
+            yaw_deg: 0,
+            yaw_rad: 0.0,
+            createdFrom: 'ORIGIN',
+            type: 'ORIGIN'
+          });
+          updateWPList();
+          renderMap();
+          runMission();
         }
-        
-        waypoints.length = 0;
-        waypoints.push({
-          id: 1,
-          x_m: +wpX.toFixed(4),
-          y_m: 0.0,
-          yaw_deg: 0,
-          yaw_rad: 0.0,
-          createdFrom: 'ORIGIN',
-          type: 'ORIGIN'
-        });
-        updateWPList();
-        renderMap();
-        runMission();
-      }
-      </script>
-      <div class="wp-list" id="wpList">
-        <div class="wp-empty">No waypoints.<br>Drive robot → press <b>[P]</b> or <b>ADD WP</b></div>
+        </script>
+        <div class="wp-list" id="wpList">
+          <div class="wp-empty">No waypoints.<br>Drive robot → press <b>[P]</b> or <b>ADD WP</b></div>
+        </div>
       </div>
     </div>
-    <div style="flex:1;"></div>
     <div class="sec" style="border:none;border-bottom:1px solid var(--border);">
       <button class="run-btn" id="runBtn" onclick="runMission()">▶ RUN WAYPOINTS</button>
         <button class="run-btn" id="visualizeBtn" style="margin-top:7px;background:rgba(0,212,255,.12);border-color:var(--accent);color:var(--accent);" onclick="toggleWaypointSimulation()">👁️ Visualize</button>
@@ -487,12 +492,23 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
         }
       }
       function startWaypointSimulation() {
-        if (!waypoints.length || simActive || simPaused) return;
+        // Build spatial waypoint list from sequence panel, fall back to waypoints
+        let vizWps = [];
+        if (sequence.length > 0) {
+          sequence.forEach(seqItem => {
+            if (seqItem.type === 'waypoint' && seqItem.data && seqItem.data.x_m !== undefined) {
+              vizWps.push(seqItem.data);
+            }
+          });
+        } else {
+          vizWps = waypoints.filter(w => w.type !== 'ACTION' && w.type !== 'ANCHOR');
+        }
+        if (!vizWps.length || simActive || simPaused) return;
         simActive = true;
         simPaused = false;
         window._simWaypoints = [
           { x_m: robot.x, y_m: robot.y, yaw_rad: robot.yaw },
-          ...waypoints
+          ...vizWps
         ];
         simIdx = 0;
         simRobot = {
@@ -611,6 +627,25 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
     </div>
   </div>
 
+  <!-- SEQUENCE PANEL: Separate from sidebar, full height -->
+  <div class="sequence-outer-panel" style="width:260px;min-width:200px;max-width:320px;display:flex;flex-direction:column;min-height:0;background:var(--panel);border-left:2px solid var(--accent);border-right:1px solid var(--border);">
+    <div class="sec" style="border:none;display:flex;flex-direction:column;min-height:0;flex:1;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div class="sec-title" style="margin:0;color:var(--accent);">SEQUENCE</div>
+        <div style="display:flex;gap:4px;align-items:center;">
+          <button id="seqReverseBtn" onclick="reverseSeq()" title="Reverse sequence" style="padding:4px 10px;border-radius:4px;border:1px solid var(--muted);background:transparent;color:var(--muted);cursor:pointer;font-size:11px;font-weight:600;transition:all 0.2s;">Reverse</button>
+          <button id="seqReorderToggle" onclick="toggleSeqReorder()" title="Toggle reorder mode" style="width:28px;height:28px;border-radius:50%;border:2px solid var(--muted);background:transparent;color:var(--muted);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;">⇅</button>
+        </div>
+      </div>
+      <div class="seq-list" id="seqList" style="flex:1;overflow-y:auto;background:var(--panel2);border:1px solid var(--border);border-radius:3px;padding:4px;">
+        <div class="seq-empty" style="color:var(--muted);text-align:center;padding:20px 8px;font-size:11px;">Drag items from<br>WP DATA to arrange<br>execution sequence</div>
+      </div>
+      <div style="display:flex;gap:4px;margin-top:6px;">
+        <button class="clr-btn" onclick="clearSeq()" style="flex:1;font-size:11px;">✕ Clear Seq</button>
+      </div>
+    </div>
+  </div>
+
   <div class="center-panel" style="flex:1;display:flex;flex-direction:column;min-width:0;">
     <div class="map-wrap">
       <div class="map-inner">
@@ -682,20 +717,19 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
         <div class="mp-row">
           <span class="mp-label">CAMERA</span>
         </div>
-        <div style="padding:8px;">
-          <textarea id="cameraOutput" readonly style="width:100%;height:50px;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:4px;color:rgb(186, 194, 186);font-family:monospace;font-size:14px;padding:8px;resize:none;overflow:auto;text-align:left;line-height:1.4;word-wrap:break-word;"></textarea>
+        <div style="padding:4px;">
+          <textarea id="cameraOutput" readonly style="width:100%;height:36px;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:4px;color:rgb(186, 194, 186);font-family:monospace;font-size:12px;padding:4px;resize:none;overflow:auto;text-align:left;line-height:1.3;word-wrap:break-word;"></textarea>
         </div>
       </div>
     </div>
 
-    <div class="right-spacer"></div>
 
     <div class="right-tabbar" style="margin:6px 10px 0 10px;border-top:1px solid var(--border);border-bottom:none;">
       <button class="tab-btn active" id="tabJoyBtn" onclick="showRightTab('joy')">Joystick</button>
       <button class="tab-btn" id="tabMoveBtn" onclick="showRightTab('move')">Move</button>
     </div>
 
-    <div class="sec" id="moveSection" style="display:none;height:200px;">
+    <div class="sec" id="moveSection" style="display:none;flex:1;min-height:0;">
       <div class="sec-title">Move Command</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
         <button class="move-cmd-btn" id="moveBtn_forward" onclick="startMoveCommand('forward')">⬆ Forward</button>
@@ -704,10 +738,11 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
         <button class="move-cmd-btn" id="moveBtn_ccw" onclick="startRotateCommand('ccw')">↺ CCW</button>
         <button class="move-cmd-btn" onclick="openOriginPopup()" style="grid-column:1/-1;">📍 GO TO</button>
         <button class="move-cmd-btn" onclick="markWP()" style="grid-column:1/-1;">📌 CURR POSE</button>
+        <button class="move-cmd-btn" onclick="openSaveAnchorPopup()" style="grid-column:1/-1;color:#4dff91;border-color:#4dff91;">📍 Save Anchor</button>
       </div>
     </div>
 
-    <div class="sec" id="joySection" style="height:200px;position:relative;">
+    <div class="sec" id="joySection" style="flex:1;min-height:0;position:relative;">
       <button class="joy-toggle-btn disabled" id="joyToggleBtn" onclick="toggleJoystick()" title="Toggle joystick control">🕹️</button>
       <div class="joy-area">
         <div class="joy-pad" id="joyPad">
@@ -1328,31 +1363,62 @@ function renderMap(){
     mctx.restore();
   }
 
-  // Draw dotted line from robot to current waypoint (if not reached/done)
-  if (waypoints.length > 0 && missionState !== 'done' && missionState !== 'reached' && missionState !== 'cancelled' && missionState !== 'error') {
-    // Use missionCurrentIdx if available, else default to 0
+  // ── WP DATA: draw robot model (triangle) for ALL waypoints in WP DATA panel ──
+  waypoints.forEach((wp, i)=>{
+    if (wp.type === 'ACTION' || wp.type === 'ANCHOR') return;
+    const p=wpToCanvas(wp); if(!p) return;
+    const originYaw_rad = originYaw * Math.PI / 180;
+    const screenYaw = originYaw_rad - wp.yaw_rad;
+    mctx.save();
+    mctx.globalAlpha = 0.2;
+    drawTriangle(mctx, p.x, p.y, screenYaw, SC*.7, '#ff6b35');
+    mctx.globalAlpha = 1.0;
+    mctx.restore();
+    // Draw WP DATA number
+    const wpNum = wp.id;
+    mctx.save();
+    mctx.beginPath();
+    mctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
+    mctx.fillStyle = 'rgba(255,107,53,0.5)';
+    mctx.fill();
+    mctx.font = 'bold 10px Arial';
+    mctx.fillStyle = '#fff';
+    mctx.textAlign = 'center';
+    mctx.textBaseline = 'middle';
+    mctx.fillText(wpNum.toString(), p.x, p.y);
+    mctx.restore();
+    // Draw coordinates label
+    mctx.save(); mctx.font='8px Courier New';
+    const lbl=`(${wp.x_m.toFixed(2)},${wp.y_m.toFixed(2)})`, tw=mctx.measureText(lbl).width;
+    mctx.fillStyle='rgba(10,14,23,.85)'; mctx.fillRect(p.x+14,p.y-15,tw+4,11);
+    mctx.fillStyle='#00d4ff'; mctx.textAlign='left'; mctx.textBaseline='alphabetic'; mctx.fillText(lbl,p.x+16,p.y-6); mctx.restore();
+  });
+
+  // ── SEQUENCE: build spatial waypoints from sequence panel only ──
+  const _seqSpatialWPs = [];
+  sequence.forEach(seqItem => {
+    if (seqItem.type === 'waypoint' && seqItem.data && seqItem.data.x_m !== undefined) {
+      _seqSpatialWPs.push(seqItem.data);
+    }
+  });
+
+  // Draw dotted line from robot to current sequence waypoint
+  if (_seqSpatialWPs.length > 0 && missionState !== 'done' && missionState !== 'reached' && missionState !== 'cancelled' && missionState !== 'error') {
     let idx = 0;
-    if (typeof missionCurrentIdx === 'number' && missionCurrentIdx < waypoints.length) {
+    if (typeof missionCurrentIdx === 'number' && missionCurrentIdx < _seqSpatialWPs.length) {
       idx = missionCurrentIdx;
     }
-    // Find next spatial waypoint (skip ACTION and ANCHOR nodes)
-    let nextSpatialIdx = idx;
-    while (nextSpatialIdx < waypoints.length && (waypoints[nextSpatialIdx].type === 'ACTION' || waypoints[nextSpatialIdx].type === 'ANCHOR')) {
-      nextSpatialIdx++;
-    }
     const rp = robotToCanvas();
-    const wp1 = (nextSpatialIdx < waypoints.length) ? wpToCanvas(waypoints[nextSpatialIdx]) : null;
+    const wp1 = wpToCanvas(_seqSpatialWPs[idx]);
     if (rp && wp1) {
-      const isHighlighted = (highlightedWpIdx === nextSpatialIdx);
       mctx.save();
       mctx.setLineDash([7, 7]);
-      mctx.strokeStyle = isHighlighted ? '#FFD700' : '#ff6b35';
+      mctx.strokeStyle = '#ff6b35';
       mctx.lineWidth = 2;
       mctx.beginPath();
       mctx.moveTo(rp.x, rp.y);
       mctx.lineTo(wp1.x, wp1.y);
       mctx.stroke();
-      // Arrowhead at current waypoint
       const dx = wp1.x - rp.x, dy = wp1.y - rp.y;
       const angle = Math.atan2(dy, dx);
       const len = 18;
@@ -1363,36 +1429,26 @@ function renderMap(){
       mctx.lineTo(wp1.x - len * Math.cos(angle + Math.PI/7), wp1.y - len * Math.sin(angle + Math.PI/7));
       mctx.lineTo(wp1.x, wp1.y);
       mctx.closePath();
-      mctx.fillStyle = isHighlighted ? '#000000' : '#ff6b35';
+      mctx.fillStyle = '#ff6b35';
       mctx.fill();
-      mctx.setLineDash([]);
       mctx.restore();
     }
   }
-  // Dotted lines between waypoints (skip ACTION and ANCHOR nodes)
-  {
-    const spatialWPs = waypoints.filter(w => w.type !== 'ACTION' && w.type !== 'ANCHOR');
-    if (spatialWPs.length > 1) {
+
+  // Dotted arrows between sequence waypoints only
+  if (_seqSpatialWPs.length > 1) {
     mctx.save();
     mctx.setLineDash([7, 7]);
     mctx.lineWidth = 2;
-    for (let i = 0; i < spatialWPs.length - 1; i++) {
-      const p1 = wpToCanvas(spatialWPs[i]);
-      const p2 = wpToCanvas(spatialWPs[i+1]);
+    for (let i = 0; i < _seqSpatialWPs.length - 1; i++) {
+      const p1 = wpToCanvas(_seqSpatialWPs[i]);
+      const p2 = wpToCanvas(_seqSpatialWPs[i+1]);
       if (p1 && p2) {
-        // Find original waypoint indices for highlight check
-        const wpIdx1 = waypoints.indexOf(spatialWPs[i]);
-        const wpIdx2 = waypoints.indexOf(spatialWPs[i+1]);
-        const isHighlighted = (highlightedWpIdx === wpIdx1 || highlightedWpIdx === wpIdx2);
-        
-        // Use yellow for highlighted arrows, orange for normal
-        mctx.strokeStyle = isHighlighted ? '#FFD700' : '#ff6b35';
-        
+        mctx.strokeStyle = '#ff6b35';
         mctx.beginPath();
         mctx.moveTo(p1.x, p1.y);
         mctx.lineTo(p2.x, p2.y);
         mctx.stroke();
-        // Arrowhead at p2
         const dx = p2.x - p1.x, dy = p2.y - p1.y;
         const angle = Math.atan2(dy, dx);
         const len = 18;
@@ -1403,57 +1459,33 @@ function renderMap(){
         mctx.lineTo(p2.x - len * Math.cos(angle + Math.PI/7), p2.y - len * Math.sin(angle + Math.PI/7));
         mctx.lineTo(p2.x, p2.y);
         mctx.closePath();
-        mctx.fillStyle = isHighlighted ? '#000000' : '#ff6b35';
+        mctx.fillStyle = '#ff6b35';
         mctx.fill();
         mctx.setLineDash([7, 7]);
       }
     }
     mctx.setLineDash([]);
     mctx.restore();
-    }
   }
-  // waypoints: draw robot model at each waypoint with reduced opacity and sequence number
-  let mapWpNum = 0;
-  waypoints.forEach((wp,i)=>{
-    if(wp.type === 'ACTION' || wp.type === 'ANCHOR') return; // skip ACTION and ANCHOR nodes on map
-    mapWpNum++;
+
+  // Numbered circles for sequence waypoints only
+  _seqSpatialWPs.forEach((wp,i)=>{
     const p=wpToCanvas(wp); if(!p) return;
-    // Draw robot model - screen heading = originYaw_rad - wp.yaw_rad (yaw CW positive)
-    const originYaw_rad = originYaw * Math.PI / 180;
-    const screenYaw = originYaw_rad - wp.yaw_rad;
-    mctx.save();
-    mctx.globalAlpha = 0.2;
-    drawTriangle(mctx, p.x, p.y, screenYaw, SC*.7, '#ff6b35');
-    mctx.globalAlpha = 1.0;
-    mctx.restore();
-    // Draw sequence number in a circle
-    const seqNum = mapWpNum;
+    const seqNum = wp.id || (i + 1);
     mctx.save();
     mctx.beginPath();
     mctx.arc(p.x, p.y, 12, 0, Math.PI * 2);
-    if(highlightedWpIdx === i) {
-      mctx.fillStyle = '#FFD700'; // Inverted: gold background
-      mctx.fill();
-      mctx.strokeStyle = '#000'; // Inverted: black stroke
-    } else {
-      mctx.fillStyle = 'rgba(255,107,53,0.9)'; // Normal: orange background
-      mctx.fill();
-      mctx.strokeStyle = '#fff'; // Normal: white stroke
-    }
+    mctx.fillStyle = 'rgba(255,107,53,0.9)';
+    mctx.fill();
+    mctx.strokeStyle = '#fff';
     mctx.lineWidth = 1.5;
     mctx.stroke();
-    // Make font bolder if highlighted
-    mctx.font = highlightedWpIdx === i ? 'bold 13px Arial' : 'bold 11px Arial';
-    mctx.fillStyle = highlightedWpIdx === i ? '#000' : '#fff'; // Inverted text color when highlighted
+    mctx.font = 'bold 11px Arial';
+    mctx.fillStyle = '#fff';
     mctx.textAlign = 'center';
     mctx.textBaseline = 'middle';
     mctx.fillText(seqNum.toString(), p.x, p.y);
     mctx.restore();
-    // Draw coordinates label
-    mctx.save(); mctx.font='8px Courier New';
-    const lbl=`(${wp.x_m.toFixed(2)},${wp.y_m.toFixed(2)})`, tw=mctx.measureText(lbl).width;
-    mctx.fillStyle='rgba(10,14,23,.85)'; mctx.fillRect(p.x+14,p.y-15,tw+4,11);
-    mctx.fillStyle='#00d4ff'; mctx.textAlign='left'; mctx.textBaseline='alphabetic'; mctx.fillText(lbl,p.x+16,p.y-6); mctx.restore();
   });
 // Draw a small triangle (like a dot) with a black base, facing up at yaw=0
 function drawSmallTriangle(ctx, cx, cy, yaw, sz, col) {
@@ -2024,11 +2056,17 @@ function executePressFunc() {
     wpX = wpX + globalErrorValue;
   }
   
+  // Prevent duplicate waypoints (same x, y, yaw)
+  const _dupX = +wpX.toFixed(4), _dupY = +robot.y.toFixed(4), _dupYaw = Math.round(robot.yaw * 180 / Math.PI);
+  if (waypoints.some(w => w.type !== 'ACTION' && w.type !== 'ANCHOR' && Math.abs(w.x_m - _dupX) < 0.001 && Math.abs(w.y_m - _dupY) < 0.001 && w.yaw_deg === _dupYaw)) {
+    showToast('⚠️ Duplicate waypoint — already exists in WP DATA');
+    return;
+  }
   waypoints.push({
     id: waypoints.length + 1,
-    x_m: +wpX.toFixed(4),
-    y_m: +robot.y.toFixed(4),
-    yaw_deg: Math.round(robot.yaw * 180 / Math.PI),
+    x_m: _dupX,
+    y_m: _dupY,
+    yaw_deg: _dupYaw,
     yaw_rad: robot.yaw,
     createdFrom: 'WP'
   });
@@ -2095,7 +2133,7 @@ function updateWPList(){
     if(wp.type === 'ACTION'){
       const actionLabels = {detect_color: '🔍 Detect Colour'};
       const label = actionLabels[wp.node] || wp.node;
-      return `<div class="wp-item wp-action" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragover="onWpDragOver(event)" ondrop="onWpDrop(event)" ondragend="onWpDragEnd(event)">
+      return `<div class="wp-item wp-action" data-idx="${i}" ondblclick="highlightWaypoint(${i})">
         <div class="wp-num" style="background:#9c27b0; color:#fff;">⚡</div>
         <div class="wp-body"><div class="wp-xy" style="color:#ce93d8;">${label}</div></div>
         <button class="wp-del" onclick="delWP(${i})">✕</button>
@@ -2103,7 +2141,7 @@ function updateWPList(){
     }
     // Anchor items render differently
     if(wp.type === 'ANCHOR'){
-      return `<div class="wp-item wp-anchor" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragover="onWpDragOver(event)" ondrop="onWpDrop(event)" ondragend="onWpDragEnd(event)">
+      return `<div class="wp-item wp-anchor" data-idx="${i}" ondblclick="highlightWaypoint(${i})">
         <div class="wp-num" style="background:#2196F3; color:#fff;">📍</div>
         <div class="wp-body"><div class="wp-xy" style="color:#64b4ff;">${wp.anchor_name}</div><div class="wp-yaw" style="color:#ffb464;">${wp.direction.toUpperCase()} | fwd: ${wp.average.toFixed(4)}m | lat: ${wp.distance.toFixed(4)}m</div></div>
         <button class="wp-del" onclick="delWP(${i})">✕</button>
@@ -2114,7 +2152,7 @@ function updateWPList(){
     let circleColor = '#81C784'; // Default light green for 'wp'
     if (wp.createdFrom === 'MOVE') circleColor = '#FDD835'; // Light yellow for MOVE panel
     if (wp.createdFrom === 'P') circleColor = '#FFB74D'; // Light orange for P keypress mark
-    return `<div class="wp-item wp-${wp.type && wp.type.toLowerCase ? wp.type.toLowerCase() : 'wp'}" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragover="onWpDragOver(event)" ondrop="onWpDrop(event)" ondragend="onWpDragEnd(event)">
+    return `<div class="wp-item wp-${wp.type && wp.type.toLowerCase ? wp.type.toLowerCase() : 'wp'}" data-idx="${i}" ondblclick="highlightWaypoint(${i})">
       <div class="wp-num" style="background:${circleColor}; color:#fff;">${wpNum}</div>
       <div class="wp-body"><div class="wp-xy">x:${wp.x_m} y:${wp.y_m} m</div><div class="wp-yaw">yaw:${wp.yaw_deg}°</div></div>
       <button class="wp-del" onclick="delWP(${i})">✕</button>
@@ -2151,11 +2189,12 @@ function highlightWaypoint(idx) {
   renderMap();
 }
 
-// Drag-and-drop handlers for waypoint reordering
+// Drag-and-drop handlers for waypoint reordering and dragging to sequence
 let dragWpIdx = null;
 function onWpDragStart(e) {
   dragWpIdx = +e.currentTarget.dataset.idx;
   e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', dragWpIdx.toString());
   e.currentTarget.style.opacity = '0.5';
 }
 function onWpDragOver(e) {
@@ -2164,20 +2203,11 @@ function onWpDragOver(e) {
 }
 function onWpDrop(e) {
   e.preventDefault();
-  const from = dragWpIdx;
-  const to = +e.currentTarget.dataset.idx;
-  if (from === to) return;
-  const moved = waypoints.splice(from, 1)[0];
-  waypoints.splice(to, 0, moved);
-  waypoints.forEach((w,j)=>w.id=j+1);
-  updateWPList();
-  renderMap();
+  // Reordering disabled — WP DATA order is fixed
 }
 function onWpDragEnd(e) {
   e.currentTarget.style.opacity = '';
   dragWpIdx = null;
-  updateWPList();
-  renderMap();
 }
 
 // Click-to-edit waypoint number (order)
@@ -2224,6 +2254,12 @@ function closeActionPopup(){
   document.getElementById('actionOverlay').classList.remove('open');
 }
 function addAction(node){
+  // Prevent duplicate actions
+  if (waypoints.some(w => w.type === 'ACTION' && w.node === node)) {
+    showToast('⚠️ Action "' + node + '" already exists in WP DATA');
+    closeActionPopup();
+    return;
+  }
   waypoints.push({
     id: waypoints.length + 1,
     type: 'ACTION',
@@ -2265,6 +2301,12 @@ function displayAnchorList(anchors){
 }
 
 function addAnchorToWaypoints(name, direction, distance, average){
+  // Prevent duplicate anchors
+  if (waypoints.some(w => w.type === 'ANCHOR' && w.anchor_name === name)) {
+    showToast('⚠️ Anchor "' + name + '" already exists in WP DATA');
+    closeAnchorListPopup();
+    return;
+  }
   waypoints.push({
     id: waypoints.length + 1,
     type: 'ANCHOR',
@@ -3205,6 +3247,12 @@ function confirmAddWP(){
   
   let yaw_deg = Math.round(finalYaw * 180 / Math.PI);
   if (yaw_deg === 360) yaw_deg = 0;
+  // Prevent duplicate waypoints (same x, y, yaw)
+  const _cX = +finalX.toFixed(4), _cY = +finalY.toFixed(4);
+  if (waypoints.some(w => w.type !== 'ACTION' && w.type !== 'ANCHOR' && Math.abs(w.x_m - _cX) < 0.001 && Math.abs(w.y_m - _cY) < 0.001 && w.yaw_deg === yaw_deg)) {
+    showToast('⚠️ Duplicate waypoint — already exists in WP DATA');
+    return;
+  }
   waypoints.push({
     id: waypoints.length + 1,
     x_m: +finalX.toFixed(4),
@@ -3244,10 +3292,58 @@ document.getElementById('addWpOverlay').addEventListener('click',e=>{
   if(e.target===document.getElementById('addWpOverlay')) closeAddWP();
 });
 function exportWP(){
-  if(!waypoints.length){ alert('No waypoints to export.'); return; }
-  const data={map:{width:mapW,height:mapH,resolution_cm:mapRes},origin_px:originPx,waypoints:waypoints.map(w=>({id:w.id,x_m:w.x_m,y_m:w.y_m,yaw_deg:w.yaw_deg}))};
-  const txt=JSON.stringify(data,null,2);
-  try{ const b=new Blob([txt],{type:'application/json'}),url=URL.createObjectURL(b),a=document.createElement('a'); a.href=url; a.download='kiwi_waypoints.json'; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(url);document.body.removeChild(a);},1000); }catch(_){}
+  if(!sequence.length){ alert('No items in sequence. Add waypoints/anchors to WP DATA and drag them to SEQUENCE panel.'); return; }
+  
+  // Build data and sequence from current state
+  const data = {};
+  const seqRefs = [];
+  
+  sequence.forEach((seqItem) => {
+    if (seqItem.type === 'waypoint') {
+      const wp = waypoints.find(w => w.id.toString() === seqItem.id.replace('wp', ''));
+      if (wp) {
+        data[seqItem.id] = {
+          x: parseFloat(wp.x_m),
+          y: parseFloat(wp.y_m),
+          yaw: parseFloat(wp.yaw_deg)
+        };
+        seqRefs.push(seqItem.id);
+      }
+    } else if (seqItem.type === 'anchor') {
+      const anc = waypoints.find(w => w.id.toString() === seqItem.id.replace('anchor', ''));
+      if (anc) {
+        data[seqItem.id] = {
+          forward: parseFloat(anc.average),
+          lateral: parseFloat(anc.distance)
+        };
+        seqRefs.push(seqItem.id);
+      }
+    } else if (seqItem.type === 'action') {
+      seqRefs.push({action: seqItem.id});
+    }
+  });
+  
+  const missionData = {
+    map: {width: mapW, height: mapH, resolution_cm: mapRes},
+    origin_px: originPx,
+    data: data,
+    sequence: seqRefs
+  };
+  
+  const txt = JSON.stringify(missionData, null, 2);
+  try{
+    const b = new Blob([txt], {type:'application/json'}),
+          url = URL.createObjectURL(b),
+          a = document.createElement('a');
+    a.href = url;
+    a.download = 'kiwi_mission.json';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    }, 1000);
+  } catch(_) {}
   showPopup(txt);
 }
 function showPopup(txt){
@@ -3947,6 +4043,182 @@ function loadMapData(d){
   showToast('🎯 Click map to place origin → WASD adjust • ENTER save • ESC cancel');
 }
 
+// ── SEQUENCE PANEL STATE ──────────────────────────────────────────────────────
+let sequence = [];  // Array of {id: 'wp1', type: 'waypoint'|'anchor'} or {id: 'action_name', type: 'action'}
+
+function addToSequence(itemId, itemType, itemData) {
+  const seqItem = document.createElement('div');
+  seqItem.className = 'seq-item';
+  seqItem.draggable = seqReorderMode;
+  seqItem.dataset.id = itemId;
+  seqItem.dataset.type = itemType;
+  seqItem.style.cursor = seqReorderMode ? 'grab' : 'default';
+  seqItem.innerHTML = `
+    <span class="seq-label">${itemType === 'action' ? '⚡ ' : itemType === 'anchor' ? '📍 ' : '🎯 '}${itemId}</span>
+    <button class="seq-remove" onclick="removeFromSequence(this)" style="opacity:0;transition:opacity 0.2s;">✕</button>
+  `;
+  seqItem.addEventListener('dragstart', dragStart);
+  seqItem.addEventListener('dragend', dragEnd);
+  seqItem.addEventListener('mouseenter', () => { seqItem.querySelector('.seq-remove').style.opacity = '1'; });
+  seqItem.addEventListener('mouseleave', () => { seqItem.querySelector('.seq-remove').style.opacity = '0'; });
+  
+  const container = document.getElementById('seqList');
+  const empty = container.querySelector('.seq-empty');
+  if (empty) empty.remove();
+  container.appendChild(seqItem);
+  
+  sequence.push({id: itemId, type: itemType, data: itemData});
+  renderMap();
+}
+
+function removeFromSequence(btn) {
+  const item = btn.parentElement;
+  const idx = sequence.findIndex(s => s.id === item.dataset.id);
+  if (idx !== -1) sequence.splice(idx, 1);
+  item.remove();
+  
+  const container = document.getElementById('seqList');
+  if (container.children.length === 0) {
+    container.innerHTML = '<div class="seq-empty" style="color:var(--muted);text-align:center;padding:20px 8px;font-size:11px;">Drag items from<br>WP DATA to arrange<br>execution sequence</div>';
+  }
+  renderMap();
+}
+
+function clearSeq() {
+  sequence = [];
+  document.getElementById('seqList').innerHTML = '<div class="seq-empty" style="color:var(--muted);text-align:center;padding:20px 8px;font-size:11px;">Drag items from<br>WP DATA to arrange<br>execution sequence</div>';
+  renderMap();
+}
+
+function reverseSeq() {
+  if (sequence.length < 2) return;
+  sequence.reverse();
+  // Rebuild DOM to match reversed order
+  const list = document.getElementById('seqList');
+  const items = [...list.querySelectorAll('.seq-item')];
+  items.reverse().forEach(el => list.appendChild(el));
+  renderMap();
+}
+
+let draggedElement = null;
+let seqReorderMode = false;
+
+function toggleSeqReorder() {
+  seqReorderMode = !seqReorderMode;
+  const btn = document.getElementById('seqReorderToggle');
+  if (seqReorderMode) {
+    btn.style.borderColor = 'var(--accent)';
+    btn.style.background = 'var(--accent)';
+    btn.style.color = '#0a0e17';
+  } else {
+    btn.style.borderColor = 'var(--muted)';
+    btn.style.background = 'transparent';
+    btn.style.color = 'var(--muted)';
+  }
+  // Update draggable state of seq-items
+  document.querySelectorAll('#seqList .seq-item').forEach(el => {
+    el.draggable = seqReorderMode;
+    el.style.cursor = seqReorderMode ? 'grab' : 'default';
+  });
+}
+
+function dragStart(e) {
+  if (!seqReorderMode) { e.preventDefault(); return; }
+  draggedElement = this;
+  this.style.opacity = '0.4';
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/seq-reorder', 'true');
+}
+function dragEnd(e) {
+  if (draggedElement) draggedElement.style.opacity = '1';
+  draggedElement = null;
+  // Remove all drop indicators
+  document.querySelectorAll('.seq-drop-indicator').forEach(el => el.remove());
+}
+
+// Reorder drop handling within seqList
+function setupSeqReorderDrop() {
+  const list = document.getElementById('seqList');
+  list.addEventListener('dragover', (e) => {
+    if (!seqReorderMode || !draggedElement) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    // Find closest seq-item to insert before
+    const items = [...list.querySelectorAll('.seq-item')];
+    const afterEl = items.reduce((closest, child) => {
+      const box = child.getBoundingClientRect();
+      const offset = e.clientY - box.top - box.height / 2;
+      if (offset < 0 && offset > closest.offset) return { offset, element: child };
+      return closest;
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+    if (afterEl) {
+      list.insertBefore(draggedElement, afterEl);
+    } else {
+      list.appendChild(draggedElement);
+    }
+  });
+  list.addEventListener('drop', (e) => {
+    if (!seqReorderMode || !draggedElement) return;
+    if (!e.dataTransfer.types.includes('text/seq-reorder')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    // Sync sequence array to match DOM order
+    const items = [...list.querySelectorAll('.seq-item')];
+    const newSeq = [];
+    items.forEach(el => {
+      const found = sequence.find(s => s.id === el.dataset.id);
+      if (found) newSeq.push(found);
+    });
+    sequence = newSeq;
+    renderMap();
+  });
+}
+setupSeqReorderDrop();
+
+const seqContainer = document.getElementById('seqList');
+if (seqContainer) {
+  seqContainer.addEventListener('dragover', (e) => { 
+    e.preventDefault(); 
+    e.dataTransfer.dropEffect = 'move'; 
+    seqContainer.style.background = 'rgba(0, 212, 255, 0.2)'; 
+    seqContainer.style.borderColor = 'var(--accent)';
+  });
+  seqContainer.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+  });
+  seqContainer.addEventListener('dragleave', (e) => { 
+    if (e.target === seqContainer) {
+      seqContainer.style.background = 'var(--panel2)'; 
+      seqContainer.style.borderColor = 'var(--border)';
+    }
+  });
+  seqContainer.addEventListener('drop', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    seqContainer.style.background = 'var(--panel2)';
+    seqContainer.style.borderColor = 'var(--border)';
+    
+    try {
+      const wpIdxStr = e.dataTransfer.getData('text/plain');
+      if (wpIdxStr) {
+        const wpIdx = parseInt(wpIdxStr);
+        if (!isNaN(wpIdx) && waypoints[wpIdx]) {
+          const wp = waypoints[wpIdx];
+          if (wp.type === 'ACTION') {
+            addToSequence('detect_color', 'action', wp);
+          } else if (wp.type === 'ANCHOR') {
+            addToSequence('anchor' + wp.id, 'anchor', wp);
+          } else {
+            addToSequence('wp' + wp.id, 'waypoint', wp);
+          }
+        }
+      }
+    } catch(err) {
+      console.error('Drop handler error:', err);
+    }
+  });
+}
+
 // ── MISSION CONTROL ───────────────────────────────────────────────────────────
 let _missionRunning = false;
 function runMission(){
@@ -3963,26 +4235,67 @@ function runMission(){
     updateMissionPanel({state:'cancelled', msg:'Cancel signal sent…'});
     return;
   }
-  if(!waypoints.length){ alert('No waypoints marked.\nDrive robot and press [P] to mark waypoints first.'); return; }
 
-  // Build behavior tree from waypoints list
-  const children = waypoints.map(w => {
-    if(w.type === 'ACTION'){
-      return {node: w.node};
+  // If sequence is empty but waypoints exist, auto-build sequence from all waypoints
+  const useSequence = sequence.length > 0;
+  let runList;
+  if (useSequence) {
+    runList = sequence;
+  } else if (waypoints.length > 0) {
+    // Fallback: run all waypoints in order
+    runList = waypoints.map(wp => {
+      if (wp.type === 'ACTION') return {id: wp.node || 'detect_color', type: 'action', data: wp};
+      if (wp.type === 'ANCHOR') return {id: 'anchor' + wp.id, type: 'anchor', data: wp};
+      return {id: 'wp' + wp.id, type: 'waypoint', data: wp};
+    });
+  } else {
+    alert('No waypoints defined.\nDrive robot → press [P] or ADD WP to create waypoints.');
+    return;
+  }
+
+  // Build data from ALL WP DATA panel items
+  const data = {};
+  waypoints.forEach(wp => {
+    if (wp.type === 'ACTION') {
+      // Actions go in data keyed by node name
+      data[wp.node || 'detect_color'] = { action: wp.node || 'detect_color' };
+    } else if (wp.type === 'ANCHOR') {
+      data['anchor' + wp.id] = {
+        forward: parseFloat(wp.average || 0),
+        lateral: parseFloat(wp.distance || 0)
+      };
+    } else {
+      data['wp' + wp.id] = {
+        x: parseFloat(wp.x_m),
+        y: parseFloat(wp.y_m),
+        yaw: parseFloat(wp.yaw_deg)
+      };
     }
-    if(w.type === 'ANCHOR'){
-      return {node: 'anchor', forward: w.average, lateral: w.distance};
-    }
-    return {node: 'goto', x: w.x_m, y: w.y_m, yaw: w.yaw_deg};
   });
+
+  // Build sequence from SEQUENCE panel
+  const seqRefs = [];
+  runList.forEach(seqItem => {
+    if (seqItem.type === 'waypoint') {
+      seqRefs.push(seqItem.id);
+    } else if (seqItem.type === 'anchor') {
+      seqRefs.push(seqItem.id);
+    } else if (seqItem.type === 'action') {
+      seqRefs.push({action: seqItem.id});
+    }
+  });
+
+  if (seqRefs.length === 0) {
+    alert('Could not build mission from waypoints.');
+    return;
+  }
 
   const payload = {
     type: 'run_mission',
-    tree: {
-      type: 'sequence',
-      children: children
-    }
+    data: data,
+    sequence: seqRefs
   };
+  console.log('[MISSION] Sending payload:', JSON.stringify(payload));
   send(payload);
 
   // optimistic UI update
@@ -3993,7 +4306,7 @@ function runMission(){
   runb.style.borderColor = '#f44336';
   runb.style.color = '#fff';
   document.getElementById('stopBtn').style.display = 'none';
-  updateMissionPanel({state:'running', current:0, total:waypoints.length, msg:'Sending mission to robot…'});
+  updateMissionPanel({state:'running', current:0, total:sequence.length, msg:'Sending mission to robot…'});
 }
 
 function cancelMission(){

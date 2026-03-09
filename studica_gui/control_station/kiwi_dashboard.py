@@ -124,6 +124,7 @@ def _handle_ws(client: _WSClient):
                 try:
                     msg = json.loads(pl.decode())
                     t   = msg.get("type","")
+                    print(f"[WS] Received message type: {t}")
                     if t == "cmd_vel":
                         with state_lock:
                             shared_state["cmd_vel"] = {
@@ -141,6 +142,7 @@ def _handle_ws(client: _WSClient):
                     elif t == "run_mission":
                         mission_data = msg.get("data")
                         mission_seq = msg.get("sequence")
+                        print(f"[WS] run_mission received: data={mission_data}, sequence={mission_seq}")
                         if mission_data and mission_seq:
                             # Already in new format
                             with state_lock:
@@ -555,7 +557,7 @@ class _Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         if self.headers.get("Upgrade","").lower()=="websocket" and self.path=="/ws":
             self._upgrade_ws(); return
-        body = HTML.encode("utf-8")
+        body = _load_dashboard_html().encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type",   "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
@@ -670,7 +672,7 @@ class KiwiDashboardNode(Node):
             out      = String()
             out.data = json.dumps(mission)
             self._wp_pub.publish(out)
-            self.get_logger().info(f"[MISSION] Published mission → /kiwi/waypoints")
+            self.get_logger().info(f"[MISSION] Published mission → /kiwi/waypoints: {out.data[:200]}")
         if cancel:
             out      = String()
             out.data = "cancel"
