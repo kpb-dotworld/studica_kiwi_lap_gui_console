@@ -40,6 +40,21 @@ header{display:flex;align-items:center;justify-content:space-between;padding:12p
 .ws-badge.conn{color:#ffcc00;border-color:#ffcc00;background:rgba(255,204,0,.07);}
 .hdr-btn{font-size:11px;padding:4px 12px;border:1px solid var(--accent2);color:var(--accent2);background:rgba(255,107,53,.08);cursor:pointer;border-radius:3px;font-family:inherit;letter-spacing:.5px;transition:all .15s;}
 .hdr-btn:hover{background:rgba(255,107,53,.2);}
+.estop-btn{font-size:13px;font-weight:700;padding:8px 20px;border:2px solid var(--red);color:#fff;background:var(--red);cursor:pointer;border-radius:4px;font-family:inherit;letter-spacing:1px;transition:all .15s;text-transform:uppercase;flex:0 0 auto;}
+.estop-btn:hover{background:rgba(255,68,85,.9);border-color:#fff;}
+.estop-btn.active{background:#8b0000;border-color:#8b0000;color:#fff;}
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.3; }
+}
+.estop-circle {
+  display: inline-block;
+  animation: none;
+}
+.estop-btn.active .estop-circle {
+  animation: blink 0.6s infinite;
+}
+.hdr-center{flex:1;display:flex;justify-content:center;align-items:center;}
 .p-tip{font-size:1em;color:var(--muted2);}
 .p-tip b{color:var(--accent2);}
 .dbg{padding:4px 18px;background:#060d16;border-bottom:1px solid var(--border);font-size:var(--font-size-small);color:var(--muted2);display:flex;gap:18px;flex-shrink:0;}
@@ -106,6 +121,10 @@ canvas{display:block;image-rendering:pixelated;max-width:100vw;max-height:90vh;}
 .rot-btn{width:44px;height:44px;border-radius:50%;background:var(--panel2);border:2px solid var(--border);color:var(--accent);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s;user-select:none;}
 .rot-btn:hover{border-color:var(--accent);background:rgba(0,212,255,.1);}
 .rot-btn:active,.rot-btn.held{background:rgba(0,212,255,.18);border-color:var(--accent);}
+.joy-toggle-btn{width:44px;height:44px;border-radius:50%;background:var(--panel2);border:2px solid var(--border);color:var(--accent);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s;user-select:none;position:absolute;bottom:8px;left:8px;}
+.joy-toggle-btn:hover{border-color:var(--accent);background:rgba(0,212,255,.1);}
+.joy-toggle-btn.disabled{color:var(--red);border-color:var(--muted2);background:rgba(255,68,85,.08);}
+.joy-toggle-btn.disabled:hover{border-color:var(--red);background:rgba(255,68,85,.15);}
 .rot-lbl{font-size:8px;color:var(--muted);letter-spacing:1px;}
 .spd-row{display:flex;align-items:center;gap:8px;margin-top:7px;}
 .spd-row label{font-size:9px;color:var(--muted2);white-space:nowrap;}
@@ -349,6 +368,9 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 <!-- ═══ HEADER ═══════════════════════════════════════════════════════════════ -->
 <header>
   <div class="logo">Team India Dashboard</div>
+  <div class="hdr-center">
+    <button class="estop-btn" id="estopBtn" onclick="toggleEStop()"><span class="estop-circle">🔴</span> E - STOP</button>
+  </div>
   <div class="hdr-right">
     <button class="hdr-btn" onclick="openEditor()">🗺 Map Editor</button>
     <button class="hdr-btn" style="margin-left:8px;" onclick="clearCache()">🗑 Clear</button>
@@ -409,6 +431,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
     <div class="sec" style="border:none;border-bottom:1px solid var(--border);display:flex;flex-direction:column;min-height:0;">
       <div class="sec-title" style="margin:0;margin-bottom:8px;">WAYPOINTS [P]</div>
       <button class="action-btn" onclick="openActionPopup()" style="width:100%;margin-bottom:6px;">⚡ Action</button>
+      <button class="action-btn" onclick="openSaveAnchorPopup()" style="width:100%;margin-bottom:6px;color:#4dff91;border-color:#4dff91;">📍 Save Anchor</button>
       <button class="addwp-btn" onclick="handleQKeyPress()" style="width:100%;margin-bottom:8px;">WP</button>
       <div style="display:flex;gap:4px;align-items:center;justify-content:flex-end;margin-bottom:8px;">
         <button class="clr-btn" onclick="clearWP()">✕ Clear</button>
@@ -684,7 +707,8 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
       </div>
     </div>
 
-    <div class="sec" id="joySection" style="height:200px;">
+    <div class="sec" id="joySection" style="height:200px;position:relative;">
+      <button class="joy-toggle-btn disabled" id="joyToggleBtn" onclick="toggleJoystick()" title="Toggle joystick control">🕹️</button>
       <div class="joy-area">
         <div class="joy-pad" id="joyPad">
           <div class="joy-ring"></div><div class="joy-cross-h"></div><div class="joy-cross-v"></div>
@@ -1030,6 +1054,35 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
       <button class="action-item-btn" onclick="addAction('detect_color')">🔍 Detect Colour</button>
     </div>
     <button class="action-close-btn" onclick="closeActionPopup()">✕ Cancel</button>
+  </div>
+</div>
+
+<!-- SAVE ANCHOR POPUP -->
+<div class="action-overlay" id="saveAnchorOverlay">
+  <div class="action-box" style="width:340px;">
+    <div class="action-title">📍 Save Anchor</div>
+    <div style="background:var(--panel2);border:1px solid var(--border);border-radius:4px;padding:10px;margin-bottom:12px;text-align:left;">
+      <div style="font-size:10px;color:var(--muted2);margin-bottom:6px;letter-spacing:.5px;text-transform:uppercase;">Raw Data</div>
+      <div style="font-size:10px;color:var(--accent);word-break:break-all;font-family:var(--font-mono);line-height:1.6;margin-bottom:10px;" id="anchorDataDisplay">—</div>
+      <div style="font-size:9px;color:var(--muted2);margin-bottom:10px;line-height:1.5;" id="anchorParsedDisplay">—</div>
+      <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:8px;">
+        <div style="font-size:10px;color:var(--muted2);margin-bottom:8px;letter-spacing:.5px;text-transform:uppercase;">Calculated</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;" id="anchorCalculatedDisplay">
+          <div style="font-size:9px;color:#888;">—</div>
+          <div style="font-size:9px;color:#888;">—</div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:9px;color:var(--muted2);letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:6px;">File Name</label>
+      <input type="text" id="anchorFilenameInput" placeholder="e.g. left_anchor_1, right_anchor_2" style="width:100%;background:#21262d;border:1px solid var(--border);color:var(--accent);font-family:inherit;font-size:12px;padding:8px;border-radius:3px;outline:none;box-sizing:border-box;">
+      <div style="font-size:8px;color:var(--muted2);margin-top:4px;">Leave blank for auto timestamp</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
+      <button class="action-item-btn" onclick="saveAnchor('left')" style="flex:1;background:rgba(100,180,255,.15);border-color:#64b4ff;color:#64b4ff;">⬅️ Save Left</button>
+      <button class="action-item-btn" onclick="saveAnchor('right')" style="flex:1;background:rgba(255,180,100,.15);border-color:#ffb464;color:#ffb464;">Save Right ➡️</button>
+    </div>
+    <button class="action-close-btn" onclick="closeSaveAnchorPopup()">✕ Close</button>
   </div>
 </div>
 
@@ -1756,7 +1809,16 @@ function connect(){
         document.getElementById('cvLy').textContent=d.linear_y.toFixed(2);
         document.getElementById('cvAz').textContent=d.angular_z.toFixed(2);
       }
-      if(d.type==='dis_data') document.getElementById('sDisData').textContent=d.data;
+      if(d.type==='dis_data') {
+        // Format array data as string for display
+        if(Array.isArray(d.data)) {
+          window.lastDisDataArray = d.data;  // Store raw array
+          document.getElementById('sDisData').textContent = '[' + d.data.map(v => v.toFixed(3)).join(', ') + ']';
+        } else {
+          window.lastDisDataArray = null;
+          document.getElementById('sDisData').textContent = d.data;
+        }
+      }
       if(d.type==='map_list') {
         console.log('[MAP] Received map_list:', d.maps);
         refreshMapLibrary(d.maps);
@@ -1825,6 +1887,7 @@ connect();
 // ── JOYSTICK ──────────────────────────────────────────────────────────────────
 const joyPad=document.getElementById('joyPad'), joyKnob=document.getElementById('joyKnob');
 let joyActive=false, jLX=0, jLY=0, jAZ=0, maxSpd=0.6;
+let joystickEnabled=false;  // Toggle state for joystick (starts disabled)
 function setKnob(dx,dy){
   const R=joyPad.offsetWidth/2-20, dist=Math.sqrt(dx*dx+dy*dy);
   const cl=Math.min(dist,R), ang=Math.atan2(dy,dx);
@@ -1832,15 +1895,18 @@ function setKnob(dx,dy){
   joyKnob.style.left=(50+kx/R*50)+'%'; joyKnob.style.top=(50+ky/R*50)+'%';
   jLX=(kx/R)*maxSpd; jLY=-(ky/R)*maxSpd; updateCV();
 }
-function joyStart(e){ joyActive=true; joyMove(e); }
-function joyMove(e){ if(!joyActive) return; const r=joyPad.getBoundingClientRect(); const pt=e.touches?e.touches[0]:e; setKnob(pt.clientX-r.left-r.width/2,pt.clientY-r.top-r.height/2); }
+function joyStart(e){ if(!joystickEnabled) return; joyActive=true; joyMove(e); }
+function joyMove(e){ if(!joyActive||!joystickEnabled) return; const r=joyPad.getBoundingClientRect(); const pt=e.touches?e.touches[0]:e; setKnob(pt.clientX-r.left-r.width/2,pt.clientY-r.top-r.height/2); }
 function joyEnd(){ joyActive=false; jLX=0; jLY=0; joyKnob.style.left='50%'; joyKnob.style.top='50%'; updateCV(); }
 joyPad.addEventListener('mousedown',joyStart); window.addEventListener('mousemove',joyMove); window.addEventListener('mouseup',joyEnd);
 joyPad.addEventListener('touchstart',e=>{e.preventDefault();joyStart(e);},{passive:false});
 window.addEventListener('touchmove',e=>joyMove(e),{passive:false}); window.addEventListener('touchend',joyEnd);
+function toggleJoystick(){ joystickEnabled=!joystickEnabled; const btn=document.getElementById('joyToggleBtn'); btn.classList.toggle('disabled'); if(!joystickEnabled) joyEnd(); }
 function startRot(d){ jAZ=d*maxSpd*1.5; document.getElementById(d>0?'rotL':'rotR').classList.add('held'); updateCV(); }
 function stopRot(){ jAZ=0; document.getElementById('rotL').classList.remove('held'); document.getElementById('rotR').classList.remove('held'); updateCV(); }
 function onSpdChange(){ maxSpd=parseFloat(document.getElementById('spdSlider').value); document.getElementById('spdVal').textContent=maxSpd.toFixed(2); }
+let estopActive=false;
+function toggleEStop(){ estopActive=!estopActive; const btn=document.getElementById('estopBtn'); btn.classList.toggle('active'); send({type:'estop', data:estopActive}); }
 function updateCV(){
   document.getElementById('cvLx').textContent=jLY.toFixed(2);
   document.getElementById('cvLy').textContent=(-jLX).toFixed(2);
@@ -1848,7 +1914,7 @@ function updateCV(){
 }
 // ── IJKL CONTROL FOR WAYPOINT & ORIGIN MODES ──────────────────────────────────
 let ijklKeys = {i:false, j:false, k:false, l:false, q:false, e:false};
-let ijklSpeed = 0.3;  // m/s for movement
+let ijklSpeed = 0.1;  // m/s for movement
 let selectedMarkerX = null;  // temp marker position during adjustment (odom coords for waypoint)
 let selectedMarkerY = null;
 let selectedMarkerYaw = 0;
@@ -2140,6 +2206,154 @@ function addAction(node){
   updateWPList();
   renderMap();
   showToast('⚡ Action added: ' + node);
+}
+
+// ── SAVE ANCHOR POPUP ─────────────────────────────────────────────────────────
+let currentAnchorRawData = null;
+let currentAnchorRawArray = null;  // Store raw array data from server
+let currentAnchorParsedData = null;
+
+function parseDisData(data) {
+  try {
+    // If it's already an array, return it
+    if (Array.isArray(data)) {
+      return data.map(x => parseFloat(x));
+    }
+    // If it's a string, try to parse as JSON array
+    if (typeof data === 'string') {
+      if (data.startsWith('[') && data.endsWith(']')) {
+        return JSON.parse(data);
+      }
+      // Try to parse as comma-separated values
+      const parts = data.split(',').map(x => parseFloat(x.trim())).filter(x => !isNaN(x));
+      return parts.length > 0 ? parts : null;
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function openSaveAnchorPopup(){
+  const disDataElement = document.getElementById('sDisData');
+  const disDataValue = disDataElement ? disDataElement.textContent : '—';
+  currentAnchorRawData = disDataValue;
+  
+  // Also get the raw array if available (from window.lastDisDataArray set by WebSocket handler)
+  if (window.lastDisDataArray !== undefined) {
+    currentAnchorRawArray = window.lastDisDataArray;
+  }
+  
+  // Display raw data
+  document.getElementById('anchorDataDisplay').textContent = disDataValue;
+  
+  // Parse the data - prefer raw array if available
+  if (disDataValue === '—') {
+    document.getElementById('anchorParsedDisplay').innerHTML = '<span style="color:var(--red);">⚠️ No data available</span>';
+    document.getElementById('anchorCalculatedDisplay').innerHTML = '<span style="color:var(--red);">Cannot calculate</span>';
+    currentAnchorParsedData = null;
+  } else {
+    const parsed = parseDisData(currentAnchorRawArray || disDataValue);
+    currentAnchorParsedData = parsed;
+    
+    if (parsed && parsed.length >= 4) {
+      // Display parsed values
+      const parsedHTML = `data[0]: <span style="color:var(--green);">${parsed[0].toFixed(4)}</span><br>` +
+        `data[1]: <span style="color:var(--accent);">${parsed[1].toFixed(4)}</span><br>` +
+        `data[2]: <span style="color:var(--accent);">${parsed[2].toFixed(4)}</span><br>` +
+        `data[3]: <span style="color:var(--accent2);">${parsed[3].toFixed(4)}</span>`;
+      document.getElementById('anchorParsedDisplay').innerHTML = parsedHTML;
+      
+      // Calculate and display anchor values
+      const average = (parsed[1] + parsed[2]) / 2;
+      const leftValue = -parsed[0];
+      const rightValue = parsed[3];
+      
+      const calcHTML = `<span style="color:#64b4ff;font-family:var(--font-mono);">LEFT: ${leftValue.toFixed(4)}<br>avg: ${average.toFixed(4)}</span>` +
+        `<span style="color:#ffb464;font-family:var(--font-mono);">RIGHT: ${rightValue.toFixed(4)}<br>avg: ${average.toFixed(4)}</span>`;
+      document.getElementById('anchorCalculatedDisplay').innerHTML = calcHTML;
+    } else {
+      document.getElementById('anchorParsedDisplay').innerHTML = '<span style="color:var(--red);">Format: needs ≥4 values</span>';
+      document.getElementById('anchorCalculatedDisplay').innerHTML = '<span style="color:var(--red);">Invalid</span>';
+    }
+  }
+  
+  document.getElementById('saveAnchorOverlay').classList.add('open');
+}
+
+function closeSaveAnchorPopup(){
+  document.getElementById('saveAnchorOverlay').classList.remove('open');
+  currentAnchorRawData = null;
+  currentAnchorRawArray = null;
+  currentAnchorParsedData = null;
+}
+
+function saveAnchor(direction) {
+  if (!currentAnchorParsedData || currentAnchorParsedData.length < 4) {
+    showToast('❌ Invalid anchor data');
+    return;
+  }
+  
+  // Get filename from input
+  const filenameInput = document.getElementById('anchorFilenameInput');
+  let filename = filenameInput ? filenameInput.value.trim() : '';
+  
+  // Validate filename
+  if (filename && !/^[a-zA-Z0-9_\-]+$/.test(filename)) {
+    showToast('❌ Filename can only contain letters, numbers, - and _');
+    return;
+  }
+  
+  if (!filename) {
+    // Generate default name from direction + timestamp
+    const now = new Date();
+    const ts = now.getFullYear().toString().slice(2) + 
+               String(now.getMonth() + 1).padStart(2, '0') +
+               String(now.getDate()).padStart(2, '0') + '_' +
+               String(now.getHours()).padStart(2, '0') +
+               String(now.getMinutes()).padStart(2, '0') +
+               String(now.getSeconds()).padStart(2, '0');
+    filename = `anchor_${direction}_${ts}`;
+  }
+  
+  const data = currentAnchorParsedData;
+  const average = (data[1] + data[2]) / 2;
+  
+  let anchorValue = 0;
+  if (direction === 'left') {
+    anchorValue = -data[0];
+  } else if (direction === 'right') {
+    anchorValue = data[3];
+  }
+  
+  const anchorData = {
+    direction: direction,
+    distance: anchorValue,
+    average: average,
+    raw_data: currentAnchorRawData,
+    timestamp: new Date().toISOString()
+  };
+  
+  // Send to server via WebSocket
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      type: 'save_anchor',
+      direction: direction,
+      distance: anchorValue,
+      average: average,
+      filename: filename
+    }));
+    
+    showToast(`📍 Anchor saved: ${filename}`);
+    closeSaveAnchorPopup();
+    
+    // Also save to localStorage for reference
+    const anchors = JSON.parse(localStorage.getItem('robot_anchors') || '[]');
+    anchors.push(anchorData);
+    localStorage.setItem('robot_anchors', JSON.stringify(anchors));
+  } else {
+    showToast('❌ WebSocket not connected');
+  }
 }
 
 // Helper: find the last real spatial waypoint (skips ACTION nodes)
