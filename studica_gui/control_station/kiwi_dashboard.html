@@ -4304,16 +4304,19 @@ function updateConditionalUI(seqItem, caseIdx, caseNum, cases) {
   input.value = cases[caseNum].name || '';
   dropZone.dataset.caseNum = caseNum;
   dropZone.innerHTML = (cases[caseNum].wps && cases[caseNum].wps.length > 0)
-    ? cases[caseNum].wps.map(wp => {
+    ? cases[caseNum].wps.map((wp, wpIndex) => {
         let displayName = wp.name;
-        // If name is undefined or empty, reconstruct from waypoint data
-        if (!displayName && wp.wpIdx !== undefined && waypoints[wp.wpIdx]) {
-          const wpData = waypoints[wp.wpIdx];
-          displayName = wpData.type === 'ANCHOR' ? `📍 Anchor ${wpData.id}` : 
-                       wpData.type === 'ACTION' ? `⚡ ${wpData.node || 'detect_color'}` :
-                       `🎯 WP ${wpData.id}`;
+        // If name is undefined or empty, reconstruct from waypoint data using wpId
+        if (!displayName && wp.wpId !== undefined) {
+          const wpIdx = waypoints.findIndex(w => w.id === wp.wpId);
+          if (wpIdx !== -1) {
+            const wpData = waypoints[wpIdx];
+            displayName = wpData.type === 'ANCHOR' ? `📍 Anchor ${wpData.id}` : 
+                         wpData.type === 'ACTION' ? `⚡ ${wpData.node || 'detect_color'}` :
+                         `🎯 WP ${wpData.id}`;
+          }
         }
-        return `<div style="padding:4px 8px;background:rgba(77,255,145,.1);border:1px solid var(--accent);border-radius:3px;font-size:11px;color:var(--accent);">${displayName || 'Unknown'}</div>`;
+        return `<div style="padding:4px 8px;background:rgba(77,255,145,.1);border:1px solid var(--accent);border-radius:3px;font-size:11px;color:var(--accent);display:flex;align-items:center;justify-content:space-between;gap:6px;" data-wp-index="${wpIndex}" data-case-num="${caseNum}"><span>${displayName || 'Unknown'}</span><button style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:14px;padding:0;margin:0;width:16px;height:16px;display:flex;align-items:center;justify-content:center;" onclick="removeWaypointFromConditionalCase(event)" title="Delete waypoint">✕</button></div>`;
       }).join('')
     : 'Drop waypoints here';
   
@@ -4347,6 +4350,31 @@ function addSeqToConditionalCase(seqItem, wpIdx, dropZone) {
   seqItem.dataset.cases = JSON.stringify(cases);
   
   updateConditionalUI(seqItem, caseIdx, caseNum, cases);
+}
+
+function removeWaypointFromConditionalCase(event) {
+  event.stopPropagation();
+  const wpDiv = event.currentTarget.closest('[data-wp-index]');
+  if (!wpDiv) return;
+  
+  const wpIndex = parseInt(wpDiv.dataset.wpIndex);
+  const caseNum = parseInt(wpDiv.dataset.caseNum);
+  
+  // Find the seqItem (parent of the dropzone)
+  const dropZone = wpDiv.parentElement;
+  const condWrapper = dropZone.closest('.seq-conditional-wrapper');
+  const seqItem = condWrapper.closest('.seq-item');
+  
+  if (!seqItem.dataset.cases) return;
+  
+  const cases = JSON.parse(seqItem.dataset.cases);
+  if (cases[caseNum] && cases[caseNum].wps) {
+    cases[caseNum].wps.splice(wpIndex, 1);
+    seqItem.dataset.cases = JSON.stringify(cases);
+    
+    const caseIdx = parseInt(condWrapper.dataset.caseIndex);
+    updateConditionalUI(seqItem, caseIdx, caseNum, cases);
+  }
 }
 
 function clearSeq() {
