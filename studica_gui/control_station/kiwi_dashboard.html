@@ -249,6 +249,25 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .seq-remove{background:none;border:none;color:var(--muted);cursor:pointer;padding:2px 6px;border-radius:2px;font-size:12px;transition:color 0.2s;font-family:inherit;}
 .seq-remove:hover{color:var(--red);}
 .seq-empty{color:var(--muted);text-align:center;padding:20px 8px;font-size:11px;line-height:1.6;pointer-events:none;}
+
+/* CONDITIONAL DETECT_COLOR */
+.seq-conditional-wrapper{display:flex;flex-direction:column;gap:4px;margin-top:4px;}
+.seq-cond-header{display:flex;align-items:center;gap:6px;padding:6px 8px;background:rgba(77,255,145,.1);border:1px solid rgba(77,255,145,.3);border-radius:3px;}
+.seq-cond-toggle{appearance:none;width:40px;height:20px;background:var(--muted);border:none;border-radius:10px;cursor:pointer;transition:all 0.3s;position:relative;}
+.seq-cond-toggle:checked{background:#4dff91;}
+.seq-cond-toggle::before{content:'';position:absolute;width:16px;height:16px;background:#fff;border-radius:50%;top:2px;left:2px;transition:left 0.3s;}
+.seq-cond-toggle:checked::before{left:22px;}
+.seq-cond-cases{display:flex;align-items:center;gap:4px;padding:8px;background:var(--panel2);border:1px solid var(--border);border-radius:3px;}
+.seq-cond-nav{display:flex;align-items:center;gap:4px;}
+.seq-cond-nav button{background:transparent;border:1px solid var(--muted);color:var(--muted);padding:2px 6px;border-radius:2px;cursor:pointer;font-size:10px;}
+.seq-cond-nav button:hover{border-color:var(--accent);color:var(--accent);}
+.seq-cond-index{color:#4dff91;font-weight:700;font-size:11px;min-width:30px;text-align:center;}
+.seq-cond-input{background:var(--bg);border:1px solid var(--border);color:var(--accent);padding:4px 6px;border-radius:3px;font-family:inherit;font-size:11px;width:100px;}
+.seq-cond-add{background:rgba(77,255,145,.2);border:1px solid #4dff91;color:#4dff91;padding:2px 8px;border-radius:3px;cursor:pointer;font-size:11px;font-weight:600;}
+.seq-cond-add:hover{background:rgba(77,255,145,.3);}
+.seq-cond-dropzone{padding:8px;background:transparent;border:2px dashed var(--accent);border-radius:3px;min-height:60px;text-align:center;color:var(--accent);font-size:10px;transition:all 0.2s;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;}
+.seq-cond-dropzone.dragover{background:rgba(77,255,145,.1);border-color:#4dff91;}
+
 .popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1000;display:flex;align-items:center;justify-content:center;}
 .popup{background:var(--panel);border:1px solid var(--accent);border-radius:6px;padding:16px;width:480px;max-width:94vw;display:flex;flex-direction:column;gap:10px;}
 .popup-title{color:var(--accent);font-size:12px;font-weight:700;letter-spacing:1px;}
@@ -4053,14 +4072,169 @@ function addToSequence(itemId, itemType, itemData) {
   seqItem.dataset.id = itemId;
   seqItem.dataset.type = itemType;
   seqItem.style.cursor = seqReorderMode ? 'grab' : 'default';
-  seqItem.innerHTML = `
-    <span class="seq-label">${itemType === 'action' ? '⚡ ' : itemType === 'anchor' ? '📍 ' : '🎯 '}${itemId}</span>
-    <button class="seq-remove" onclick="removeFromSequence(this)" style="opacity:0;transition:opacity 0.2s;">✕</button>
-  `;
+  seqItem.style.flexDirection = 'column';
+  seqItem.style.alignItems = 'flex-start';
+  seqItem.style.gap = '4px';
+  
+  // Header with label and remove button
+  const headerDiv = document.createElement('div');
+  headerDiv.style.display = 'flex';
+  headerDiv.style.alignItems = 'center';
+  headerDiv.style.justifyContent = 'space-between';
+  headerDiv.style.width = '100%';
+  headerDiv.style.gap = '8px';
+  
+  // Left group: label + toggle
+  const leftGroup = document.createElement('div');
+  leftGroup.style.display = 'flex';
+  leftGroup.style.alignItems = 'center';
+  leftGroup.style.gap = '6px';
+  
+  const label = document.createElement('span');
+  label.className = 'seq-label';
+  label.textContent = `${itemType === 'action' ? '⚡ ' : itemType === 'anchor' ? '📍 ' : '🎯 '}${itemId}`;
+  leftGroup.appendChild(label);
+  
+  // Create toggle for detect_color EARLY so it's in the header
+  let condWrapper = null;
+  let toggle = null;
+  if (itemType === 'action' && itemId === 'detect_color') {
+    toggle = document.createElement('input');
+    toggle.type = 'checkbox';
+    toggle.className = 'seq-cond-toggle';
+    toggle.style.cursor = 'pointer';
+    toggle.title = 'Enable conditional branching';
+    leftGroup.appendChild(toggle);
+  }
+  
+  const removeBtn = document.createElement('button');
+  removeBtn.className = 'seq-remove';
+  removeBtn.textContent = '✕';
+  removeBtn.style.opacity = '0';
+  removeBtn.style.transition = 'opacity 0.2s';
+  removeBtn.onclick = () => removeFromSequence(removeBtn);
+  
+  headerDiv.appendChild(leftGroup);
+  headerDiv.appendChild(removeBtn);
+  seqItem.appendChild(headerDiv);
+  
+  // Add conditional UI for detect_color
+  if (itemType === 'action' && itemId === 'detect_color') {
+    condWrapper = document.createElement('div');
+    condWrapper.className = 'seq-conditional-wrapper';
+    condWrapper.style.display = 'none';
+    condWrapper.dataset.caseIndex = 0;
+    
+    // Cases UI
+    const casesUI = document.createElement('div');
+    casesUI.className = 'seq-cond-cases';
+    
+    const navBtn = document.createElement('button');
+    navBtn.textContent = '◀';
+    navBtn.className = 'seq-cond-nav';
+    navBtn.style.padding = '2px 4px';
+    navBtn.onclick = () => navigateCase(seqItem, -1);
+    casesUI.appendChild(navBtn);
+    
+    const indexSpan = document.createElement('span');
+    indexSpan.className = 'seq-cond-index';
+    indexSpan.textContent = '< 1 >';
+    casesUI.appendChild(indexSpan);
+    
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'seq-cond-input';
+    input.placeholder = 'e.g., GREEN';
+    input.style.flex = '1';
+    casesUI.appendChild(input);
+    
+    const addCaseBtn = document.createElement('button');
+    addCaseBtn.className = 'seq-cond-add';
+    addCaseBtn.textContent = '+ ADD';
+    addCaseBtn.onclick = () => addConditionalCase(seqItem);
+    casesUI.appendChild(addCaseBtn);
+    
+    const navBtn2 = document.createElement('button');
+    navBtn2.textContent = '▶';
+    navBtn2.className = 'seq-cond-nav';
+    navBtn2.style.padding = '2px 4px';
+    navBtn2.onclick = () => navigateCase(seqItem, 1);
+    casesUI.appendChild(navBtn2);
+    
+    condWrapper.appendChild(casesUI);
+    
+    // Drop zone for current case
+    const dropZone = document.createElement('div');
+    dropZone.className = 'seq-cond-dropzone';
+    dropZone.textContent = 'Drop waypoints here';
+    dropZone.dataset.caseNum = 1;
+    dropZone.ondragover = (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    };
+    dropZone.ondragleave = () => dropZone.classList.remove('dragover');
+    dropZone.ondrop = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropZone.classList.remove('dragover');
+      const wpIdxStr = e.dataTransfer.getData('text/plain');
+      if (wpIdxStr) {
+        const wpIdx = parseInt(wpIdxStr);
+        if (!isNaN(wpIdx) && waypoints[wpIdx]) {
+          addSeqToConditionalCase(seqItem, wpIdx, dropZone);
+        }
+      }
+    };
+    condWrapper.appendChild(dropZone);
+    
+    seqItem.appendChild(condWrapper);
+    seqItem.dataset.hasConditional = 'false';
+    
+    // NOW set up the toggle handler after condWrapper is complete
+    toggle.onchange = function() {
+      if (this.checked) {
+        condWrapper.style.display = 'flex';
+        seqItem.dataset.hasConditional = 'true';
+        
+        // Initialize cases if not already done
+        if (!seqItem.dataset.cases) {
+          seqItem.dataset.cases = JSON.stringify({1: {name: "", wps: []}});
+          condWrapper.dataset.caseIndex = 0;
+          // Initialize UI for the first case
+          const indexSpan = condWrapper.querySelector('.seq-cond-index');
+          const input = condWrapper.querySelector('.seq-cond-input');
+          if (indexSpan) indexSpan.textContent = '< 1 >';
+          if (input) {
+            input.value = '';
+            input.oninput = () => {
+              const cases = JSON.parse(seqItem.dataset.cases);
+              cases[1].name = input.value;
+              seqItem.dataset.cases = JSON.stringify(cases);
+            };
+          }
+        }
+      } else {
+        condWrapper.style.display = 'none';
+        seqItem.dataset.hasConditional = 'false';
+        // Clear conditional data
+        const seqIdx = sequence.findIndex(s => s.id === itemId);
+        if (seqIdx !== -1) {
+          sequence[seqIdx].conditional = undefined;
+        }
+      }
+    };
+  }
+  
   seqItem.addEventListener('dragstart', dragStart);
   seqItem.addEventListener('dragend', dragEnd);
-  seqItem.addEventListener('mouseenter', () => { seqItem.querySelector('.seq-remove').style.opacity = '1'; });
-  seqItem.addEventListener('mouseleave', () => { seqItem.querySelector('.seq-remove').style.opacity = '0'; });
+  seqItem.draggable = seqReorderMode;
+  seqItem.style.cursor = seqReorderMode ? 'grab' : 'default';
+  seqItem.addEventListener('mouseenter', () => { 
+    removeBtn.style.opacity = '1'; 
+  });
+  seqItem.addEventListener('mouseleave', () => { 
+    removeBtn.style.opacity = '0'; 
+  });
   
   const container = document.getElementById('seqList');
   const empty = container.querySelector('.seq-empty');
@@ -4072,7 +4246,7 @@ function addToSequence(itemId, itemType, itemData) {
 }
 
 function removeFromSequence(btn) {
-  const item = btn.parentElement;
+  const item = btn.closest('.seq-item');
   const idx = sequence.findIndex(s => s.id === item.dataset.id);
   if (idx !== -1) sequence.splice(idx, 1);
   item.remove();
@@ -4082,6 +4256,93 @@ function removeFromSequence(btn) {
     container.innerHTML = '<div class="seq-empty" style="color:var(--muted);text-align:center;padding:20px 8px;font-size:11px;">Drag items from<br>WP DATA to arrange<br>execution sequence</div>';
   }
   renderMap();
+}
+
+function navigateCase(seqItem, direction) {
+  if (!seqItem.dataset.cases) {
+    seqItem.dataset.cases = JSON.stringify({1: {name: "", wps: []}});
+  }
+  
+  const cases = JSON.parse(seqItem.dataset.cases);
+  const caseCount = Object.keys(cases).length;
+  let currentIdx = parseInt(seqItem.querySelector('.seq-conditional-wrapper').dataset.caseIndex) || 0;
+  
+  currentIdx = (currentIdx + direction + caseCount) % caseCount;
+  const caseNum = Object.keys(cases)[currentIdx];
+  
+  updateConditionalUI(seqItem, currentIdx, caseNum, cases);
+}
+
+function addConditionalCase(seqItem) {
+  if (!seqItem.dataset.cases) {
+    seqItem.dataset.cases = JSON.stringify({1: {name: "", wps: []}});
+  }
+  
+  const cases = JSON.parse(seqItem.dataset.cases);
+  const newCaseNum = Math.max(...Object.keys(cases).map(Number)) + 1;
+  cases[newCaseNum] = {name: "", wps: []};
+  seqItem.dataset.cases = JSON.stringify(cases);
+  
+  const condWrapper = seqItem.querySelector('.seq-conditional-wrapper');
+  condWrapper.dataset.caseIndex = newCaseNum - 1;
+  
+  updateConditionalUI(seqItem, newCaseNum - 1, newCaseNum, cases);
+}
+
+function updateConditionalUI(seqItem, caseIdx, caseNum, cases) {
+  const condWrapper = seqItem.querySelector('.seq-conditional-wrapper');
+  const indexSpan = condWrapper.querySelector('.seq-cond-index');
+  const input = condWrapper.querySelector('.seq-cond-input');
+  const dropZone = condWrapper.querySelector('.seq-cond-dropzone');
+  
+  condWrapper.dataset.caseIndex = caseIdx;
+  indexSpan.textContent = `< ${caseNum} >`;
+  input.value = cases[caseNum].name || '';
+  dropZone.dataset.caseNum = caseNum;
+  dropZone.innerHTML = (cases[caseNum].wps && cases[caseNum].wps.length > 0)
+    ? cases[caseNum].wps.map(wp => {
+        let displayName = wp.name;
+        // If name is undefined or empty, reconstruct from waypoint data
+        if (!displayName && wp.wpIdx !== undefined && waypoints[wp.wpIdx]) {
+          const wpData = waypoints[wp.wpIdx];
+          displayName = wpData.type === 'ANCHOR' ? `📍 Anchor ${wpData.id}` : 
+                       wpData.type === 'ACTION' ? `⚡ ${wpData.node || 'detect_color'}` :
+                       `🎯 WP ${wpData.id}`;
+        }
+        return `<div style="padding:4px 8px;background:rgba(77,255,145,.1);border:1px solid var(--accent);border-radius:3px;font-size:11px;color:var(--accent);">${displayName || 'Unknown'}</div>`;
+      }).join('')
+    : 'Drop waypoints here';
+  
+  // Bind input change to update case name
+  input.oninput = () => {
+    cases[caseNum].name = input.value;
+    seqItem.dataset.cases = JSON.stringify(cases);
+  };
+}
+
+function addSeqToConditionalCase(seqItem, wpIdx, dropZone) {
+  if (!seqItem.dataset.cases) {
+    seqItem.dataset.cases = JSON.stringify({1: {name: "", wps: []}});
+  }
+  
+  const cases = JSON.parse(seqItem.dataset.cases);
+  const condWrapper = seqItem.querySelector('.seq-conditional-wrapper');
+  const caseIdx = parseInt(condWrapper.dataset.caseIndex);
+  const caseNum = Object.keys(cases)[caseIdx];
+  
+  if (!cases[caseNum].wps) cases[caseNum].wps = [];
+  
+  const wp = {
+    name: waypoints[wpIdx].name,
+    wpIdx: wpIdx,
+    lat: waypoints[wpIdx].lat,
+    lon: waypoints[wpIdx].lon
+  };
+  
+  cases[caseNum].wps.push(wp);
+  seqItem.dataset.cases = JSON.stringify(cases);
+  
+  updateConditionalUI(seqItem, caseIdx, caseNum, cases);
 }
 
 function clearSeq() {
@@ -4273,15 +4534,50 @@ function runMission(){
     }
   });
 
-  // Build sequence from SEQUENCE panel
+  // Build sequence from SEQUENCE panel with new format
   const seqRefs = [];
-  runList.forEach(seqItem => {
+  const seqItemElements = document.querySelectorAll('#seqList .seq-item');
+  runList.forEach((seqItem, idx) => {
+    const seqItemElement = seqItemElements[idx] || null;
+    
     if (seqItem.type === 'waypoint') {
-      seqRefs.push(seqItem.id);
+      seqRefs.push({node: 'goto', target: seqItem.id});
     } else if (seqItem.type === 'anchor') {
-      seqRefs.push(seqItem.id);
+      seqRefs.push({node: 'goto', target: seqItem.id});
     } else if (seqItem.type === 'action') {
-      seqRefs.push({action: seqItem.id});
+      if (seqItem.id === 'detect_color') {
+        // Add detect_color node
+        seqRefs.push({node: 'detect_color'});
+        
+        // Check if this seqItem has conditional data in DOM
+        if (seqItemElement && seqItemElement.dataset.hasConditional === 'true') {
+          const casesData = seqItemElement.dataset.cases;
+          if (casesData) {
+            const cases = JSON.parse(casesData);
+            
+            // Convert cases format for run.py
+            const switchCases = {};
+            Object.entries(cases).forEach(([caseNum, caseObj]) => {
+              if (caseObj.name && caseObj.wps && caseObj.wps.length > 0) {
+                // Build sequence for this case
+                switchCases[caseObj.name] = caseObj.wps.map(wp => ({
+                  node: 'goto',
+                  target: 'wp' + wp.wpIdx
+                }));
+              }
+            });
+            
+            // Only add switch_color if there are actual cases with content
+            if (Object.keys(switchCases).length > 0) {
+              seqRefs.push({
+                node: 'switch_color',
+                cases: switchCases,
+                default: [] // Empty default for now
+              });
+            }
+          }
+        }
+      }
     }
   });
 
@@ -4295,7 +4591,7 @@ function runMission(){
     data: data,
     sequence: seqRefs
   };
-  console.log('[MISSION] Sending payload:', JSON.stringify(payload));
+  console.log('[MISSION] Sending payload:', JSON.stringify(payload, null, 2));
   send(payload);
 
   // optimistic UI update
