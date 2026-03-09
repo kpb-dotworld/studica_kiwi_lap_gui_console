@@ -17,9 +17,10 @@ import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Imu, Image
-from std_msgs.msg import String, Bool
+from geometry_msgs.msg import Twist
+from std_msgs.msg import String, Bool, Float32MultiArray
 
-import threading, json, math, time, base64
+import threading, json, math, time, base64, subprocess, re
 import hashlib, struct, http.server, socketserver, os
 from typing import Set
 
@@ -95,14 +96,24 @@ def _broadcast(data: dict):
     if dead:
         with ws_clients_lock: ws_clients.difference_update(dead)
 
+estop_active = False   # global estop state
+
 def _handle_from_browser(msg: dict):
+    global estop_active
     op    = msg.get("op", "")
     topic = msg.get("topic", "")
     data  = msg.get("msg", {})
-    if op == "publish" and topic == "/kiwi/estop" and ros_node_ref:
-        m = Bool(); m.data = bool(data.get("data", False))
+    if op == "publish" and topic == "/estop" and ros_node_ref:
+        engage = bool(data.get("data", False))
+        estop_active = engage
+        m = Bool(); m.data = engage
         ros_node_ref.estop_pub.publish(m)
-        print(f"[ROS] /kiwi/estop → {'ENGAGED' if m.data else 'RELEASED'}")
+        print(f"[ROS] /estop → {'ENGAGED' if engage else 'RELEASED'}")
+        if engage:
+            # immediately zero out cmd_vel
+            zero = Twist()
+            ros_node_ref.cmd_vel_pub.publish(zero)
+            print("[ROS] /cmd_vel → ZEROED (estop engaged)")
 
 def _handle_ws(client: WSClient):
     with ws_clients_lock: ws_clients.add(client)
@@ -165,24 +176,40 @@ def _run_server():
 class KiwiServerNode(Node):
     def __init__(self):
         super().__init__("kiwi_debug_server")
-        self.estop_pub = self.create_publisher(Bool, "/kiwi/estop", 10)
+        self.estop_pub   = self.create_publisher(Bool,  "/estop", 10)
+        self.cmd_vel_pub = self.create_publisher(Twist, "/cmd_vel",    10)
+        self.create_subscription(Twist,   "/cmd_vel",        self._cmdvel_cb,  10)
         self.create_subscription(Odometry, "/odom",           self._odom_cb,    10)
-        self.create_subscription(String,   "/dis_data",       self._dis_cb,     10)
-        self.create_subscription(Imu,      "/imu/data",       self._imu_cb,     10)
+        self.create_subscription(Float32MultiArray, "/dis_data",       self._dis_cb,     10)
+        self.create_subscription(Imu,      "/imu",            self._imu_cb,     10)
         self.create_subscription(Bool,     "/kiwi/gripper",   self._gripper_cb, 10)
         self.create_subscription(String,   "/kiwi/waypoints", self._wp_cb,      10)
         self.create_subscription(String,   "/kiwi/cancel",    self._cancel_cb,  10)
+        self.create_subscription(String,   "/camera/colour",       self._colour_cb,   10)
+        self.create_subscription(String,   "/camera/qr",           self._qr_cb,       10)
         self.create_subscription(Image,    "/ascamera_hp60c/camera_publisher/rgb0/image",
                                            self._camera_cb, 10)
         self.get_logger().info("━"*50)
         self.get_logger().info("  KIWI Debug Server — No rosbridge needed!")
         self.get_logger().info(f"  Open browser → http://localhost:{HTTP_PORT}")
         self.get_logger().info("━"*50)
-        self.get_logger().info("  SUB /odom  /dis_data  /imu/data")
-        self.get_logger().info("  SUB /kiwi/gripper  /kiwi/waypoints  /kiwi/cancel")
+        self.get_logger().info("  SUB /odom  /dis_data(Float32MultiArray)  /imu  /cmd_vel")
+        self.get_logger().info("  SUB /kiwi/gripper  /kiwi/waypoints  /kiwi/cancel  /camera/colour  /camera/qr")
         self.get_logger().info("  SUB /ascamera_hp60c/.../rgb0/image")
-        self.get_logger().info("  PUB /kiwi/estop")
+        self.get_logger().info("  PUB /estop  /cmd_vel(zero on estop)")
         self.get_logger().info("━"*50)
+
+    def _cmdvel_cb(self, msg):
+        global estop_active
+        if estop_active:
+            zero = Twist()
+            self.cmd_vel_pub.publish(zero)
+            print("[ROS] /cmd_vel blocked — estop active, publishing zero")
+        _broadcast({
+            "type": "cmd_vel",
+            "lx": msg.linear.x,  "ly": msg.linear.y,  "lz": msg.linear.z,
+            "ax": msg.angular.x, "ay": msg.angular.y, "az": msg.angular.z,
+        })
 
     def _odom_cb(self, msg):
         x   = msg.pose.pose.position.x
@@ -192,11 +219,25 @@ class KiwiServerNode(Node):
         _broadcast({"type": "odom", "x": x, "y": y, "yaw": yaw})
 
     def _dis_cb(self, msg):
-        _broadcast({"type": "dis_data", "data": msg.data})
+        d = msg.data
+        _broadcast({
+            "type": "dis_data",
+            "IR1": float(d[0]) if len(d) > 0 else 0.0,
+            "IR2": float(d[1]) if len(d) > 1 else 0.0,
+            "US1": float(d[2]) if len(d) > 2 else 0.0,
+            "US2": float(d[3]) if len(d) > 3 else 0.0,
+        })
 
     def _imu_cb(self, msg):
-        q = msg.orientation
-        _broadcast({"type": "imu", "x": q.x, "y": q.y, "z": q.z, "w": q.w})
+        q  = msg.orientation
+        av = msg.angular_velocity
+        la = msg.linear_acceleration
+        _broadcast({
+            "type": "imu",
+            "orientation": {"x": q.x,  "y": q.y,  "z": q.z,  "w": q.w},
+            "angular_velocity":    {"x": av.x, "y": av.y, "z": av.z},
+            "linear_acceleration": {"x": la.x, "y": la.y, "z": la.z},
+        })
 
     def _gripper_cb(self, msg):
         _broadcast({"type": "gripper", "data": msg.data})
@@ -206,6 +247,12 @@ class KiwiServerNode(Node):
 
     def _cancel_cb(self, msg):
         _broadcast({"type": "cancel", "data": msg.data})
+
+    def _colour_cb(self, msg):
+        _broadcast({"type": "detected_data", "color": msg.data, "qr": ""})
+
+    def _qr_cb(self, msg):
+        _broadcast({"type": "detected_data", "color": "NONE", "qr": msg.data})
 
     def _camera_cb(self, msg):
         try:
@@ -218,9 +265,48 @@ class KiwiServerNode(Node):
 # ═══════════════════════════════════════════
 # MAIN
 # ═══════════════════════════════════════════
+TRACKED_TOPICS = [
+    '/estop',
+    '/cmd_vel',
+    '/odom',
+    '/dis_data',
+    '/imu',
+    '/kiwi/gripper',
+    '/kiwi/waypoints',
+    '/kiwi/cancel',
+    '/camera/colour',
+    '/camera/qr',
+    '/ascamera_hp60c/camera_publisher/rgb0/image',
+]
+
+def _get_topic_info(topic):
+    """Run ros2 topic info <topic> and parse publisher/subscriber counts."""
+    try:
+        result = subprocess.run(
+            ['ros2', 'topic', 'info', topic],
+            capture_output=True, text=True, timeout=3
+        )
+        out = result.stdout
+        pub_match = re.search(r'Publisher count:\s*(\d+)', out)
+        sub_match = re.search(r'Subscription count:\s*(\d+)', out)
+        pub_count = int(pub_match.group(1)) if pub_match else 0
+        sub_count = int(sub_match.group(1)) if sub_match else 0
+        return {"topic": topic, "publishers": pub_count, "subscribers": sub_count}
+    except Exception:
+        return {"topic": topic, "publishers": 0, "subscribers": 0}
+
+def _topic_info_poller():
+    """Poll topic info every 3 seconds and broadcast to dashboard."""
+    time.sleep(2.0)  # wait for ROS to init
+    while True:
+        infos = [_get_topic_info(t) for t in TRACKED_TOPICS]
+        _broadcast({"type": "topic_info", "topics": infos})
+        time.sleep(3.0)
+
 def main():
     global ros_node_ref
     threading.Thread(target=_run_server, daemon=True).start()
+    threading.Thread(target=_topic_info_poller, daemon=True).start()
     time.sleep(0.3)
     rclpy.init()
     node = KiwiServerNode()
