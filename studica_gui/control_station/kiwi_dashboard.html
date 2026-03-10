@@ -339,7 +339,11 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 
 /* SEQUENCE PANEL */
 .seq-list{display:flex;flex-direction:column;gap:8px;padding:6px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;min-height:60px;min-width:0;}
-.sequence-outer-panel{width:clamp(280px,24vw,340px);min-width:240px;max-width:360px;display:flex;flex-direction:column;min-height:0;background:var(--panel);border-left:2px solid var(--accent);border-right:1px solid var(--border);}
+.sequence-outer-panel{width:clamp(280px,24vw,340px);min-width:240px;max-width:420px;flex:0 0 clamp(280px,24vw,340px);display:flex;flex-direction:column;min-height:0;background:var(--panel);border-left:2px solid var(--accent);border-right:1px solid var(--border);}
+.sequence-resizer{width:10px;flex:0 0 10px;position:relative;cursor:col-resize;background:linear-gradient(180deg,rgba(8,15,23,.95),rgba(10,18,28,.98));border-right:1px solid rgba(28,42,56,.9);border-left:1px solid rgba(18,29,40,.95);transition:background .15s ease,border-color .15s ease;}
+.sequence-resizer::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:4px;height:72px;border-radius:999px;background:repeating-linear-gradient(180deg,rgba(0,212,255,.22) 0 6px,rgba(0,212,255,.06) 6px 12px);box-shadow:0 0 0 1px rgba(0,212,255,.05);}
+.sequence-resizer:hover{background:linear-gradient(180deg,rgba(10,24,36,.98),rgba(12,28,42,.98));border-left-color:rgba(0,212,255,.2);border-right-color:rgba(0,212,255,.25);}
+body.is-resizing-sequence,body.is-resizing-sequence *{cursor:col-resize !important;}
 .seq-item{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:10px 12px;background:linear-gradient(180deg,rgba(17,27,40,.98),rgba(10,18,28,.96));border:1px solid rgba(41,67,92,.95);border-radius:10px;cursor:grab;transition:all 0.2s;user-select:none;min-width:0;overflow:hidden;}
 .seq-item:hover{background:var(--panel2);border-color:var(--accent);}
 .seq-item:active{cursor:grabbing;}
@@ -383,7 +387,8 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .seq-case-add{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;background:transparent;border:1px solid var(--accent);color:var(--accent);font-size:10px;font-family:inherit;cursor:pointer;border-radius:6px;letter-spacing:.04em;}
 .seq-case-add:hover{background:rgba(0,212,255,.12);}
 @media (max-width:1100px){
-  .sequence-outer-panel{width:clamp(250px,30vw,320px);min-width:220px;max-width:320px;}
+  .sequence-outer-panel{width:clamp(250px,30vw,320px);min-width:220px;max-width:360px;flex-basis:clamp(250px,30vw,320px);}
+  .sequence-resizer{width:8px;flex-basis:8px;}
   .seq-item-header{align-items:stretch;}
   .seq-item-main{align-items:flex-start;}
   .seq-cond-cases,.seq-case-toolbar{align-items:stretch;}
@@ -827,6 +832,8 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
       </div>
     </div>
   </div>
+
+  <div class="sequence-resizer" id="sequenceResizer" title="Drag to resize sequence panel"></div>
 
   <div class="center-panel" style="flex:1;display:flex;flex-direction:column;min-width:0;">
     <div class="map-wrap">
@@ -5799,6 +5806,80 @@ function loadMapData(d){
 // ── SEQUENCE PANEL STATE ──────────────────────────────────────────────────────
 let sequence = [];  // Array of {id: 'wp1', type: 'waypoint'|'anchor'} or {id: 'action_name', type: 'action'}
 let sequenceItemCounter = 0;
+let sequenceResizeActive = false;
+
+function getSequencePanelWidthLimits() {
+  const viewportWidth = window.innerWidth || 1280;
+  return {
+    min: viewportWidth <= 1100 ? 220 : 240,
+    max: Math.min(520, Math.max(320, Math.floor(viewportWidth * 0.42)))
+  };
+}
+
+function applySequencePanelWidth(widthPx, persist = true) {
+  const panel = document.querySelector('.sequence-outer-panel');
+  if (!panel) return;
+
+  const limits = getSequencePanelWidthLimits();
+  const clampedWidth = Math.max(limits.min, Math.min(limits.max, Math.round(widthPx)));
+  panel.style.width = `${clampedWidth}px`;
+  panel.style.flexBasis = `${clampedWidth}px`;
+
+  if (persist) {
+    localStorage.setItem('kiwi_sequence_panel_width', String(clampedWidth));
+  }
+}
+
+function restoreSequencePanelWidth() {
+  const savedWidth = parseInt(localStorage.getItem('kiwi_sequence_panel_width') || '', 10);
+  if (!Number.isNaN(savedWidth)) {
+    applySequencePanelWidth(savedWidth, false);
+  }
+}
+
+function setupSequencePanelResize() {
+  const panel = document.querySelector('.sequence-outer-panel');
+  const handle = document.getElementById('sequenceResizer');
+  if (!panel || !handle) return;
+
+  const stopResize = () => {
+    if (!sequenceResizeActive) return;
+    sequenceResizeActive = false;
+    document.body.classList.remove('is-resizing-sequence');
+  };
+
+  handle.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+    sequenceResizeActive = true;
+    document.body.classList.add('is-resizing-sequence');
+    handle.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  });
+
+  handle.addEventListener('pointermove', (event) => {
+    if (!sequenceResizeActive) return;
+    const panelLeft = panel.getBoundingClientRect().left;
+    applySequencePanelWidth(event.clientX - panelLeft);
+  });
+
+  handle.addEventListener('pointerup', (event) => {
+    stopResize();
+    if (handle.hasPointerCapture(event.pointerId)) {
+      handle.releasePointerCapture(event.pointerId);
+    }
+  });
+
+  handle.addEventListener('pointercancel', stopResize);
+  window.addEventListener('blur', stopResize);
+  window.addEventListener('resize', () => {
+    const panelWidth = panel.getBoundingClientRect().width;
+    if (panelWidth > 0) {
+      applySequencePanelWidth(panelWidth, false);
+    }
+  });
+
+  restoreSequencePanelWidth();
+}
 
 function nextSequenceKey() {
   sequenceItemCounter += 1;
@@ -6796,6 +6877,7 @@ function updateMissionPanel(d){
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 loadFavouriteWaypoints(); // Load saved favourites from localStorage
+setupSequencePanelResize();
 initCanvas();
 window.addEventListener('resize',initCanvas);
 
