@@ -1425,8 +1425,10 @@ function renderMap(){
   }
 
   // ── WP DATA: draw robot model (triangle) for ALL waypoints in WP DATA panel ──
+  let wpDisplayNum = 0;  // Counter for spatial waypoints only
   waypoints.forEach((wp, i)=>{
     if (wp.type === 'ACTION' || wp.type === 'ANCHOR') return;
+    wpDisplayNum++;  // Increment counter for spatial waypoints
     const p=wpToCanvas(wp); if(!p) return;
     const originYaw_rad = originYaw * Math.PI / 180;
     const screenYaw = originYaw_rad - wp.yaw_rad;
@@ -1435,8 +1437,7 @@ function renderMap(){
     drawTriangle(mctx, p.x, p.y, screenYaw, SC*.7, '#ff6b35');
     mctx.globalAlpha = 1.0;
     mctx.restore();
-    // Draw WP DATA number
-    const wpNum = wp.id;
+    // Draw WP DATA number (matching the list display numbering)
     mctx.save();
     mctx.beginPath();
     mctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
@@ -1446,7 +1447,7 @@ function renderMap(){
     mctx.fillStyle = '#fff';
     mctx.textAlign = 'center';
     mctx.textBaseline = 'middle';
-    mctx.fillText(wpNum.toString(), p.x, p.y);
+    mctx.fillText(wpDisplayNum.toString(), p.x, p.y);
     mctx.restore();
     // Draw coordinates label
     mctx.save(); mctx.font='8px Courier New';
