@@ -9,7 +9,7 @@
 :root{
   --bg:#0a0e17;--panel:#0f1824;--panel2:#151f2e;--border:#1e2d3d;
   --accent:#00d4ff;--accent2:#ff6b35;--green:#4dff91;--red:#ff4455;
-  --text:#ddeeff;--muted:#3d5870;--muted2:#5a7a94;
+  --text:#ddeeff;--muted:#3d5870;--muted2:#5a7a94;--yellow:#ffd54f;--text1:#f5fbff;--text2:#c6dbef;
   --font-main:'Segoe UI', 'Arial', 'Liberation Sans', 'DejaVu Sans', 'sans-serif';
   --font-mono:'JetBrains Mono', 'Fira Mono', 'Consolas', 'Menlo', 'monospace';
   --font-size-base:12.5px;
@@ -148,10 +148,40 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .obtn{padding:5px 2px;background:var(--panel2);border:1px solid var(--border);color:var(--muted2);font-family:inherit;font-size:10px;cursor:pointer;border-radius:3px;text-align:center;transition:all .15s;line-height:1.3;}
 .obtn:hover{border-color:var(--accent2);color:var(--accent2);}
 .obtn.sel{background:rgba(255,107,53,.18);border-color:var(--accent2);color:var(--accent2);font-weight:700;}
-.wp-list{max-height:none;flex:1;overflow-y:auto;margin-top:2px;}
+.wp-list{max-height:none;flex:1;overflow-y:auto;margin-top:0;min-height:0;}
 .wp-list::-webkit-scrollbar{width:3px;}.wp-list::-webkit-scrollbar-thumb{background:var(--border);}
 .wp-item{display:flex;align-items:center;gap:10px;padding:8px 12px;margin-bottom:6px;background:var(--panel2);border:1px solid var(--border);border-radius:4px;font-size:1em;}
 .wp-num{width:22px;height:22px;border-radius:50%;background:var(--accent2);color:#fff;font-size:1em;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+
+.wp-sidebar{width:260px;min-width:220px;max-width:320px;background:var(--panel2);display:flex;flex-direction:column;gap:0;box-shadow:1px 0 0 var(--border);min-height:0;}
+.wp-sidebar-scroll{flex:1;display:flex;flex-direction:column;gap:10px;padding:10px;min-height:0;overflow:hidden;border-bottom:1px solid var(--border);}
+.panel-accordion{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:12px;background:rgba(10,18,30,.88);overflow:hidden;min-height:0;transition:border-color .18s ease, box-shadow .18s ease, background .18s ease;}
+.panel-accordion.is-expanded{border-color:rgba(0,212,255,.35);box-shadow:0 0 0 1px rgba(0,212,255,.08) inset;background:rgba(11,23,39,.95);}
+.panel-accordion.waypoints-panel.is-expanded{flex:1;}
+.panel-accordion-header{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;background:transparent;border:none;color:var(--text);cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;text-align:left;transition:background .15s ease,color .15s ease;}
+.panel-accordion-header:hover{background:rgba(255,255,255,.03);}
+.panel-accordion-header[aria-expanded="true"]{color:var(--accent);}
+.panel-accordion-label{display:flex;align-items:center;gap:10px;}
+.panel-accordion-meta{font-size:18px;line-height:1;transform:rotate(0deg);transition:transform .18s ease,color .18s ease;color:var(--muted2);}
+.panel-accordion.is-expanded .panel-accordion-meta{transform:rotate(90deg);color:var(--accent);}
+.panel-accordion-content{display:none;flex-direction:column;gap:10px;padding:0 10px 10px;min-height:0;}
+.panel-accordion.is-expanded .panel-accordion-content{display:flex;}
+.action-card-grid{display:grid;gap:8px;}
+.action-card{display:flex;align-items:center;gap:10px;width:100%;padding:12px 14px;border-radius:10px;border:1px solid;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.01));cursor:pointer;font-family:inherit;font-size:13px;letter-spacing:.02em;transition:transform .15s ease,border-color .15s ease,background .15s ease,color .15s ease;}
+.action-card:hover{transform:translateY(-1px);}
+.action-card span:first-child{font-size:15px;}
+.action-card--violet{border-color:rgba(156,39,176,.65);color:#e1a6f0;background:linear-gradient(180deg,rgba(156,39,176,.17),rgba(156,39,176,.08));}
+.action-card--violet:hover{border-color:#d26df0;color:#fff;background:linear-gradient(180deg,rgba(156,39,176,.28),rgba(156,39,176,.14));}
+.action-card--cyan{border-color:rgba(0,212,255,.55);color:var(--accent);background:linear-gradient(180deg,rgba(0,212,255,.16),rgba(0,212,255,.08));}
+.action-card--cyan:hover{border-color:var(--accent);color:#fff;background:linear-gradient(180deg,rgba(0,212,255,.24),rgba(0,212,255,.1));}
+.waypoint-toolbar{display:flex;flex-direction:column;gap:8px;flex-shrink:0;}
+.waypoint-toolbar-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.waypoint-toolbar-row.single{grid-template-columns:1fr;}
+.sidebar-btn{width:100%;margin:0;padding:10px 12px;}
+.waypoint-clear-btn{width:100%;padding:8px 12px;border:1px solid rgba(255,68,85,.4);border-radius:8px;color:var(--red);font-size:11px;letter-spacing:.08em;text-transform:uppercase;}
+.waypoint-clear-btn:hover{border-color:var(--red);background:rgba(255,68,85,.12);}
+.waypoint-list-shell{flex:1;min-height:0;display:flex;}
+.waypoint-list-shell .wp-list{padding:4px;border:1px solid var(--border);border-radius:10px;background:rgba(12,24,40,.82);}
 
 /* Action button */
 .action-btn{font-size:13px;color:#9c27b0;background:none;border:1.2px solid #9c27b0;cursor:pointer;font-family:inherit;padding:5px 14px;border-radius:4px;transition:all .15s;letter-spacing:.5px;}
@@ -219,7 +249,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .action-dropdown-item:hover{background:rgba(156,39,176,.2);color:#fff;}
 
 /* FAVOURITE WAYPOINTS DROPDOWN */
-.fav-wp-dropdown{display:none;background:var(--panel2);border:1px solid var(--yellow);border-radius:4px;margin-top:4px;max-height:300px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.5);}
+.fav-wp-dropdown{display:none;background:var(--panel2);border:1px solid rgba(255,213,79,.4);border-radius:10px;margin-top:0;max-height:220px;overflow-y:auto;box-shadow:none;}
 .fav-wp-dropdown.open{display:block;}
 .fav-wp-list{padding:8px 0;}
 .fav-wp-item{padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;transition:all .15s;color:var(--text2);}
@@ -453,34 +483,45 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
   <div class="main">
 
     <!-- LEFT SIDEBAR -->
-    <div class="wp-sidebar" style="width:240px;min-width:200px;max-width:280px;background:var(--panel2);display:flex;flex-direction:column;gap:0;box-shadow:1px 0 0 var(--border);">
+    <div class="wp-sidebar">
+      <div class="wp-sidebar-scroll">
+        <div class="panel-accordion actions-panel" data-sidebar-section="actions">
+          <button class="panel-accordion-header" type="button" aria-expanded="false" onclick="toggleSidebarSection('actions')">
+            <span class="panel-accordion-label">⚡ Actions</span>
+            <span class="panel-accordion-meta">›</span>
+          </button>
+          <div class="panel-accordion-content">
+            <div class="action-card-grid">
+              <button class="action-card action-card--violet" type="button" onclick="addAction('detect_color')"><span>🔍</span><span>Detect Colour</span></button>
+              <button class="action-card action-card--violet" type="button" onclick="addAction('detect_qr')"><span>📱</span><span>Detect QR</span></button>
+              <button class="action-card action-card--cyan" type="button" onclick="openAnchorListPopup()"><span>📍</span><span>Add Saved Anchor</span></button>
+            </div>
+          </div>
+        </div>
 
-
-    <div style="display:flex;flex:1;gap:0;overflow:visible;border-bottom:1px solid var(--border);position:relative;">
-      <!-- WP DATA PANEL -->
-      <div class="sec" style="border:none;display:flex;flex-direction:column;min-height:0;flex:1;border-right:1px solid var(--border);position:relative;">
-        <div class="sec-title" style="margin:0;margin-bottom:8px;">WP DATA [P]</div>
-        <button class="action-btn" onclick="toggleActionDropdown()" style="width:100%;margin-bottom:6px;">⚡ Action</button>
-        
-        <!-- ACTION DROPDOWN PANEL -->
-        <div class="action-dropdown" id="actionDropdown">
-          <button class="action-dropdown-item" onclick="addAction('detect_color')">🔍 Detect Colour</button>
-          <button class="action-dropdown-item" onclick="addAction('detect_qr')">📱 Detect QR</button>
-          <button class="action-dropdown-item" onclick="openAnchorListPopup()">📍 Add Saved Anchor</button>
-        </div>
-        
-        <button class="addwp-btn" onclick="openFavouriteWaypoints()" style="width:100%;margin-bottom:6px;">⭐ Favourite Waypoints</button>
-        
-        <!-- FAVOURITE WAYPOINTS DROPDOWN -->
-        <div class="fav-wp-dropdown" id="favWpDropdown">
-          <div class="fav-wp-list" id="favWpList"></div>
-        </div>
-        
-        <button class="addwp-btn" onclick="handleQKeyPress()" style="width:100%;margin-bottom:8px;">WP</button>
-        <div style="display:flex;gap:4px;align-items:center;justify-content:flex-end;margin-bottom:8px;">
-          <button class="clr-btn" onclick="clearWP()">✕ Clear</button>
-        </div>
-        <script>
+        <div class="panel-accordion waypoints-panel is-expanded" data-sidebar-section="waypoints">
+          <button class="panel-accordion-header" type="button" aria-expanded="true" onclick="toggleSidebarSection('waypoints')">
+            <span class="panel-accordion-label">WP DATA [P]</span>
+            <span class="panel-accordion-meta">›</span>
+          </button>
+          <div class="panel-accordion-content">
+            <div class="waypoint-toolbar">
+              <div class="waypoint-toolbar-row">
+                <button class="addwp-btn sidebar-btn" onclick="handleQKeyPress()">➕ Add Waypoint</button>
+                <button class="addwp-btn sidebar-btn" onclick="openFavouriteWaypoints()">⭐ Favourite Waypoints</button>
+              </div>
+              <div class="fav-wp-dropdown" id="favWpDropdown">
+                <div class="fav-wp-list" id="favWpList"></div>
+              </div>
+              <div class="waypoint-toolbar-row">
+                <button class="exp-btn" onclick="openSaveWPPopup()">💾 Save WP</button>
+                <button class="exp-btn" onclick="openImportWPPopup()">📂 Import WP</button>
+              </div>
+              <div class="waypoint-toolbar-row single">
+                <button class="clr-btn waypoint-clear-btn" onclick="clearWP()">✕ Clear Waypoints</button>
+              </div>
+            </div>
+            <script>
         function moveToOrigin() {
           // Add a waypoint at (0,0,0) with conditional error logic
           const targetX = 0.0;
@@ -508,15 +549,16 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
           renderMap();
           runMission();
         }
-        </script>
-        <div class="wp-list" id="wpList">
-          <div class="wp-empty">No waypoints.<br>Drive robot → press <b>[P]</b> or <b>ADD WP</b></div>
+            </script>
+            <div class="waypoint-list-shell">
+              <div class="wp-list" id="wpList">
+                <div class="wp-empty">No waypoints.<br>Drive robot → press <b>[P]</b> or <b>ADD WP</b></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="sec" style="border:none;border-bottom:1px solid var(--border);">
-      <button class="run-btn" id="runBtn" onclick="runMission()">▶ RUN WAYPOINTS</button>
-        <button class="run-btn" id="visualizeBtn" style="margin-top:7px;background:rgba(0,212,255,.12);border-color:var(--accent);color:var(--accent);" onclick="toggleWaypointSimulation()">👁️ Visualize</button>
+
       <!-- Waypoint Simulation Logic -->
       <script>
       let simActive = false, simPaused = false, simIdx = 0, simRobot = null, simTimer = null;
@@ -658,13 +700,6 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
       }
       </script>
     </div>
-    <div class="sec" style="border:none;">
-      <div style="display:flex;gap:6px;">
-        <button class="exp-btn" onclick="openSaveWPPopup()" style="flex:1;">💾 Save WP</button>
-        <button class="exp-btn" onclick="openImportWPPopup()" style="flex:1;">📂 Import WP</button>
-      </div>
-    </div>
-  </div>
 
   <!-- SEQUENCE PANEL: Separate from sidebar, full height -->
   <div class="sequence-outer-panel" style="width:260px;min-width:200px;max-width:320px;display:flex;flex-direction:column;min-height:0;background:var(--panel);border-left:2px solid var(--accent);border-right:1px solid var(--border);">
@@ -678,6 +713,10 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
       </div>
       <div class="seq-list" id="seqList" style="flex:1;overflow-y:auto;background:var(--panel2);border:1px solid var(--border);border-radius:3px;padding:4px;">
         <div class="seq-empty" style="color:var(--muted);text-align:center;padding:20px 8px;font-size:11px;">Drag items from<br>WP DATA to arrange<br>execution sequence</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;">
+        <button class="run-btn" id="runBtn" onclick="runMission()" style="margin-bottom:0;">▶ RUN WAYPOINTS</button>
+        <button class="run-btn" id="visualizeBtn" style="margin:0;background:rgba(0,212,255,.12);border-color:var(--accent);color:var(--accent);" onclick="toggleWaypointSimulation()">👁️ Visualize</button>
       </div>
       <div style="display:flex;gap:4px;margin-top:6px;">
         <button class="clr-btn" onclick="clearSeq()" style="flex:1;font-size:11px;">✕ Clear Seq</button>
@@ -2462,7 +2501,42 @@ function editWpNum(idx) {
 function delWP(i){ waypoints.splice(i,1); waypoints.forEach((w,j)=>w.id=j+1); updateWPList(); renderMap(); }
 function clearWP(){ if(!waypoints.length)return; waypoints=[]; updateWPList(); renderMap(); }
 
+function getSidebarSection(sectionName) {
+  return document.querySelector(`[data-sidebar-section="${sectionName}"]`);
+}
+
+function syncSidebarSection(section) {
+  if (!section) return;
+  const header = section.querySelector('.panel-accordion-header');
+  if (header) {
+    header.setAttribute('aria-expanded', section.classList.contains('is-expanded') ? 'true' : 'false');
+  }
+}
+
+function expandSidebarSection(sectionName) {
+  const section = getSidebarSection(sectionName);
+  if (!section || section.classList.contains('is-expanded')) return;
+  section.classList.add('is-expanded');
+  syncSidebarSection(section);
+}
+
+function toggleSidebarSection(sectionName) {
+  const section = getSidebarSection(sectionName);
+  if (!section) return;
+
+  section.classList.toggle('is-expanded');
+  syncSidebarSection(section);
+
+  if (sectionName === 'waypoints' && !section.classList.contains('is-expanded')) {
+    const favDropdown = document.getElementById('favWpDropdown');
+    if (favDropdown) favDropdown.classList.remove('open');
+  }
+}
+
+document.querySelectorAll('.panel-accordion').forEach(syncSidebarSection);
+
 function openFavouriteWaypoints(){
+  expandSidebarSection('waypoints');
   const dropdown = document.getElementById('favWpDropdown');
   const list = document.getElementById('favWpList');
   if (!dropdown || !list) return;
@@ -2501,25 +2575,14 @@ function selectFavouriteWP(index) {
 }
 // ── ACTION POPUP ──────────────────────────────────────────────────────────────
 function toggleActionDropdown(){
-  const dropdown = document.getElementById('actionDropdown');
-  const actionBtn = document.querySelector('.action-btn');
-  
-  if (!dropdown || !actionBtn) return;
-  
-  dropdown.classList.toggle('open');
-  
-  if (dropdown.classList.contains('open')) {
-    // Position dropdown below the button
-    const rect = actionBtn.getBoundingClientRect();
-    dropdown.style.left = rect.left + 'px';
-    dropdown.style.top = (rect.bottom + 4) + 'px';
-    dropdown.style.width = rect.width + 'px';
-  }
+  toggleSidebarSection('actions');
 }
 
 function closeActionDropdown(){
-  const dropdown = document.getElementById('actionDropdown');
-  if (dropdown) dropdown.classList.remove('open');
+  const section = getSidebarSection('actions');
+  if (!section) return;
+  section.classList.remove('is-expanded');
+  syncSidebarSection(section);
 }
 
 function addAction(node){
@@ -4518,11 +4581,11 @@ function navigateCase(seqItem, direction) {
   }
   
   const cases = JSON.parse(seqItem.dataset.cases);
-  const caseCount = Object.keys(cases).length;
-  let currentIdx = parseInt(seqItem.querySelector('.seq-conditional-wrapper').dataset.caseIndex) || 0;
+  const caseNums = getOrderedCaseNumbers(cases);
+  let currentIdx = parseInt(seqItem.querySelector('.seq-conditional-wrapper').dataset.caseIndex, 10) || 0;
   
-  currentIdx = (currentIdx + direction + caseCount) % caseCount;
-  const caseNum = Object.keys(cases)[currentIdx];
+  currentIdx = (currentIdx + direction + caseNums.length) % caseNums.length;
+  const caseNum = caseNums[currentIdx];
   
   updateConditionalUI(seqItem, currentIdx, caseNum, cases);
 }
@@ -4538,9 +4601,99 @@ function addConditionalCase(seqItem) {
   seqItem.dataset.cases = JSON.stringify(cases);
   
   const condWrapper = seqItem.querySelector('.seq-conditional-wrapper');
-  condWrapper.dataset.caseIndex = newCaseNum - 1;
+  condWrapper.dataset.caseIndex = getOrderedCaseNumbers(cases).length - 1;
   
-  updateConditionalUI(seqItem, newCaseNum - 1, newCaseNum, cases);
+  updateConditionalUI(seqItem, condWrapper.dataset.caseIndex, newCaseNum, cases);
+}
+
+function getOrderedCaseNumbers(cases) {
+  return Object.keys(cases || {})
+    .map(Number)
+    .filter(num => !Number.isNaN(num))
+    .sort((a, b) => a - b);
+}
+
+function getCaseNumberAtIndex(cases, caseIdx) {
+  const caseNums = getOrderedCaseNumbers(cases);
+  if (!caseNums.length) {
+    return { caseNums: [1], caseIdx: 0, caseNum: 1 };
+  }
+
+  const normalizedIdx = ((parseInt(caseIdx, 10) || 0) % caseNums.length + caseNums.length) % caseNums.length;
+  return {
+    caseNums,
+    caseIdx: normalizedIdx,
+    caseNum: caseNums[normalizedIdx]
+  };
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function createConditionalWaypointEntry(droppedWp) {
+  if (droppedWp.type === 'ACTION' && (droppedWp.node === 'detect_color' || droppedWp.node === 'detect_qr')) {
+    return {
+      name: droppedWp.name,
+      isAction: true,
+      actionType: droppedWp.node,
+      wpId: droppedWp.id,
+      nestedCases: {1: {name: "", wps: []}},
+      nestedCaseIndex: 0,
+      nestedToggled: false
+    };
+  }
+
+  return {
+    name: droppedWp.name,
+    wpId: droppedWp.id,
+    lat: droppedWp.lat,
+    lon: droppedWp.lon,
+    isAction: false
+  };
+}
+
+function getConditionalWaypointLabel(wp) {
+  if (wp.isAction) {
+    return wp.actionType === 'detect_color' ? '🔍 Detect Colour' : '📱 Detect QR';
+  }
+
+  let displayName = wp.name;
+  if (!displayName && wp.wpId !== undefined) {
+    const wpIdx = waypoints.findIndex(w => w.id === wp.wpId);
+    if (wpIdx !== -1) {
+      const wpData = waypoints[wpIdx];
+      const actionLabel = wpData.node === 'detect_color' ? '🔍 Detect Colour' : wpData.node === 'detect_qr' ? '📱 Detect QR' : wpData.node;
+      displayName = wpData.type === 'ANCHOR' ? `📍 Anchor ${wpData.id}` : 
+                   wpData.type === 'ACTION' ? `⚡ ${actionLabel}` :
+                   `🎯 WP ${wpData.id}`;
+    }
+  }
+
+  return displayName || 'Unknown';
+}
+
+function getNestedConditionalTarget(seqItemId, caseNum, wpIndex) {
+  const seqItem = document.querySelector(`[data-id="${seqItemId}"]`);
+  if (!seqItem || !seqItem.dataset.cases) return null;
+
+  const cases = JSON.parse(seqItem.dataset.cases);
+  if (!cases[caseNum] || !cases[caseNum].wps || !cases[caseNum].wps[wpIndex]) return null;
+
+  const wp = cases[caseNum].wps[wpIndex];
+  if (!wp.nestedCases || !Object.keys(wp.nestedCases).length) {
+    wp.nestedCases = {1: {name: "", wps: []}};
+  }
+  if (wp.nestedCaseIndex === undefined) {
+    wp.nestedCaseIndex = 0;
+  }
+
+  return { seqItem, cases, wp };
 }
 
 function updateConditionalUI(seqItem, caseIdx, caseNum, cases) {
@@ -4548,54 +4701,56 @@ function updateConditionalUI(seqItem, caseIdx, caseNum, cases) {
   const indexSpan = condWrapper.querySelector('.seq-cond-index');
   const input = condWrapper.querySelector('.seq-cond-input');
   const dropZone = condWrapper.querySelector('.seq-cond-dropzone');
+  const caseInfo = getCaseNumberAtIndex(cases, caseIdx);
+  const activeCaseNum = caseInfo.caseNum;
+  const activeCase = cases[activeCaseNum] || { name: '', wps: [] };
   
-  condWrapper.dataset.caseIndex = caseIdx;
-  indexSpan.textContent = `< ${caseNum} >`;
-  input.value = cases[caseNum].name || '';
-  dropZone.dataset.caseNum = caseNum;
-  dropZone.innerHTML = (cases[caseNum].wps && cases[caseNum].wps.length > 0)
-    ? cases[caseNum].wps.map((wp, wpIndex) => {
+  condWrapper.dataset.caseIndex = caseInfo.caseIdx;
+  indexSpan.textContent = `< ${activeCaseNum} >`;
+  input.value = activeCase.name || '';
+  dropZone.dataset.caseNum = activeCaseNum;
+  dropZone.innerHTML = (activeCase.wps && activeCase.wps.length > 0)
+    ? activeCase.wps.map((wp, wpIndex) => {
         // Handle nested actions (detect_color/detect_qr)
         if (wp.isAction) {
           const actionLabel = wp.actionType === 'detect_color' ? '🔍 Detect Colour' : '📱 Detect QR';
-          const nestedCasesStr = JSON.stringify(wp.nestedCases || {1: {name: "", wps: []}});
-          const nestedToggled = wp.nestedToggled ? 'style="display:flex;"' : 'style="display:none;"';
-          return `<div style="padding:8px;background:rgba(100,150,200,.15);border:1px solid #4dff91;border-radius:3px;font-size:11px;color:var(--accent);margin:4px 0;" data-wp-index="${wpIndex}" data-case-num="${caseNum}">
+          const nestedCases = wp.nestedCases && Object.keys(wp.nestedCases).length ? wp.nestedCases : {1: {name: "", wps: []}};
+          const nestedCaseInfo = getCaseNumberAtIndex(nestedCases, wp.nestedCaseIndex || 0);
+          const nestedCaseNum = nestedCaseInfo.caseNum;
+          const nestedCase = nestedCases[nestedCaseNum] || { name: '', wps: [] };
+          const nestedItemsHtml = nestedCase.wps && nestedCase.wps.length > 0
+            ? nestedCase.wps.map((nestedWp, nestedWpIndex) => `<div style="padding:4px 8px;background:rgba(77,255,145,.1);border:1px solid var(--accent);border-radius:3px;font-size:11px;color:var(--accent);display:flex;align-items:center;justify-content:space-between;gap:6px;" data-nested-wp-index="${nestedWpIndex}"><span>${escapeHtml(getConditionalWaypointLabel(nestedWp))}</span><button style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:14px;padding:0;margin:0;width:16px;height:16px;display:flex;align-items:center;justify-content:center;" onclick="removeWaypointFromNestedCase(event, '${seqItem.dataset.id}', ${activeCaseNum}, ${wpIndex}, ${nestedCaseNum}, ${nestedWpIndex})" title="Delete waypoint">✕</button></div>`).join('')
+            : 'Drop waypoints here';
+          const nestedDisplay = wp.nestedToggled ? 'flex' : 'none';
+          return `<div style="padding:8px;background:rgba(100,150,200,.15);border:1px solid #4dff91;border-radius:3px;font-size:11px;color:var(--accent);margin:4px 0;" data-wp-index="${wpIndex}" data-case-num="${activeCaseNum}">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
-              <span>⚡ ${actionLabel}</span>
+              <span>⚡ ${escapeHtml(actionLabel)}</span>
               <div style="display:flex;gap:4px;">
-                <input type="checkbox" style="cursor:pointer;" title="Toggle nested conditions" onchange="toggleNestedAction(event, '${seqItem.dataset.id}', ${caseNum}, ${wpIndex})">
+                <input type="checkbox" style="cursor:pointer;" title="Toggle nested conditions" onchange="toggleNestedAction(event, '${seqItem.dataset.id}', ${activeCaseNum}, ${wpIndex})" ${wp.nestedToggled ? 'checked' : ''}>
                 <button style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:14px;padding:0;margin:0;width:16px;height:16px;display:flex;align-items:center;justify-content:center;" onclick="removeWaypointFromConditionalCase(event)" title="Delete">✕</button>
               </div>
             </div>
-            <div class="nested-cond-ui" ${nestedToggled} data-nested-cases='${nestedCasesStr}' style="margin-top:8px;padding:8px;background:rgba(0,0,0,.2);border-radius:3px;gap:4px;">
-              <div style="font-size:10px;color:var(--muted);">Nested cases for ${actionLabel}:</div>
-              <div style="display:flex;gap:4px;margin-top:4px;">
-                <button style="padding:2px 6px;background:transparent;border:1px solid var(--accent);color:var(--accent);font-size:10px;cursor:pointer;border-radius:2px;" onclick="addNestedCase(event, '${seqItem.dataset.id}', ${caseNum}, ${wpIndex})">+ Add Case</button>
+            <div class="nested-cond-ui" style="display:${nestedDisplay};margin-top:8px;padding:8px;background:rgba(0,0,0,.2);border-radius:3px;gap:4px;flex-direction:column;">
+              <div style="font-size:10px;color:var(--muted);">Nested cases for ${escapeHtml(actionLabel)}:</div>
+              <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:4px;">
+                <button class="seq-cond-nav" style="padding:2px 4px;" onclick="navigateNestedCase(event, '${seqItem.dataset.id}', ${activeCaseNum}, ${wpIndex}, -1)">◀</button>
+                <span class="seq-cond-index">&lt; ${nestedCaseNum} &gt;</span>
+                <input type="text" class="seq-cond-input" placeholder="e.g., GREEN" style="flex:1;min-width:120px;" value="${escapeHtml(nestedCase.name || '')}" oninput="updateNestedCaseName('${seqItem.dataset.id}', ${activeCaseNum}, ${wpIndex}, ${nestedCaseNum}, this.value)">
+                <button style="padding:2px 6px;background:transparent;border:1px solid var(--accent);color:var(--accent);font-size:10px;cursor:pointer;border-radius:2px;" onclick="addNestedCase(event, '${seqItem.dataset.id}', ${activeCaseNum}, ${wpIndex})">+ Add Case</button>
+                <button class="seq-cond-nav" style="padding:2px 4px;" onclick="navigateNestedCase(event, '${seqItem.dataset.id}', ${activeCaseNum}, ${wpIndex}, 1)">▶</button>
               </div>
+              <div class="seq-cond-dropzone" data-case-num="${nestedCaseNum}" ondragover="event.preventDefault(); this.classList.add('dragover');" ondragleave="this.classList.remove('dragover');" ondrop="handleNestedCaseDrop(event, '${seqItem.dataset.id}', ${activeCaseNum}, ${wpIndex}, ${nestedCaseNum})">${nestedItemsHtml}</div>
             </div>
           </div>`;
         }
         
-        let displayName = wp.name;
-        // If name is undefined or empty, reconstruct from waypoint data using wpId
-        if (!displayName && wp.wpId !== undefined) {
-          const wpIdx = waypoints.findIndex(w => w.id === wp.wpId);
-          if (wpIdx !== -1) {
-            const wpData = waypoints[wpIdx];
-            const actionLabel = wpData.node === 'detect_color' ? '🔍 Detect Colour' : wpData.node === 'detect_qr' ? '📱 Detect QR' : wpData.node;
-            displayName = wpData.type === 'ANCHOR' ? `📍 Anchor ${wpData.id}` : 
-                         wpData.type === 'ACTION' ? `⚡ ${actionLabel}` :
-                         `🎯 WP ${wpData.id}`;
-          }
-        }
-        return `<div style="padding:4px 8px;background:rgba(77,255,145,.1);border:1px solid var(--accent);border-radius:3px;font-size:11px;color:var(--accent);display:flex;align-items:center;justify-content:space-between;gap:6px;" data-wp-index="${wpIndex}" data-case-num="${caseNum}"><span>${displayName || 'Unknown'}</span><button style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:14px;padding:0;margin:0;width:16px;height:16px;display:flex;align-items:center;justify-content:center;" onclick="removeWaypointFromConditionalCase(event)" title="Delete waypoint">✕</button></div>`;
+        return `<div style="padding:4px 8px;background:rgba(77,255,145,.1);border:1px solid var(--accent);border-radius:3px;font-size:11px;color:var(--accent);display:flex;align-items:center;justify-content:space-between;gap:6px;" data-wp-index="${wpIndex}" data-case-num="${activeCaseNum}"><span>${escapeHtml(getConditionalWaypointLabel(wp))}</span><button style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:14px;padding:0;margin:0;width:16px;height:16px;display:flex;align-items:center;justify-content:center;" onclick="removeWaypointFromConditionalCase(event)" title="Delete waypoint">✕</button></div>`;
       }).join('')
     : 'Drop waypoints here';
   
   // Bind input change to update case name
   input.oninput = () => {
-    cases[caseNum].name = input.value;
+    cases[activeCaseNum].name = input.value;
     seqItem.dataset.cases = JSON.stringify(cases);
   };
 }
@@ -4607,33 +4762,14 @@ function addSeqToConditionalCase(seqItem, wpIdx, dropZone) {
   
   const cases = JSON.parse(seqItem.dataset.cases);
   const condWrapper = seqItem.querySelector('.seq-conditional-wrapper');
-  const caseIdx = parseInt(condWrapper.dataset.caseIndex);
-  const caseNum = Object.keys(cases)[caseIdx];
+  const caseInfo = getCaseNumberAtIndex(cases, parseInt(condWrapper.dataset.caseIndex, 10));
+  const caseIdx = caseInfo.caseIdx;
+  const caseNum = caseInfo.caseNum;
   
   if (!cases[caseNum].wps) cases[caseNum].wps = [];
   
   const droppedWp = waypoints[wpIdx];
-  
-  // Check if it's an action (detect_color or detect_qr) for nesting
-  if (droppedWp.type === 'ACTION' && (droppedWp.node === 'detect_color' || droppedWp.node === 'detect_qr')) {
-    const wp = {
-      name: droppedWp.name,
-      isAction: true,
-      actionType: droppedWp.node,
-      wpId: droppedWp.id,
-      nestedCases: {1: {name: "", wps: []}}  // Start with one empty case for nesting
-    };
-    cases[caseNum].wps.push(wp);
-  } else {
-    const wp = {
-      name: droppedWp.name,
-      wpId: droppedWp.id,  // Store actual waypoint ID, not array index
-      lat: droppedWp.lat,
-      lon: droppedWp.lon,
-      isAction: false
-    };
-    cases[caseNum].wps.push(wp);
-  }
+  cases[caseNum].wps.push(createConditionalWaypointEntry(droppedWp));
   
   seqItem.dataset.cases = JSON.stringify(cases);
   
@@ -4686,26 +4822,98 @@ function toggleNestedAction(event, seqItemId, caseNum, wpIndex) {
 
 function addNestedCase(event, seqItemId, caseNum, wpIndex) {
   event.stopPropagation();
-  const seqItem = document.querySelector(`[data-id="${seqItemId}"]`);
-  
-  if (!seqItem || !seqItem.dataset.cases) return;
-  
-  const cases = JSON.parse(seqItem.dataset.cases);
-  if (cases[caseNum] && cases[caseNum].wps && cases[caseNum].wps[wpIndex]) {
-    const wp = cases[caseNum].wps[wpIndex];
-    if (!wp.nestedCases) wp.nestedCases = {};
-    
-    // Find next case number
-    const nestedCaseNums = Object.keys(wp.nestedCases).map(Number);
-    const nextNum = Math.max(0, ...nestedCaseNums) + 1;
-    
-    wp.nestedCases[nextNum] = {name: "", wps: []};
-    seqItem.dataset.cases = JSON.stringify(cases);
-    
-    const condWrapper = seqItem.querySelector('.seq-conditional-wrapper');
-    const caseIdx = parseInt(condWrapper.dataset.caseIndex);
-    updateConditionalUI(seqItem, caseIdx, caseNum, cases);
+  const target = getNestedConditionalTarget(seqItemId, caseNum, wpIndex);
+  if (!target) return;
+
+  const { seqItem, cases, wp } = target;
+  const nestedCaseNums = getOrderedCaseNumbers(wp.nestedCases);
+  const nextNum = (nestedCaseNums[nestedCaseNums.length - 1] || 0) + 1;
+
+  wp.nestedCases[nextNum] = {name: "", wps: []};
+  wp.nestedCaseIndex = nestedCaseNums.length;
+  seqItem.dataset.cases = JSON.stringify(cases);
+
+  const condWrapper = seqItem.querySelector('.seq-conditional-wrapper');
+  const caseIdx = parseInt(condWrapper.dataset.caseIndex, 10) || 0;
+  updateConditionalUI(seqItem, caseIdx, caseNum, cases);
+}
+
+function navigateNestedCase(event, seqItemId, caseNum, wpIndex, direction) {
+  event.stopPropagation();
+  const target = getNestedConditionalTarget(seqItemId, caseNum, wpIndex);
+  if (!target) return;
+
+  const { seqItem, cases, wp } = target;
+  const nestedCaseNums = getOrderedCaseNumbers(wp.nestedCases);
+  if (!nestedCaseNums.length) return;
+
+  const currentIdx = parseInt(wp.nestedCaseIndex, 10) || 0;
+  wp.nestedCaseIndex = (currentIdx + direction + nestedCaseNums.length) % nestedCaseNums.length;
+  seqItem.dataset.cases = JSON.stringify(cases);
+
+  const condWrapper = seqItem.querySelector('.seq-conditional-wrapper');
+  const caseIdx = parseInt(condWrapper.dataset.caseIndex, 10) || 0;
+  updateConditionalUI(seqItem, caseIdx, caseNum, cases);
+}
+
+function updateNestedCaseName(seqItemId, caseNum, wpIndex, nestedCaseNum, value) {
+  const target = getNestedConditionalTarget(seqItemId, caseNum, wpIndex);
+  if (!target) return;
+
+  const { seqItem, cases, wp } = target;
+  if (!wp.nestedCases[nestedCaseNum]) {
+    wp.nestedCases[nestedCaseNum] = {name: '', wps: []};
   }
+
+  wp.nestedCases[nestedCaseNum].name = value;
+  seqItem.dataset.cases = JSON.stringify(cases);
+}
+
+function handleNestedCaseDrop(event, seqItemId, caseNum, wpIndex, nestedCaseNum) {
+  event.preventDefault();
+  event.stopPropagation();
+  const dropZone = event.currentTarget;
+  dropZone.classList.remove('dragover');
+
+  const wpIdxStr = event.dataTransfer.getData('text/plain');
+  if (!wpIdxStr) return;
+
+  const target = getNestedConditionalTarget(seqItemId, caseNum, wpIndex);
+  if (!target) return;
+
+  const droppedWpIdx = parseInt(wpIdxStr, 10);
+  if (Number.isNaN(droppedWpIdx) || !waypoints[droppedWpIdx]) return;
+
+  const { seqItem, cases, wp } = target;
+  if (!wp.nestedCases[nestedCaseNum]) {
+    wp.nestedCases[nestedCaseNum] = {name: '', wps: []};
+  }
+  if (!wp.nestedCases[nestedCaseNum].wps) {
+    wp.nestedCases[nestedCaseNum].wps = [];
+  }
+
+  wp.nestedCases[nestedCaseNum].wps.push(createConditionalWaypointEntry(waypoints[droppedWpIdx]));
+  seqItem.dataset.cases = JSON.stringify(cases);
+
+  const condWrapper = seqItem.querySelector('.seq-conditional-wrapper');
+  const caseIdx = parseInt(condWrapper.dataset.caseIndex, 10) || 0;
+  updateConditionalUI(seqItem, caseIdx, caseNum, cases);
+}
+
+function removeWaypointFromNestedCase(event, seqItemId, caseNum, wpIndex, nestedCaseNum, nestedWpIndex) {
+  event.stopPropagation();
+  const target = getNestedConditionalTarget(seqItemId, caseNum, wpIndex);
+  if (!target) return;
+
+  const { seqItem, cases, wp } = target;
+  if (!wp.nestedCases[nestedCaseNum] || !wp.nestedCases[nestedCaseNum].wps) return;
+
+  wp.nestedCases[nestedCaseNum].wps.splice(nestedWpIndex, 1);
+  seqItem.dataset.cases = JSON.stringify(cases);
+
+  const condWrapper = seqItem.querySelector('.seq-conditional-wrapper');
+  const caseIdx = parseInt(condWrapper.dataset.caseIndex, 10) || 0;
+  updateConditionalUI(seqItem, caseIdx, caseNum, cases);
 }
 
 function clearSeq() {
