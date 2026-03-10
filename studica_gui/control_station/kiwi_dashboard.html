@@ -256,6 +256,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .wp-origin-num{background:var(--accent2) !important;color:#fff !important;}
 .wp-origin-empty{opacity:.95;}
 .seq-origin-card{display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:6px;border:1px solid rgba(255,107,53,.35);border-radius:4px;background:linear-gradient(180deg,rgba(255,107,53,.12),rgba(255,107,53,.05));}
+.seq-origin-card.is-selected{border-color:rgba(0,212,255,.78);background:linear-gradient(180deg,rgba(0,212,255,.18),rgba(255,107,53,.07));box-shadow:0 0 0 1px rgba(0,212,255,.12) inset,0 0 18px rgba(0,212,255,.12);}
 .seq-origin-badge{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--accent2);color:#fff;font-size:11px;font-weight:700;flex-shrink:0;}
 .seq-origin-body{flex:1;min-width:0;}
 .seq-origin-title{color:#ffd2c2;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;}
@@ -1532,9 +1533,16 @@ function syncSequenceOriginCard(){
     card.className = 'seq-origin-card';
   }
 
+  card.onclick = () => selectOriginWaypoint(true);
+  card.title = 'Select origin waypoint';
+
   card.innerHTML = originPx
     ? `<div class="seq-origin-badge">O</div><div class="seq-origin-body"><div class="seq-origin-title">Origin</div><div class="seq-origin-copy">Map origin active at pixel (${originPx.x}, ${originPx.y})<br>Frame origin: x:0 y:0 m | facing ${originYaw}°</div></div>`
     : '<div class="seq-origin-badge">O</div><div class="seq-origin-body"><div class="seq-origin-title">Origin</div><div class="seq-origin-copy">No map origin set yet. Click on the map to define it.</div></div>';
+
+  const originWaypoint = getOriginWaypoint();
+  const selectedWaypoint = getSelectedWaypoint();
+  card.classList.toggle('is-selected', !!originWaypoint && selectedWaypoint === originWaypoint);
 
   if (container.firstChild !== card) {
     container.prepend(card);
@@ -1859,6 +1867,9 @@ function renderMap(){
   const selectedWaypoint = getSelectedWaypoint();
   if (selectedWaypoint && isSpatialWaypoint(selectedWaypoint)) {
     drawWaypointSelectionOverlay(selectedWaypoint, 'rgba(0,212,255,.98)', 20, 3.2);
+    if (selectedWaypoint.isOrigin) {
+      drawSelectedOriginOverlay();
+    }
   }
 
   if (Number.isInteger(highlightedWpIdx) && highlightedWpIdx >= 0 && highlightedWpIdx < waypoints.length) {
@@ -2113,6 +2124,22 @@ function drawWaypointSelectionOverlay(wp, strokeStyle, radius, lineWidth) {
   mctx.strokeStyle = strokeStyle;
   mctx.lineWidth = lineWidth;
   mctx.stroke();
+  mctx.restore();
+}
+
+function drawSelectedOriginOverlay() {
+  if (!originPx) return;
+
+  const originWaypoint = getOriginWaypoint();
+  if (!originWaypoint) return;
+
+  const point = wpToCanvas(originWaypoint);
+  if (!point) return;
+
+  const screenYaw = originYaw * Math.PI / 180;
+  mctx.save();
+  mctx.globalAlpha = 1;
+  drawTriangle(mctx, point.x, point.y, screenYaw, SC * 0.95, '#00d4ff');
   mctx.restore();
 }
 
@@ -2779,7 +2806,15 @@ function findSpatialWaypointIndexById(wpId) {
 
 function syncSelectedSequenceCards(scrollIntoView = false) {
   const selectedWaypoint = getSelectedWaypoint();
+  const originWaypoint = getOriginWaypoint();
   let firstMatch = null;
+
+  const originCard = document.querySelector('#seqList .seq-origin-card');
+  if (originCard) {
+    const matchesOrigin = !!selectedWaypoint && !!originWaypoint && selectedWaypoint === originWaypoint;
+    originCard.classList.toggle('is-selected', matchesOrigin);
+    if (!firstMatch && matchesOrigin) firstMatch = originCard;
+  }
 
   document.querySelectorAll('#seqList .seq-item[data-seq-key]').forEach(card => {
     const seqEntry = sequence.find(item => item.seqKey === card.dataset.seqKey);
@@ -2809,6 +2844,16 @@ function setSelectedWaypoint(idx, options = false) {
   selectedWpIdx = Number.isInteger(idx) && idx >= 0 && idx < waypoints.length ? idx : null;
   syncSelectedWaypointCard(selectionOptions.scrollWaypoint);
   syncSelectedSequenceCards(selectionOptions.scrollSequence);
+}
+
+function selectOriginWaypoint(scrollIntoView = true) {
+  const idx = getOriginWaypointIndex();
+  if (idx === -1) return;
+
+  expandSidebarSection('waypoints');
+  clearWaypointInteractionState();
+  setSelectedWaypoint(idx, { scrollWaypoint: scrollIntoView, scrollSequence: scrollIntoView });
+  pulseWaypointHighlight(idx, scrollIntoView);
 }
 
 function pulseWaypointHighlight(idx, scrollIntoView = false) {
