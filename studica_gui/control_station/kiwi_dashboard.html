@@ -179,8 +179,26 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .waypoint-toolbar-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .waypoint-toolbar-row.single{grid-template-columns:1fr;}
 .sidebar-btn{width:100%;margin:0;padding:10px 12px;}
+.waypoint-primary-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:16px 14px;border-radius:12px;border:1px solid rgba(0,212,255,.7);background:linear-gradient(180deg,rgba(0,212,255,.16),rgba(0,212,255,.07));color:#dff9ff;font-family:inherit;cursor:pointer;transition:transform .15s ease,border-color .15s ease,background .15s ease,box-shadow .15s ease;box-shadow:0 8px 24px rgba(0,212,255,.08);}
+.waypoint-primary-btn:hover{transform:translateY(-1px);border-color:var(--accent);background:linear-gradient(180deg,rgba(0,212,255,.24),rgba(0,212,255,.1));}
+.waypoint-primary-icon{font-size:18px;line-height:1;}
+.waypoint-primary-copy{display:flex;flex-direction:column;align-items:flex-start;gap:2px;}
+.waypoint-primary-title{font-size:15px;font-weight:700;letter-spacing:.02em;}
+.waypoint-primary-sub{font-size:10px;color:rgba(221,238,255,.68);letter-spacing:.12em;text-transform:uppercase;}
+.waypoint-secondary-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.waypoint-secondary-btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:10px 12px;border-radius:10px;border:1px solid rgba(49,89,120,.9);background:rgba(10,24,40,.9);color:var(--text);font-family:inherit;font-size:12px;font-weight:600;letter-spacing:.02em;cursor:pointer;transition:border-color .15s ease,background .15s ease,transform .15s ease,color .15s ease;}
+.waypoint-secondary-btn:hover{transform:translateY(-1px);border-color:var(--accent);background:rgba(13,31,51,.98);color:#fff;}
+.waypoint-secondary-btn span:first-child{font-size:15px;line-height:1;}
+.waypoint-secondary-btn.anchor-btn{border-color:rgba(0,212,255,.45);color:#bdefff;}
+.waypoint-secondary-btn.favourite-btn{border-color:rgba(255,213,79,.38);color:#ffe79b;}
+.waypoint-utility-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.waypoint-utility-btn{width:100%;padding:9px 12px;border-radius:9px;border:1px solid rgba(36,67,92,.9);background:rgba(8,20,33,.76);color:var(--muted2);font-family:inherit;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:border-color .15s ease,background .15s ease,color .15s ease;}
+.waypoint-utility-btn:hover{border-color:var(--accent);background:rgba(0,212,255,.08);color:var(--accent);}
+.waypoint-clear-row{display:flex;justify-content:flex-end;padding-top:2px;}
 .waypoint-clear-btn{width:100%;padding:8px 12px;border:1px solid rgba(255,68,85,.4);border-radius:8px;color:var(--red);font-size:11px;letter-spacing:.08em;text-transform:uppercase;}
+.waypoint-clear-row .waypoint-clear-btn{width:auto;border:none;padding:4px 0;background:none;border-radius:0;font-size:10px;letter-spacing:.12em;opacity:.9;}
 .waypoint-clear-btn:hover{border-color:var(--red);background:rgba(255,68,85,.12);}
+.waypoint-clear-row .waypoint-clear-btn:hover{background:none;opacity:1;}
 .waypoint-list-shell{flex:1;min-height:0;display:flex;}
 .waypoint-list-shell .wp-list{padding:4px;border:1px solid var(--border);border-radius:10px;background:rgba(12,24,40,.82);}
 
@@ -506,21 +524,25 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
           </button>
           <div class="panel-accordion-content">
             <div class="waypoint-toolbar">
-              <div class="waypoint-toolbar-row">
-                <button class="addwp-btn sidebar-btn" onclick="handleQKeyPress()">➕ Add Waypoint</button>
-                <button class="addwp-btn sidebar-btn" onclick="openFavouriteWaypoints()">⭐ Favourite Waypoints</button>
+              <button class="waypoint-primary-btn" onclick="handleQKeyPress()">
+                <span class="waypoint-primary-icon">➕</span>
+                <span class="waypoint-primary-copy">
+                  <span class="waypoint-primary-title">Add Waypoint</span>
+                  <span class="waypoint-primary-sub">Press P or click</span>
+                </span>
+              </button>
+              <div class="waypoint-secondary-grid">
+                <button class="waypoint-secondary-btn anchor-btn" onclick="openAnchorListPopup()"><span>📍</span><span>Saved Anchor</span></button>
+                <button class="waypoint-secondary-btn favourite-btn" onclick="openFavouriteWaypoints()"><span>⭐</span><span>Favourite WP</span></button>
               </div>
               <div class="fav-wp-dropdown" id="favWpDropdown">
                 <div class="fav-wp-list" id="favWpList"></div>
               </div>
-              <div class="waypoint-toolbar-row">
-                <button class="exp-btn" onclick="openSaveWPPopup()">💾 Save WP</button>
-                <button class="exp-btn" onclick="openImportWPPopup()">📂 Import WP</button>
+              <div class="waypoint-utility-row">
+                <button class="waypoint-utility-btn" onclick="openSaveWPPopup()">Save</button>
+                <button class="waypoint-utility-btn" onclick="openImportWPPopup()">Import</button>
               </div>
-              <div class="waypoint-toolbar-row single">
-                <button class="exp-btn" onclick="openAnchorListPopup()">📍 Add Saved Anchor</button>
-              </div>
-              <div class="waypoint-toolbar-row single">
+              <div class="waypoint-clear-row">
                 <button class="clr-btn waypoint-clear-btn" onclick="clearWP()">✕ Clear Waypoints</button>
               </div>
             </div>
