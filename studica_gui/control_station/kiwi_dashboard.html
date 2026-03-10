@@ -153,7 +153,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .wp-item{display:flex;align-items:center;gap:8px;padding:7px 10px;margin-bottom:5px;background:var(--panel2);border:1px solid var(--border);border-radius:4px;font-size:.95em;}
 .wp-item.is-selected{border-color:rgba(0,212,255,.7);background:linear-gradient(180deg,rgba(0,212,255,.18),rgba(0,212,255,.08));box-shadow:0 0 0 1px rgba(0,212,255,.14) inset,0 0 18px rgba(0,212,255,.12);}
 .wp-item.is-editing{border-color:rgba(77,255,145,.7);box-shadow:0 0 0 1px rgba(77,255,145,.16) inset,0 0 22px rgba(77,255,145,.14);}
-.wp-num{width:22px;height:22px;border-radius:50%;background:var(--accent2);color:#fff;font-size:.9em;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.wp-num{width:22px;height:22px;border-radius:50%;background:var(--green);color:#000;font-size:.9em;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 
 .wp-sidebar{width:260px;min-width:220px;max-width:320px;background:var(--panel2);display:flex;flex-direction:column;gap:0;box-shadow:1px 0 0 var(--border);min-height:0;}
 .wp-sidebar-scroll{flex:1;display:flex;flex-direction:column;gap:10px;padding:10px;min-height:0;overflow:hidden;border-bottom:1px solid var(--border);}
@@ -1725,6 +1725,8 @@ function renderMap(){
     mctx.restore();
   }
 
+  const _seqRouteNodes = getActiveSequenceRouteNodes();
+
   // ── WP DATA: draw robot model (triangle) for ALL waypoints in WP DATA panel ──
   let wpDisplayNum = 0;  // Counter for spatial waypoints only
   waypoints.forEach((wp, i)=>{
@@ -1733,6 +1735,11 @@ function renderMap(){
     const p=wpToCanvas(wp); if(!p) return;
     const isSelected = i === selectedWpIdx;
     const isHighlighted = i === highlightedWpIdx;
+    const isOriginWaypoint = !!wp.isOrigin;
+    const isInSequence = isOriginWaypoint || _seqRouteNodes.some(routeNode => {
+      const routeWaypoint = routeNode && routeNode.waypoint;
+      return routeWaypoint === wp || (routeWaypoint && routeWaypoint.id === wp.id);
+    });
     const originYaw_rad = originYaw * Math.PI / 180;
     const screenYaw = originYaw_rad - wp.yaw_rad;
     if (isSelected || isHighlighted) {
@@ -1745,18 +1752,29 @@ function renderMap(){
       mctx.restore();
     }
     mctx.save();
-    mctx.globalAlpha = isSelected ? 0.34 : 0.2;
-    drawTriangle(mctx, p.x, p.y, screenYaw, SC*.7, isSelected ? '#00d4ff' : '#ff6b35');
-    mctx.globalAlpha = 1.0;
+    drawTriangle(
+      mctx,
+      p.x,
+      p.y,
+      screenYaw,
+      SC*.7,
+      isOriginWaypoint ? '#ff6b35' : (isSelected ? '#00d4ff' : (isInSequence ? '#5fbaff' : '#aeb8c4')),
+      { fillAlpha: isOriginWaypoint ? 1 : (isSelected ? 0.34 : (isInSequence ? 0.28 : 0.3)) }
+    );
     mctx.restore();
     // Draw WP DATA number (matching the list display numbering)
     mctx.save();
     mctx.beginPath();
     mctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
-    mctx.fillStyle = isSelected ? 'rgba(0,212,255,0.85)' : 'rgba(255,107,53,0.5)';
+    mctx.fillStyle = isOriginWaypoint
+      ? 'rgba(255,107,53,0.92)'
+      : 'rgba(77,255,145,0.92)';
     mctx.fill();
+    mctx.strokeStyle = isOriginWaypoint ? '#ffd2c2' : '#d8ffe8';
+    mctx.lineWidth = 1.5;
+    mctx.stroke();
     mctx.font = 'bold 10px Arial';
-    mctx.fillStyle = '#fff';
+    mctx.fillStyle = isOriginWaypoint ? '#fff' : '#000';
     mctx.textAlign = 'center';
     mctx.textBaseline = 'middle';
     mctx.fillText(wpDisplayNum.toString(), p.x, p.y);
@@ -1767,9 +1785,6 @@ function renderMap(){
     mctx.fillStyle='rgba(10,14,23,.85)'; mctx.fillRect(p.x+14,p.y-15,tw+4,11);
     mctx.fillStyle='#00d4ff'; mctx.textAlign='left'; mctx.textBaseline='alphabetic'; mctx.fillText(lbl,p.x+16,p.y-6); mctx.restore();
   });
-
-  // ── SEQUENCE: build active route nodes only when the sequence panel is populated ──
-  const _seqRouteNodes = getActiveSequenceRouteNodes();
 
   // Draw dotted line from robot to current sequence waypoint
   if (_seqRouteNodes.length > 0 && missionState !== 'done' && missionState !== 'reached' && missionState !== 'cancelled' && missionState !== 'error') {
@@ -1823,6 +1838,17 @@ function renderMap(){
         mctx.moveTo(p1.x, p1.y);
         mctx.lineTo(p2.x, p2.y);
         mctx.stroke();
+        if (routeNode2.caseName) {
+          const labelX = p1.x + (p2.x - p1.x) * 0.18;
+          const labelY = p1.y + (p2.y - p1.y) * 0.18;
+          mctx.save();
+          mctx.font = '800 10px Segoe UI';
+          mctx.textAlign = 'left';
+          mctx.textBaseline = 'alphabetic';
+          mctx.fillStyle = segmentColor;
+          mctx.fillText(`[${routeNode2.caseName}]`, labelX + 4, labelY - 4);
+          mctx.restore();
+        }
         const dx = p2.x - p1.x, dy = p2.y - p1.y;
         const angle = Math.atan2(dy, dx);
         const len = 18;
@@ -1862,17 +1888,6 @@ function renderMap(){
     mctx.textBaseline = 'middle';
     mctx.fillText(seqNum.toString(), p.x, p.y);
     mctx.restore();
-
-    if (routeNode.caseName) {
-      mctx.save();
-      mctx.font = 'bold 8px Courier New';
-      mctx.textAlign = 'left';
-      mctx.textBaseline = 'alphabetic';
-      mctx.fillStyle = routeFill;
-      const caseLabel = `[${routeNode.caseName}]`;
-      mctx.fillText(caseLabel, p.x + 16, p.y + 9);
-      mctx.restore();
-    }
   });
 
   const selectedWaypoint = getSelectedWaypoint();
@@ -1971,7 +1986,7 @@ function drawSmallTriangle(ctx, cx, cy, yaw, sz, col) {
     const color = selectedMarkerPixelX !== null ? '#ff9900' : '#ff6b35';  // brighter if selected
     // Origin itself faces originYaw direction on screen (screen heading = originYaw)
     const screenYaw = originYaw * Math.PI / 180;
-    drawTriangle(mctx, px, py, screenYaw, SC*.85, color);
+    drawTriangle(mctx, px, py, screenYaw, SC*.85, color, { fillAlpha: 1 });
     mctx.save(); mctx.font='10px Courier New'; mctx.fillStyle=color;
     mctx.textAlign='left'; mctx.textBaseline='alphabetic';
     mctx.fillText(`origin @ px(${Math.round(dispPixelX)},${Math.round(dispPixelY)})`, px+SC, py-4); 
@@ -2049,10 +2064,12 @@ function canvasToOdom(canvasCellX, canvasCellY){
   const oy_m = lftDist / cells;
   return { x: ox_m, y: oy_m };
 }
-function drawTriangle(ctx,cx,cy,yaw,sz,col){
+function drawTriangle(ctx,cx,cy,yaw,sz,col,options={}){
   // yaw = screen heading angle (CCW from screen right), ctx.rotate is CW positive
   // so we negate yaw, and add π/2 to orient triangle graphic (black side at front)
   ctx.save(); ctx.translate(cx,cy); ctx.rotate(-yaw + Math.PI/2);
+  const fillAlpha = typeof options.fillAlpha === 'number' ? options.fillAlpha : 0.18;
+  const showDetectionCircle = options.showDetectionCircle !== false;
   
   // Convert robot dimensions from cm to pixels
   // Robot radius = 27cm, Detection circle = 30cm
@@ -2060,11 +2077,13 @@ function drawTriangle(ctx,cx,cy,yaw,sz,col){
   const detectionRadiusPx = (30 / mapRes) * SC;
   
   // Draw detection circle (30cm radius)
-  ctx.strokeStyle = col + '40';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.arc(0, 0, detectionRadiusPx, 0, Math.PI * 2);
-  ctx.stroke();
+  if (showDetectionCircle) {
+    ctx.strokeStyle = col + '40';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(0, 0, detectionRadiusPx, 0, Math.PI * 2);
+    ctx.stroke();
+  }
   
   // Draw inverted triangle (pointing down) as robot model with 27cm radius
   // Triangle geometry: equilateral triangle pointing downward
@@ -2077,8 +2096,10 @@ function drawTriangle(ctx,cx,cy,yaw,sz,col){
   ctx.lineTo(triangleHalfBase, -triangleHeight * 0.5);   // top-right
   ctx.closePath();
   
-  ctx.fillStyle = col + '30';
+  ctx.fillStyle = col;
+  ctx.globalAlpha = fillAlpha;
   ctx.fill();
+  ctx.globalAlpha = 1;
   ctx.strokeStyle = col;
   ctx.lineWidth = 2;
   ctx.stroke();
@@ -2150,7 +2171,7 @@ function drawSelectedOriginOverlay() {
   const screenYaw = originYaw * Math.PI / 180;
   mctx.save();
   mctx.globalAlpha = 1;
-  drawTriangle(mctx, point.x, point.y, screenYaw, SC * 0.95, '#00d4ff');
+  drawTriangle(mctx, point.x, point.y, screenYaw, SC * 0.95, '#ff6b35', { fillAlpha: 1 });
   mctx.restore();
 }
 
@@ -2857,6 +2878,20 @@ function setSelectedWaypoint(idx, options = false) {
   syncSelectedSequenceCards(selectionOptions.scrollSequence);
 }
 
+function clearSelectedWaypoint(render = true) {
+  if (selectedWpIdx === null && highlightedWpIdx === null) return;
+  selectedWpIdx = null;
+  highlightedWpIdx = null;
+  highlightStartTime = null;
+  if (highlightTimeout !== null) {
+    clearTimeout(highlightTimeout);
+    highlightTimeout = null;
+  }
+  syncSelectedWaypointCard(false);
+  syncSelectedSequenceCards(false);
+  if (render) renderMap();
+}
+
 function selectOriginWaypoint(scrollIntoView = true) {
   const idx = getOriginWaypointIndex();
   if (idx === -1) return;
@@ -3003,7 +3038,7 @@ function updateWPList(){
     const favouriteBtnClass = wp.isFavourite ? 'wp-meta-btn favorite-on' : 'wp-meta-btn';
     const favouriteBtnLabel = wp.isFavourite ? '⭐' : '☆';
     cards.push(`<div class="${spatialClasses.join(' ')}" draggable="true" data-idx="${i}" onclick="selectWaypointFromList(${i})" ondblclick="event.stopPropagation(); openWaypointMetadataEditor(${i})" ondragstart="onWpDragStart(event)" ondragend="onWpDragEnd(event)">
-      <div class="wp-num" style="background:${circleColor}; color:#fff;">${wpNum}</div>
+      <div class="wp-num" style="background:${circleColor}; color:${wp.isOrigin ? '#fff' : '#000'};">${wpNum}</div>
       <div class="wp-body"><div class="wp-title-row"><div class="wp-xy" style="color:#00d4ff; font-weight:700;">${title}</div></div><div class="wp-yaw">${detail}</div></div>
       <div class="wp-actions">${originMarker}<button class="wp-meta-btn" type="button" onclick="event.stopPropagation(); openWaypointMetadataEditor(${i})">✎</button><button class="${favouriteBtnClass}" type="button" onclick="event.stopPropagation(); toggleWaypointFavourite(${i})">${favouriteBtnLabel}</button><button class="wp-del" onclick="event.stopPropagation(); delWP(${i})">✕</button></div>
     </div>`);
@@ -3898,7 +3933,10 @@ mapCanvas.addEventListener('click', e=>{
   const clickY = (e.clientY - r.top) * cssScaleY;
   const idx = findSpatialWaypointAtCanvasPoint(clickX, clickY);
 
-  if (idx === -1) return;
+  if (idx === -1) {
+    clearSelectedWaypoint(true);
+    return;
+  }
 
   expandSidebarSection('waypoints');
   setSelectedWaypoint(idx, { scrollWaypoint: true, scrollSequence: true });
@@ -6854,6 +6892,12 @@ updateWPList();
 
 const seqContainer = document.getElementById('seqList');
 if (seqContainer) {
+  seqContainer.addEventListener('scroll', () => {
+    if (!settingOrig && !wpMapClickActive) clearSelectedWaypoint(true);
+  });
+  seqContainer.addEventListener('click', (e) => {
+    if (e.target === seqContainer && !settingOrig && !wpMapClickActive) clearSelectedWaypoint(true);
+  });
   seqContainer.addEventListener('dragover', (e) => { 
     e.preventDefault(); 
     e.dataTransfer.dropEffect = 'move'; 
@@ -6883,6 +6927,16 @@ if (seqContainer) {
     } catch(err) {
       console.error('Drop handler error:', err);
     }
+  });
+}
+
+const wpListContainer = document.getElementById('wpList');
+if (wpListContainer) {
+  wpListContainer.addEventListener('scroll', () => {
+    if (!settingOrig && !wpMapClickActive) clearSelectedWaypoint(true);
+  });
+  wpListContainer.addEventListener('click', (e) => {
+    if (e.target === wpListContainer && !settingOrig && !wpMapClickActive) clearSelectedWaypoint(true);
   });
 }
 
