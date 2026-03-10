@@ -219,6 +219,22 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .wp-body{flex:1;}.wp-xy{color:var(--accent);font-size:1em;}.wp-yaw{font-size:1em;color:var(--green);}
 .wp-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1em;padding:2px 3px;transition:color .15s;}
 .wp-del:hover{color:var(--red);}
+.wp-del.locked{cursor:not-allowed;color:var(--muted2);}
+.wp-del.locked:hover{color:var(--muted2);}
+.wp-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.wp-origin-btn{padding:5px 8px;border-radius:999px;border:1px solid rgba(0,212,255,.35);background:rgba(0,212,255,.08);color:#bdefff;font-family:inherit;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:border-color .15s ease,background .15s ease,color .15s ease;}
+.wp-origin-btn:hover{border-color:var(--accent);background:rgba(0,212,255,.16);color:#fff;}
+.wp-origin-btn.active,.wp-origin-btn:disabled{border-color:rgba(255,107,53,.55);background:rgba(255,107,53,.14);color:#ffd9cb;cursor:default;}
+.wp-origin-card{border-color:rgba(255,107,53,.35);background:linear-gradient(180deg,rgba(255,107,53,.12),rgba(255,107,53,.05));}
+.wp-origin-card .wp-xy{color:#ffd2c2;}
+.wp-origin-card .wp-yaw{color:#ffb995;}
+.wp-origin-num{background:var(--accent2) !important;color:#fff !important;}
+.wp-origin-empty{opacity:.95;}
+.seq-origin-card{display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:6px;border:1px solid rgba(255,107,53,.35);border-radius:4px;background:linear-gradient(180deg,rgba(255,107,53,.12),rgba(255,107,53,.05));}
+.seq-origin-badge{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--accent2);color:#fff;font-size:11px;font-weight:700;flex-shrink:0;}
+.seq-origin-body{flex:1;min-width:0;}
+.seq-origin-title{color:#ffd2c2;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;}
+.seq-origin-copy{color:#ffb995;font-size:10px;line-height:1.5;}
 .wp-empty{text-align:center;color:var(--muted);font-size:1em;padding:16px 0;line-height:2.2;}
 .wp-empty b{color:var(--accent2);}
 .exp-btn{width:100%;padding:8px;background:rgba(0,212,255,.08);border:1px solid var(--accent);color:var(--accent);font-family:inherit;font-size:11px;cursor:pointer;border-radius:3px;letter-spacing:1.5px;text-transform:uppercase;transition:all .15s;}
@@ -563,12 +579,13 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
           waypoints.length = 0;
           waypoints.push({
             id: 1,
+            name: 'Origin',
             x_m: +wpX.toFixed(4),
             y_m: 0.0,
             yaw_deg: 0,
             yaw_rad: 0.0,
             createdFrom: 'ORIGIN',
-            type: 'ORIGIN'
+            isOrigin: true
           });
           updateWPList();
           renderMap();
@@ -1339,6 +1356,92 @@ let originPx=null, settingOrig=false;
 let originYaw=0;                     // degrees — robot facing direction at origin (0=right,90=up,180=left,270=down)
 let robot={x:0,y:0,yaw:0};
 let waypoints=[];
+const SEQ_EMPTY_HTML = '<div class="seq-empty" style="color:var(--muted);text-align:center;padding:20px 8px;font-size:11px;">Drag items from<br>WP DATA to arrange<br>execution sequence</div>';
+
+function isSpatialWaypoint(wp){
+  return !!wp && wp.type !== 'ACTION' && wp.type !== 'ANCHOR';
+}
+
+function normalizeWaypointIds(){
+  waypoints.forEach((wp, idx) => {
+    wp.id = idx + 1;
+  });
+}
+
+function getOriginWaypointIndex(){
+  return waypoints.findIndex(wp => isSpatialWaypoint(wp) && wp.isOrigin);
+}
+
+function getOriginWaypoint(){
+  const idx = getOriginWaypointIndex();
+  return idx === -1 ? null : waypoints[idx];
+}
+
+function clearOriginFlag(){
+  waypoints.forEach(wp => {
+    if (wp && wp.isOrigin) wp.isOrigin = false;
+  });
+}
+
+function formatWaypointSummary(wp){
+  return `x:${wp.x_m} y:${wp.y_m} m | yaw:${wp.yaw_deg}°`;
+}
+
+function upsertOriginWaypoint(){
+  const originData = {
+    name: 'Origin',
+    x_m: 0,
+    y_m: 0,
+    yaw_deg: 0,
+    yaw_rad: 0,
+    createdFrom: 'ORIGIN',
+    type: 'WP',
+    isOrigin: true
+  };
+
+  const originIdx = getOriginWaypointIndex();
+  clearOriginFlag();
+
+  if (originIdx >= 0) {
+    waypoints[originIdx] = {
+      ...waypoints[originIdx],
+      ...originData
+    };
+  } else {
+    waypoints.push({
+      id: waypoints.length + 1,
+      ...originData
+    });
+  }
+
+  normalizeWaypointIds();
+}
+
+function syncSequenceOriginCard(){
+  const container = document.getElementById('seqList');
+  if (!container) return;
+
+  let card = container.querySelector('.seq-origin-card');
+  if (!card) {
+    card = document.createElement('div');
+    card.className = 'seq-origin-card';
+  }
+
+  card.innerHTML = originPx
+    ? `<div class="seq-origin-badge">O</div><div class="seq-origin-body"><div class="seq-origin-title">Origin</div><div class="seq-origin-copy">Map origin active at pixel (${originPx.x}, ${originPx.y})<br>Frame origin: x:0 y:0 m | facing ${originYaw}°</div></div>`
+    : '<div class="seq-origin-badge">O</div><div class="seq-origin-body"><div class="seq-origin-title">Origin</div><div class="seq-origin-copy">No map origin set yet. Click on the map to define it.</div></div>';
+
+  if (container.firstChild !== card) {
+    container.prepend(card);
+  }
+
+  const empty = container.querySelector('.seq-empty');
+  if (sequence.length === 0) {
+    if (!empty) container.insertAdjacentHTML('beforeend', SEQ_EMPTY_HTML);
+  } else if (empty) {
+    empty.remove();
+  }
+}
 // Track current mission progress for arrow display
 let missionCurrentIdx = 0;
 let missionState = 'idle';
@@ -1903,6 +2006,7 @@ function setOriginYaw(deg){
   });
   // Hide the orientation arrows after one is pressed
   document.getElementById('origOrient').style.display = 'none';
+  updateWPList();
   renderMap();
 }
 
@@ -1932,6 +2036,8 @@ function confirmOrigin(){
   btn.classList.remove('on');
   btn.textContent='🎯 Reset Origin';
   document.getElementById('origOrient').style.display='block';
+  upsertOriginWaypoint();
+  updateWPList();
   renderMap();
   showToast('✅ Origin saved at pixel('+originPx.x+','+originPx.y+')');
   
@@ -2405,39 +2511,54 @@ function handleQKeyPress() {
 document.addEventListener('keydown',e=>{ if((e.key==='p'||e.key==='P')&&!e.target.matches('input,textarea')) markWP(); });
 function updateWPList(){
   const el=document.getElementById('wpList');
-  if(!waypoints.length){ el.innerHTML='<div class="wp-empty">No waypoints.<br>Drive robot → press <b>[P]</b></div>'; return; }
+  if(!waypoints.length){
+    el.innerHTML = '<div class="wp-empty">No waypoints.<br>Drive robot → press <b>[P]</b></div>';
+    syncSequenceOriginCard();
+    return;
+  }
   let wpNum = 0;
-  el.innerHTML = waypoints.map((wp, i) => {
+  const cards = [];
+  waypoints.forEach((wp, i) => {
     // Action items render differently
     if(wp.type === 'ACTION'){
       const actionLabels = {detect_color: '🔍 Detect Colour', detect_qr: '📱 Detect QR'};
       const label = actionLabels[wp.node] || wp.node;
-      return `<div class="wp-item wp-action" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragend="onWpDragEnd(event)">
+      cards.push(`<div class="wp-item wp-action" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragend="onWpDragEnd(event)">
         <div class="wp-num" style="background:#9c27b0; color:#fff;">⚡</div>
         <div class="wp-body"><div class="wp-xy" style="color:#ce93d8;">${label}</div></div>
         <button class="wp-del" onclick="delWP(${i})">✕</button>
-      </div>`;
+      </div>`);
+      return;
     }
     // Anchor items render differently
     if(wp.type === 'ANCHOR'){
-      return `<div class="wp-item wp-anchor" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragend="onWpDragEnd(event)">
+      cards.push(`<div class="wp-item wp-anchor" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragend="onWpDragEnd(event)">
         <div class="wp-num" style="background:#2196F3; color:#fff;">📍</div>
         <div class="wp-body"><div class="wp-xy" style="color:#64b4ff;">${wp.anchor_name}</div><div class="wp-yaw" style="color:#ffb464;">${wp.direction.toUpperCase()} | fwd: ${wp.average.toFixed(4)}m | lat: ${wp.distance.toFixed(4)}m</div></div>
         <button class="wp-del" onclick="delWP(${i})">✕</button>
-      </div>`;
+      </div>`);
+      return;
     }
     wpNum++;
     // Determine circle color based on creation source
     let circleColor = '#81C784'; // Default light green for 'wp'
     if (wp.createdFrom === 'MOVE') circleColor = '#FDD835'; // Light yellow for MOVE panel
     if (wp.createdFrom === 'P') circleColor = '#FFB74D'; // Light orange for P keypress mark
+    if (wp.isOrigin) circleColor = '#ff6b35';
     const favMarker = wp.isFavourite ? '⭐ ' : '';
-    return `<div class="wp-item wp-${wp.type && wp.type.toLowerCase ? wp.type.toLowerCase() : 'wp'}" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragend="onWpDragEnd(event)">
+    const title = wp.isOrigin ? `${favMarker}${wp.name || 'Origin'} · Origin` : `${favMarker}${wp.name || 'WP ' + wpNum}`;
+    const detail = wp.isOrigin
+      ? `Origin waypoint | frame origin x:0 y:0 m | facing ${originYaw}°`
+      : `x:${wp.x_m} y:${wp.y_m} m | yaw:${wp.yaw_deg}°`;
+    const originMarker = wp.isOrigin ? '<button class="wp-origin-btn active" type="button" disabled>Origin</button>' : '';
+    cards.push(`<div class="wp-item wp-${wp.type && wp.type.toLowerCase ? wp.type.toLowerCase() : 'wp'}" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragend="onWpDragEnd(event)">
       <div class="wp-num" style="background:${circleColor}; color:#fff;">${wpNum}</div>
-      <div class="wp-body"><div class="wp-xy" style="color:#00d4ff; font-weight:700;">${favMarker}${wp.name || 'WP ' + wpNum}</div><div class="wp-yaw">x:${wp.x_m} y:${wp.y_m} m | yaw:${wp.yaw_deg}°</div></div>
-      <button class="wp-del" onclick="delWP(${i})">✕</button>
-    </div>`;
-  }).join('');
+      <div class="wp-body"><div class="wp-xy" style="color:#00d4ff; font-weight:700;">${title}</div><div class="wp-yaw">${detail}</div></div>
+      <div class="wp-actions">${originMarker}<button class="wp-del" onclick="delWP(${i})">✕</button></div>
+    </div>`);
+  });
+  el.innerHTML = cards.join('');
+  syncSequenceOriginCard();
 }
 
 // Highlight waypoint on double-click
@@ -2500,7 +2621,9 @@ function onActionDragEnd(e) {
 
 // Click-to-edit waypoint number (order)
 function editWpNum(idx) {
-  const el = document.querySelectorAll('.wp-num')[idx];
+  const row = document.querySelector(`.wp-item[data-idx="${idx}"]`);
+  const el = row ? row.querySelector('.wp-num') : null;
+  if (!el) return;
   const oldVal = idx+1;
   const input = document.createElement('input');
   input.type = 'number';
@@ -2531,8 +2654,19 @@ function editWpNum(idx) {
   input.focus();
   input.select();
 }
-function delWP(i){ waypoints.splice(i,1); waypoints.forEach((w,j)=>w.id=j+1); updateWPList(); renderMap(); }
-function clearWP(){ if(!waypoints.length)return; waypoints=[]; updateWPList(); renderMap(); }
+function delWP(i){
+  const wp = waypoints[i];
+  if (!wp) return;
+  waypoints.splice(i,1);
+  normalizeWaypointIds();
+  updateWPList();
+  renderMap();
+}
+function clearWP(){
+  waypoints = [];
+  updateWPList();
+  renderMap();
+}
 
 function getSidebarSection(sectionName) {
   return document.querySelector(`[data-sidebar-section="${sectionName}"]`);
@@ -2825,7 +2959,7 @@ function saveAnchor(direction) {
 // Helper: find the last real spatial waypoint (skips ACTION nodes)
 function lastSpatialWP(){
   for(let i = waypoints.length - 1; i >= 0; i--){
-    if(waypoints[i].type !== 'ACTION' && waypoints[i].type !== 'ANCHOR') return waypoints[i];
+    if(isSpatialWaypoint(waypoints[i])) return waypoints[i];
   }
   return null;
 }
@@ -3510,7 +3644,6 @@ function addOriginAsWaypoint(){
     return;
   }
   
-  // Add to waypoint list
   waypoints.push({
     id: waypoints.length + 1,
     name: `GOTO WP ${waypoints.length + 1}`,
@@ -3520,6 +3653,7 @@ function addOriginAsWaypoint(){
     yaw_rad: yaw * Math.PI / 180,
     createdFrom: 'GOTO'
   });
+  normalizeWaypointIds();
   
   showToast('✓ GO TO waypoint added');
   updateWPList();
@@ -3737,9 +3871,11 @@ function saveWaypoints() {
     const mapYaw = odomYawToMapYaw(w.yaw_deg);
     return {
       id: w.id,
+      name: w.name,
       x_px: mapPx ? +mapPx.x.toFixed(4) : 0,
       y_px: mapPx ? +mapPx.y.toFixed(4) : 0,
       yaw_deg: mapYaw,
+      is_origin: !!w.isOrigin,
       createdFrom: w.createdFrom,
       type: w.type
     };
@@ -3918,14 +4054,28 @@ function applyLoadedWaypoints(data) {
     
     waypoints.push({
       id: w.id,
+      name: w.name,
       x_m: ox_m,
       y_m: oy_m,
       yaw_deg: odom_yaw_deg,
       yaw_rad: odom_yaw_deg * Math.PI / 180,
       createdFrom: w.createdFrom || 'WP',
-      type: w.type || 'WP'
+      type: w.type === 'ORIGIN' ? 'WP' : (w.type || 'WP'),
+      isOrigin: !!w.is_origin || w.type === 'ORIGIN'
     });
   });
+
+  const originIdx = getOriginWaypointIndex();
+  if (originIdx > 0) {
+    const originWp = waypoints.splice(originIdx, 1)[0];
+    clearOriginFlag();
+    originWp.isOrigin = true;
+    waypoints.unshift(originWp);
+  } else if (originIdx === 0) {
+    clearOriginFlag();
+    waypoints[0].isOrigin = true;
+  }
+  normalizeWaypointIds();
   
   updateWPList();
   renderMap();
@@ -4614,6 +4764,7 @@ function addToSequence(itemId, itemType, itemData) {
   container.appendChild(seqItem);
   
   sequence.push({id: itemId, seqKey, type: itemType, data: itemData});
+  syncSequenceOriginCard();
   renderMap();
 }
 
@@ -4622,11 +4773,8 @@ function removeFromSequence(btn) {
   const idx = sequence.findIndex(s => s.seqKey === item.dataset.seqKey);
   if (idx !== -1) sequence.splice(idx, 1);
   item.remove();
-  
-  const container = document.getElementById('seqList');
-  if (container.children.length === 0) {
-    container.innerHTML = '<div class="seq-empty" style="color:var(--muted);text-align:center;padding:20px 8px;font-size:11px;">Drag items from<br>WP DATA to arrange<br>execution sequence</div>';
-  }
+
+  syncSequenceOriginCard();
   renderMap();
 }
 
@@ -4973,7 +5121,9 @@ function removeWaypointFromNestedCase(event, seqItemId, caseNum, wpIndex, nested
 
 function clearSeq() {
   sequence = [];
-  document.getElementById('seqList').innerHTML = '<div class="seq-empty" style="color:var(--muted);text-align:center;padding:20px 8px;font-size:11px;">Drag items from<br>WP DATA to arrange<br>execution sequence</div>';
+  const list = document.getElementById('seqList');
+  list.querySelectorAll('.seq-item').forEach(item => item.remove());
+  syncSequenceOriginCard();
   renderMap();
 }
 
@@ -5061,6 +5211,8 @@ function setupSeqReorderDrop() {
   });
 }
 setupSeqReorderDrop();
+syncSequenceOriginCard();
+updateWPList();
 
 const seqContainer = document.getElementById('seqList');
 if (seqContainer) {
@@ -5334,24 +5486,18 @@ function updateMissionPanel(d){
   if(state==='done') {
     showToast('🏁 Mission complete!');
     // Clear waypoints when mission is done
-    waypoints = [];
-    updateWPList();
-    renderMap();
+    clearWP();
   }
   if(state==='error')     showToast('❌ Mission error — check status');
   if(state==='cancelled') {
     showToast('⏹ Mission cancelled');
     // Clear waypoints when mission is cancelled
-    waypoints = [];
-    updateWPList();
-    renderMap();
+    clearWP();
   }
   if(state==='success') {
     showToast('✅ Mission successful!');
     // Clear waypoints when mission is successful
-    waypoints = [];
-    updateWPList();
-    renderMap();
+    clearWP();
   }
 }
 
