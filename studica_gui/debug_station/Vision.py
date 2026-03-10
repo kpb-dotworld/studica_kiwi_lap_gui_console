@@ -369,7 +369,7 @@ def main():
         print("║     OBJECT DETECTOR          ║")
         print("╠══════════════════════════════╣")
         print("║  1 → Auto Capture & Train    ║")
-        print("║  2 → Detect                  ║")
+        print("║  2 → detect                  ║")
         print("║  3 → Show trained objects    ║")
         print("║  4 → Clear database          ║")
         print("║  Q → Quit                    ║")
