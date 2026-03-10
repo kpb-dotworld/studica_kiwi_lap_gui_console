@@ -346,6 +346,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 body.is-resizing-sequence,body.is-resizing-sequence *{cursor:col-resize !important;}
 .seq-item{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:10px 12px;background:linear-gradient(180deg,rgba(17,27,40,.98),rgba(10,18,28,.96));border:1px solid rgba(41,67,92,.95);border-radius:10px;cursor:grab;transition:all 0.2s;user-select:none;min-width:0;overflow:hidden;}
 .seq-item:hover{background:var(--panel2);border-color:var(--accent);}
+.seq-item.is-selected{border-color:rgba(0,212,255,.78);background:linear-gradient(180deg,rgba(0,212,255,.16),rgba(10,18,28,.96));box-shadow:0 0 0 1px rgba(0,212,255,.14) inset,0 0 20px rgba(0,212,255,.12);}
 .seq-item:active{cursor:grabbing;}
 .seq-item.dragging{opacity:0.6;background:var(--panel2);}
 .seq-item-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;width:100%;min-width:0;}
@@ -374,6 +375,7 @@ body.is-resizing-sequence,body.is-resizing-sequence *{cursor:col-resize !importa
 .seq-cond-dropzone.dragover{background:rgba(77,255,145,.1);border-color:#4dff91;}
 .seq-cond-empty{display:flex;align-items:center;justify-content:center;min-height:48px;color:rgba(189,239,255,.72);font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:6px;}
 .seq-case-chip{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;background:rgba(77,255,145,.1);border:1px solid rgba(0,212,255,.38);border-radius:8px;font-size:11px;color:var(--accent);min-width:0;}
+.seq-case-chip.is-selected{border-color:rgba(0,212,255,.82);background:rgba(0,212,255,.16);color:#e9fbff;box-shadow:0 0 0 1px rgba(0,212,255,.14) inset;}
 .seq-case-chip-header{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;}
 .seq-case-chip-title,.seq-case-chip-label{min-width:0;overflow-wrap:anywhere;line-height:1.4;}
 .seq-case-chip-title{font-weight:700;}
@@ -1853,6 +1855,19 @@ function renderMap(){
     mctx.fillText(seqNum.toString(), p.x, p.y);
     mctx.restore();
   });
+
+  const selectedWaypoint = getSelectedWaypoint();
+  if (selectedWaypoint && isSpatialWaypoint(selectedWaypoint)) {
+    drawWaypointSelectionOverlay(selectedWaypoint, 'rgba(0,212,255,.98)', 20, 3.2);
+  }
+
+  if (Number.isInteger(highlightedWpIdx) && highlightedWpIdx >= 0 && highlightedWpIdx < waypoints.length) {
+    const highlightedWaypoint = waypoints[highlightedWpIdx];
+    if (isSpatialWaypoint(highlightedWaypoint)) {
+      drawWaypointSelectionOverlay(highlightedWaypoint, 'rgba(77,255,145,.96)', selectedWaypoint === highlightedWaypoint ? 24 : 17, selectedWaypoint === highlightedWaypoint ? 2.4 : 2.8);
+    }
+  }
+
 // Draw a small triangle (like a dot) with a black base, facing up at yaw=0
 function drawSmallTriangle(ctx, cx, cy, yaw, sz, col) {
   ctx.save(); ctx.translate(cx, cy); ctx.rotate(yaw);
@@ -2086,6 +2101,19 @@ function drawArrow(ctx,ox,oy,deg,len,col,lw){
   ctx.lineTo(ex-hl*Math.cos(a-ha),ey-hl*Math.sin(a-ha));
   ctx.lineTo(ex-hl*Math.cos(a+ha),ey-hl*Math.sin(a+ha));
   ctx.closePath(); ctx.fill(); ctx.restore();
+}
+
+function drawWaypointSelectionOverlay(wp, strokeStyle, radius, lineWidth) {
+  const point = wpToCanvas(wp);
+  if (!point) return;
+
+  mctx.save();
+  mctx.beginPath();
+  mctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
+  mctx.strokeStyle = strokeStyle;
+  mctx.lineWidth = lineWidth;
+  mctx.stroke();
+  mctx.restore();
 }
 
 // origin click
@@ -2725,9 +2753,62 @@ function syncSelectedWaypointCard(scrollIntoView = false) {
   }
 }
 
-function setSelectedWaypoint(idx, scrollIntoView = false) {
+function normalizeSelectionSyncOptions(options = false) {
+  if (typeof options === 'object' && options !== null) {
+    return {
+      scrollWaypoint: !!options.scrollWaypoint,
+      scrollSequence: !!options.scrollSequence
+    };
+  }
+
+  return {
+    scrollWaypoint: !!options,
+    scrollSequence: false
+  };
+}
+
+function getSelectedWaypoint() {
+  return Number.isInteger(selectedWpIdx) && selectedWpIdx >= 0 && selectedWpIdx < waypoints.length
+    ? waypoints[selectedWpIdx]
+    : null;
+}
+
+function findSpatialWaypointIndexById(wpId) {
+  return waypoints.findIndex(wp => isSpatialWaypoint(wp) && wp.id === wpId);
+}
+
+function syncSelectedSequenceCards(scrollIntoView = false) {
+  const selectedWaypoint = getSelectedWaypoint();
+  let firstMatch = null;
+
+  document.querySelectorAll('#seqList .seq-item[data-seq-key]').forEach(card => {
+    const seqEntry = sequence.find(item => item.seqKey === card.dataset.seqKey);
+    const matchesSelection = !!selectedWaypoint
+      && !!seqEntry
+      && seqEntry.type === 'waypoint'
+      && (seqEntry.data === selectedWaypoint || seqEntry.data?.id === selectedWaypoint.id);
+
+    card.classList.toggle('is-selected', matchesSelection);
+    if (!firstMatch && matchesSelection) firstMatch = card;
+  });
+
+  document.querySelectorAll('#seqList .seq-case-chip[data-linked-wp-id]').forEach(chip => {
+    const linkedWpId = Number(chip.dataset.linkedWpId);
+    const matchesSelection = !!selectedWaypoint && linkedWpId === selectedWaypoint.id;
+    chip.classList.toggle('is-selected', matchesSelection);
+    if (!firstMatch && matchesSelection) firstMatch = chip;
+  });
+
+  if (scrollIntoView && firstMatch) {
+    firstMatch.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+}
+
+function setSelectedWaypoint(idx, options = false) {
+  const selectionOptions = normalizeSelectionSyncOptions(options);
   selectedWpIdx = Number.isInteger(idx) && idx >= 0 && idx < waypoints.length ? idx : null;
-  syncSelectedWaypointCard(scrollIntoView);
+  syncSelectedWaypointCard(selectionOptions.scrollWaypoint);
+  syncSelectedSequenceCards(selectionOptions.scrollSequence);
 }
 
 function pulseWaypointHighlight(idx, scrollIntoView = false) {
@@ -2769,7 +2850,7 @@ function beginWaypointEdit(idx, options = {}) {
   wpOrientation = wp.yaw_rad;
   wpDragging = false;
   mapCanvas.style.cursor = 'crosshair';
-  setSelectedWaypoint(idx, scrollIntoView);
+  setSelectedWaypoint(idx, { scrollWaypoint: scrollIntoView, scrollSequence: true });
   pulseWaypointHighlight(idx, scrollIntoView);
   updateWaypointDisplay();
   updateWaypointModeUI();
@@ -2777,6 +2858,17 @@ function beginWaypointEdit(idx, options = {}) {
 
   const wpName = wp.name || `WP ${idx + 1}`;
   showToast(`📝 Editing ${wpName} — drag to move, arrows to rotate, rename or favourite from WP DATA, ENTER to save`);
+}
+
+function clearWaypointInteractionState() {
+  wpEditMode = false;
+  wpEditIndex = -1;
+  wpDragging = false;
+  wpSelectedX = null;
+  wpSelectedY = null;
+  wpMapClickActive = simEditMode;
+  mapCanvas.style.cursor = simEditMode ? 'crosshair' : 'default';
+  updateWaypointModeUI();
 }
 
 function selectWaypointFromList(idx) {
@@ -2791,6 +2883,7 @@ function updateWPList(){
   if(!waypoints.length){
     el.innerHTML = '<div class="wp-empty">No waypoints.<br>Drive robot → press <b>[P]</b></div>';
     selectedWpIdx = null;
+    syncSelectedSequenceCards();
     syncSequenceOriginCard();
     return;
   }
@@ -2800,6 +2893,7 @@ function updateWPList(){
   if(!visibleWaypoints.length){
     el.innerHTML = '<div class="wp-empty">No favourite waypoints.<br>Mark entries with <b>⭐</b> to pin them here.</div>';
     syncSelectedWaypointCard();
+    syncSelectedSequenceCards();
     syncSequenceOriginCard();
     return;
   }
@@ -2860,6 +2954,7 @@ function updateWPList(){
   });
   el.innerHTML = cards.join('');
   syncSelectedWaypointCard();
+  syncSelectedSequenceCards();
   syncSequenceOriginCard();
 }
 
@@ -3714,6 +3809,44 @@ mapCanvas.addEventListener('dblclick', e=>{
   }
   // If we get here, no waypoint was close enough
   console.log('[DBLCLICK] No waypoint found near click');
+});
+
+function findSpatialWaypointAtCanvasPoint(canvasX, canvasY, maxDistance = 40) {
+  let closestIdx = -1;
+  let closestDistance = maxDistance;
+
+  for (let i = 0; i < waypoints.length; i++) {
+    const wp = waypoints[i];
+    if (!isSpatialWaypoint(wp)) continue;
+
+    const point = wpToCanvas(wp);
+    if (!point) continue;
+
+    const distance = Math.hypot(canvasX - point.x, canvasY - point.y);
+    if (distance <= closestDistance) {
+      closestDistance = distance;
+      closestIdx = i;
+    }
+  }
+
+  return closestIdx;
+}
+
+mapCanvas.addEventListener('click', e=>{
+  if (settingOrig || wpMapClickActive || !mapW || !mapH) return;
+
+  const r = mapCanvas.getBoundingClientRect();
+  const cssScaleX = mapCanvas.width / r.width;
+  const cssScaleY = mapCanvas.height / r.height;
+  const clickX = (e.clientX - r.left) * cssScaleX;
+  const clickY = (e.clientY - r.top) * cssScaleY;
+  const idx = findSpatialWaypointAtCanvasPoint(clickX, clickY);
+
+  if (idx === -1) return;
+
+  expandSidebarSection('waypoints');
+  setSelectedWaypoint(idx, { scrollWaypoint: true, scrollSequence: true });
+  pulseWaypointHighlight(idx, true);
 });
 
 // Handle arrow keys for waypoint orientation
@@ -5948,7 +6081,10 @@ function addToSequence(itemId, itemType, itemData) {
   removeBtn.textContent = '✕';
   removeBtn.style.opacity = '0';
   removeBtn.style.transition = 'opacity 0.2s';
-  removeBtn.onclick = () => removeFromSequence(removeBtn);
+  removeBtn.onclick = (event) => {
+    event.stopPropagation();
+    removeFromSequence(removeBtn);
+  };
   
   headerDiv.appendChild(leftGroup);
   headerDiv.appendChild(removeBtn);
@@ -6053,6 +6189,7 @@ function addToSequence(itemId, itemType, itemData) {
   
   seqItem.addEventListener('dragstart', dragStart);
   seqItem.addEventListener('dragend', dragEnd);
+  seqItem.addEventListener('click', () => selectWaypointFromSequence(seqKey, true));
   seqItem.draggable = seqReorderMode;
   seqItem.style.cursor = seqReorderMode ? 'grab' : 'default';
   seqItem.addEventListener('mouseenter', () => { 
@@ -6068,6 +6205,7 @@ function addToSequence(itemId, itemType, itemData) {
   container.appendChild(seqItem);
   
   sequence.push({id: itemId, seqKey, type: itemType, data: itemData});
+  syncSelectedSequenceCards();
   syncSequenceOriginCard();
   renderMap();
 }
@@ -6078,6 +6216,7 @@ function removeFromSequence(btn) {
   if (idx !== -1) sequence.splice(idx, 1);
   item.remove();
 
+  syncSelectedSequenceCards();
   syncSequenceOriginCard();
   renderMap();
 }
@@ -6263,6 +6402,7 @@ function refreshConditionalSeqItem(seqItem, cases) {
   seqItem.dataset.cases = JSON.stringify(cases);
   const condWrapper = seqItem.querySelector('.seq-conditional-wrapper');
   if (!condWrapper) {
+    syncSelectedSequenceCards();
     renderMap();
     return;
   }
@@ -6270,6 +6410,7 @@ function refreshConditionalSeqItem(seqItem, cases) {
   const caseIdx = parseInt(condWrapper.dataset.caseIndex, 10) || 0;
   const caseInfo = getCaseNumberAtIndex(cases, caseIdx);
   updateConditionalUI(seqItem, caseInfo.caseIdx, caseInfo.caseNum, cases);
+  syncSelectedSequenceCards();
   renderMap();
 }
 
@@ -6379,7 +6520,7 @@ function renderConditionalEntries(seqItem, parentPathValue, caseNum, entries) {
       </div>`;
     }
 
-    return `<div class="seq-case-chip" data-wp-index="${entryIndex}" data-case-num="${caseNum}">
+    return `<div class="seq-case-chip" data-wp-index="${entryIndex}" data-case-num="${caseNum}" data-linked-wp-id="${entry.wpId}" onclick="selectWaypointFromSequenceById(${entry.wpId}, true)">
       <span class="seq-case-chip-label">${escapeHtml(getConditionalWaypointLabel(entry))}</span>
       <button class="seq-chip-remove" type="button" onclick="removeConditionalEntry(event, '${seqItem.dataset.seqKey}', '${parentPathValue}', ${caseNum}, ${entryIndex})" title="Delete waypoint">✕</button>
     </div>`;
@@ -6488,10 +6629,37 @@ function updateConditionalCaseName(seqItemId, entryPathValue, nestedCaseNum, val
   target.seqItem.dataset.cases = JSON.stringify(target.cases);
 }
 
+function selectWaypointFromSequence(seqKey, scrollIntoView = true) {
+  const seqEntry = sequence.find(item => item.seqKey === seqKey);
+  if (!seqEntry || seqEntry.type !== 'waypoint' || !isSpatialWaypoint(seqEntry.data)) return;
+
+  let idx = waypoints.indexOf(seqEntry.data);
+  if (idx === -1) {
+    idx = findSpatialWaypointIndexById(seqEntry.data.id);
+  }
+  if (idx === -1) return;
+
+  expandSidebarSection('waypoints');
+  clearWaypointInteractionState();
+  setSelectedWaypoint(idx, { scrollWaypoint: scrollIntoView, scrollSequence: scrollIntoView });
+  pulseWaypointHighlight(idx, scrollIntoView);
+}
+
+function selectWaypointFromSequenceById(wpId, scrollIntoView = true) {
+  const idx = findSpatialWaypointIndexById(Number(wpId));
+  if (idx === -1) return;
+
+  expandSidebarSection('waypoints');
+  clearWaypointInteractionState();
+  setSelectedWaypoint(idx, { scrollWaypoint: scrollIntoView, scrollSequence: scrollIntoView });
+  pulseWaypointHighlight(idx, scrollIntoView);
+}
+
 function clearSeq() {
   sequence = [];
   const list = document.getElementById('seqList');
   list.querySelectorAll('.seq-item').forEach(item => item.remove());
+  syncSelectedSequenceCards();
   syncSequenceOriginCard();
   renderMap();
 }
@@ -6503,6 +6671,7 @@ function reverseSeq() {
   const list = document.getElementById('seqList');
   const items = [...list.querySelectorAll('.seq-item')];
   items.reverse().forEach(el => list.appendChild(el));
+  syncSelectedSequenceCards();
   renderMap();
 }
 
