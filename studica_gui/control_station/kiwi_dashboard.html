@@ -207,6 +207,8 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .waypoint-secondary-btn span:first-child{font-size:15px;line-height:1;}
 .waypoint-secondary-btn.anchor-btn{border-color:rgba(0,212,255,.45);color:#bdefff;}
 .waypoint-secondary-btn.favourite-btn{border-color:rgba(255,213,79,.38);color:#ffe79b;}
+.waypoint-secondary-btn.favourite-btn.is-active{border-color:rgba(255,213,79,.92);background:linear-gradient(180deg,rgba(255,213,79,.22),rgba(255,193,7,.1));color:#fff1bc;box-shadow:0 0 0 1px rgba(255,213,79,.16) inset,0 10px 24px rgba(255,193,7,.12);}
+.waypoint-secondary-btn.favourite-btn.is-active:hover{border-color:var(--yellow);background:linear-gradient(180deg,rgba(255,213,79,.28),rgba(255,193,7,.14));color:#fff7de;}
 .waypoint-utility-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .waypoint-utility-btn{width:100%;padding:9px 12px;border-radius:9px;border:1px solid rgba(36,67,92,.9);background:rgba(8,20,33,.76);color:var(--muted2);font-family:inherit;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:border-color .15s ease,background .15s ease,color .15s ease;}
 .waypoint-utility-btn:hover{border-color:var(--accent);background:rgba(0,212,255,.08);color:var(--accent);}
@@ -305,16 +307,6 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .action-dropdown-item{padding:10px 12px;font-family:inherit;font-size:12px;cursor:pointer;border:none;background:transparent;color:#ce93d8;text-align:left;letter-spacing:.5px;transition:all .15s;border-bottom:1px solid var(--border);white-space:nowrap;}
 .action-dropdown-item:last-child{border-bottom:none;}
 .action-dropdown-item:hover{background:rgba(156,39,176,.2);color:#fff;}
-
-/* FAVOURITE WAYPOINTS DROPDOWN */
-.fav-wp-dropdown{display:none;background:var(--panel2);border:1px solid rgba(255,213,79,.4);border-radius:10px;margin-top:0;max-height:220px;overflow-y:auto;box-shadow:none;}
-.fav-wp-dropdown.open{display:block;}
-.fav-wp-list{padding:8px 0;}
-.fav-wp-item{padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;transition:all .15s;color:var(--text2);}
-.fav-wp-item:last-child{border-bottom:none;}
-.fav-wp-item:hover{background:rgba(255,193,7,.15);color:var(--text1);}
-.fav-wp-item-name{font-weight:600;color:var(--yellow);font-size:12px;}
-.fav-wp-item-detail{font-size:10px;color:var(--muted2);margin-top:2px;}
 
 /* WAYPOINT MODE CHOICE popup */
 .wpmode-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1200;display:none;align-items:center;justify-content:center;}
@@ -607,10 +599,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
               </button>
               <div class="waypoint-secondary-grid">
                 <button class="waypoint-secondary-btn anchor-btn" onclick="openAnchorListPopup()"><span>📍</span><span>Saved Anchor</span></button>
-                <button class="waypoint-secondary-btn favourite-btn" onclick="openFavouriteWaypoints()"><span>⭐</span><span>Favourite WP</span></button>
-              </div>
-              <div class="fav-wp-dropdown" id="favWpDropdown">
-                <div class="fav-wp-list" id="favWpList"></div>
+                <button class="waypoint-secondary-btn favourite-btn" id="favouriteWpToggleBtn" onclick="openFavouriteWaypoints()"><span>⭐</span><span>Favourite WP</span></button>
               </div>
               <div class="waypoint-utility-row">
                 <button class="waypoint-utility-btn" onclick="openSaveWPPopup()">Save</button>
@@ -2491,6 +2480,7 @@ let tmpWaypointData = null;
 let tmpWpIsFavourite = false;
 let favouriteWaypoints = [];
 let wpMetadataEditIndex = -1;
+let favouriteFilterActive = false;
 
 function setWpFavouriteButtonState(isFavourite) {
   const btn = document.getElementById('wpFavouriteBtn');
@@ -2523,6 +2513,15 @@ function syncFavouriteWaypointEntry(wp, previousSnapshot = null) {
   if (wp && wp.isFavourite) {
     favouriteWaypoints.push({ ...wp });
   }
+  saveFavouriteWaypointsToStorage();
+}
+
+function updateFavouriteFilterButton() {
+  const btn = document.getElementById('favouriteWpToggleBtn');
+  if (!btn) return;
+  btn.classList.toggle('is-active', favouriteFilterActive);
+  btn.setAttribute('aria-pressed', favouriteFilterActive ? 'true' : 'false');
+  btn.title = favouriteFilterActive ? 'Showing favourite waypoints only' : 'Show favourite waypoints only';
 }
 
 function openWaypointMetadataEditor(idx) {
@@ -2768,15 +2767,25 @@ function selectWaypointFromList(idx) {
 
 function updateWPList(){
   const el=document.getElementById('wpList');
+  updateFavouriteFilterButton();
   if(!waypoints.length){
     el.innerHTML = '<div class="wp-empty">No waypoints.<br>Drive robot → press <b>[P]</b></div>';
     selectedWpIdx = null;
     syncSequenceOriginCard();
     return;
   }
+  const visibleWaypoints = favouriteFilterActive
+    ? waypoints.map((wp, i) => ({ wp, i })).filter(({ wp }) => isSpatialWaypoint(wp) && wp.isFavourite)
+    : waypoints.map((wp, i) => ({ wp, i }));
+  if(!visibleWaypoints.length){
+    el.innerHTML = '<div class="wp-empty">No favourite waypoints.<br>Mark entries with <b>⭐</b> to pin them here.</div>';
+    syncSelectedWaypointCard();
+    syncSequenceOriginCard();
+    return;
+  }
   let wpNum = 0;
   const cards = [];
-  waypoints.forEach((wp, i) => {
+  visibleWaypoints.forEach(({ wp, i }) => {
     // Action items render differently
     if(wp.type === 'ACTION'){
       const actionLabels = {detect_color: '🔍 Detect Colour', detect_qr: '📱 Detect QR'};
@@ -2978,52 +2987,15 @@ function toggleSidebarSection(sectionName) {
 
   section.classList.toggle('is-expanded');
   syncSidebarSection(section);
-
-  if (sectionName === 'waypoints' && !section.classList.contains('is-expanded')) {
-    const favDropdown = document.getElementById('favWpDropdown');
-    if (favDropdown) favDropdown.classList.remove('open');
-  }
 }
 
 document.querySelectorAll('.panel-accordion').forEach(syncSidebarSection);
 
 function openFavouriteWaypoints(){
   expandSidebarSection('waypoints');
-  const dropdown = document.getElementById('favWpDropdown');
-  const list = document.getElementById('favWpList');
-  if (!dropdown || !list) return;
-  
-  if (dropdown.classList.contains('open')) {
-    dropdown.classList.remove('open');
-    return;
-  }
-  
-  if (favouriteWaypoints.length === 0) {
-    showToast('⭐ No favourite waypoints yet. Mark waypoints with ⭐ when naming them!');
-    return;
-  }
-  
-  // Build list of favourite waypoints with save button at top
-  let html = '<button class="fav-wp-save-btn" onclick="saveFavouriteWaypointsToStorage()" style="width:100%;padding:10px;margin:8px;background:rgba(76,175,80,.2);border:1px solid #4caf50;color:#4caf50;border-radius:4px;cursor:pointer;font-weight:600;transition:all .2s;">💾 Save All to Storage</button>';
-  for (let i = 0; i < favouriteWaypoints.length; i++) {
-    const fav = favouriteWaypoints[i];
-    html += `<div class="fav-wp-item" onclick="selectFavouriteWP(${i})">
-      <div class="fav-wp-item-name">⭐ ${fav.name}</div>
-      <div class="fav-wp-item-detail">x:${fav.x_m.toFixed(2)} y:${fav.y_m.toFixed(2)} m | yaw:${fav.yaw_deg.toFixed(1)}°</div>
-    </div>`;
-  }
-  list.innerHTML = html;
-  dropdown.classList.add('open');
-}
-
-// Select a favourite waypoint from dropdown
-function selectFavouriteWP(index) {
-  const fav = favouriteWaypoints[index];
-  if (!fav) return;
-  showToast(`✓ Selected favourite: ${fav.name}`);
-  document.getElementById('favWpDropdown').classList.remove('open');
-  // Optional: Add to sequence or highlight on map
-  // highlightWaypoint(waypoints.indexOf(fav));
+  favouriteFilterActive = !favouriteFilterActive;
+  updateWPList();
+  showToast(favouriteFilterActive ? '⭐ Favourite filter enabled' : '⭐ Favourite filter cleared');
 }
 // ── ACTION POPUP ──────────────────────────────────────────────────────────────
 function toggleActionDropdown(){
