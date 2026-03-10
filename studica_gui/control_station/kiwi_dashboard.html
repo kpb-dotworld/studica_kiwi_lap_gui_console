@@ -210,6 +210,14 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .action-item-btn:hover{background:rgba(156,39,176,.25);}
 .action-close-btn{margin-top:12px;padding:8px 16px;font-family:inherit;font-size:11px;cursor:pointer;border-radius:4px;border:1px solid #555;background:rgba(85,85,85,.1);color:#aaa;letter-spacing:.5px;transition:all .15s;}
 .action-close-btn:hover{background:rgba(85,85,85,.2);}
+
+/* Action Dropdown Panel */
+.action-dropdown{position:fixed;background:var(--panel2);border:1px solid #9c27b0;border-radius:4px;z-index:1100;display:none;flex-direction:column;gap:0;box-shadow:0 4px 12px rgba(0,0,0,.5);transition:all .2s ease;}
+.action-dropdown.open{display:flex;visibility:visible;}
+.action-dropdown-item{padding:10px 12px;font-family:inherit;font-size:12px;cursor:pointer;border:none;background:transparent;color:#ce93d8;text-align:left;letter-spacing:.5px;transition:all .15s;border-bottom:1px solid var(--border);white-space:nowrap;}
+.action-dropdown-item:last-child{border-bottom:none;}
+.action-dropdown-item:hover{background:rgba(156,39,176,.2);color:#fff;}
+
 /* WAYPOINT MODE CHOICE popup */
 .wpmode-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1200;display:none;align-items:center;justify-content:center;}
 .wpmode-overlay.open{display:flex;}
@@ -438,11 +446,19 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
     <div class="wp-sidebar" style="width:240px;min-width:200px;max-width:280px;background:var(--panel2);display:flex;flex-direction:column;gap:0;box-shadow:1px 0 0 var(--border);">
 
 
-    <div style="display:flex;flex:1;gap:0;overflow:hidden;border-bottom:1px solid var(--border);">
+    <div style="display:flex;flex:1;gap:0;overflow:visible;border-bottom:1px solid var(--border);position:relative;">
       <!-- WP DATA PANEL -->
-      <div class="sec" style="border:none;display:flex;flex-direction:column;min-height:0;flex:1;border-right:1px solid var(--border);">
+      <div class="sec" style="border:none;display:flex;flex-direction:column;min-height:0;flex:1;border-right:1px solid var(--border);position:relative;">
         <div class="sec-title" style="margin:0;margin-bottom:8px;">WP DATA [P]</div>
-        <button class="action-btn" onclick="openActionPopup()" style="width:100%;margin-bottom:6px;">⚡ Action</button>
+        <button class="action-btn" onclick="toggleActionDropdown()" style="width:100%;margin-bottom:6px;">⚡ Action</button>
+        
+        <!-- ACTION DROPDOWN PANEL -->
+        <div class="action-dropdown" id="actionDropdown">
+          <button class="action-dropdown-item" onclick="addAction('detect_color')">🔍 Detect Colour</button>
+          <button class="action-dropdown-item" onclick="addAction('detect_qr')">📱 Detect QR</button>
+          <button class="action-dropdown-item" onclick="openAnchorListPopup()">📍 Add Saved Anchor</button>
+        </div>
+        
         <button class="addwp-btn" onclick="handleQKeyPress()" style="width:100%;margin-bottom:8px;">WP</button>
         <div style="display:flex;gap:4px;align-items:center;justify-content:flex-end;margin-bottom:8px;">
           <button class="clr-btn" onclick="clearWP()">✕ Clear</button>
@@ -1136,17 +1152,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 </div>
 
 <!-- ACTION POPUP -->
-<div class="action-overlay" id="actionOverlay">
-  <div class="action-box">
-    <div class="action-title">⚡ Add Action to Mission</div>
-    <div class="action-list">
-      <button class="action-item-btn" onclick="addAction('detect_color')">🔍 Detect Colour</button>
-      <button class="action-item-btn" onclick="addAction('detect_qr')">📱 Detect QR</button>
-      <button class="action-item-btn" onclick="openAnchorListPopup()">📍 Add Saved Anchor</button>
-    </div>
-    <button class="action-close-btn" onclick="closeActionPopup()">✕ Cancel</button>
-  </div>
-</div>
+<!-- Action Overlay removed — now using dropdown panel -->
 
 <!-- ANCHOR LIST POPUP -->
 <div class="action-overlay" id="anchorListOverlay">
@@ -2373,17 +2379,33 @@ function delWP(i){ waypoints.splice(i,1); waypoints.forEach((w,j)=>w.id=j+1); up
 function clearWP(){ if(!waypoints.length)return; waypoints=[]; updateWPList(); renderMap(); }
 
 // ── ACTION POPUP ──────────────────────────────────────────────────────────────
-function openActionPopup(){
-  document.getElementById('actionOverlay').classList.add('open');
+function toggleActionDropdown(){
+  const dropdown = document.getElementById('actionDropdown');
+  const actionBtn = document.querySelector('.action-btn');
+  
+  if (!dropdown || !actionBtn) return;
+  
+  dropdown.classList.toggle('open');
+  
+  if (dropdown.classList.contains('open')) {
+    // Position dropdown below the button
+    const rect = actionBtn.getBoundingClientRect();
+    dropdown.style.left = rect.left + 'px';
+    dropdown.style.top = (rect.bottom + 4) + 'px';
+    dropdown.style.width = rect.width + 'px';
+  }
 }
-function closeActionPopup(){
-  document.getElementById('actionOverlay').classList.remove('open');
+
+function closeActionDropdown(){
+  const dropdown = document.getElementById('actionDropdown');
+  if (dropdown) dropdown.classList.remove('open');
 }
+
 function addAction(node){
   // Prevent duplicate actions
   if (waypoints.some(w => w.type === 'ACTION' && w.node === node)) {
     showToast('⚠️ Action "' + node + '" already exists in WP DATA');
-    closeActionPopup();
+    closeActionDropdown();
     return;
   }
   waypoints.push({
@@ -2391,7 +2413,7 @@ function addAction(node){
     type: 'ACTION',
     node: node
   });
-  closeActionPopup();
+  closeActionDropdown();
   updateWPList();
   renderMap();
   showToast('⚡ Action added: ' + node);
@@ -2399,7 +2421,7 @@ function addAction(node){
 
 // ── ANCHOR LIST POPUP ─────────────────────────────────────────────────────────
 function openAnchorListPopup(){
-  closeActionPopup();
+  closeActionDropdown();
   document.getElementById('anchorListOverlay').classList.add('open');
   // Request anchor list from server
   send({type: 'list_anchors'});
