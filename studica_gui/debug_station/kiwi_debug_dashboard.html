@@ -869,6 +869,253 @@ html, body {
   box-shadow: 0 0 14px rgba(255,214,0,0.25);
 }
 
+/* ── Countdown Timer Header Button ── */
+.countdown-timer-btn {
+  background: transparent;
+  border: 1px solid var(--teal);
+  color: var(--teal);
+  padding: 7px 18px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  position: relative;
+}
+.countdown-timer-btn:hover {
+  background: rgba(0,255,213,0.1);
+  box-shadow: 0 0 14px rgba(0,255,213,0.3);
+}
+.countdown-timer-btn.running {
+  border-color: var(--green);
+  color: var(--green);
+  animation: timerPulse 1.2s ease-in-out infinite;
+}
+.countdown-timer-btn.running:hover { background: rgba(57,255,136,0.1); }
+.countdown-timer-btn.halfwarn {
+  border-color: var(--yellow);
+  color: var(--yellow);
+  animation: timerPulse 0.8s ease-in-out infinite;
+}
+.countdown-timer-btn.expired {
+  border-color: var(--red);
+  color: var(--red);
+  animation: timerPulse 0.4s ease-in-out infinite;
+}
+@keyframes timerPulse {
+  0%,100% { box-shadow: 0 0 6px currentColor; }
+  50%      { box-shadow: 0 0 20px currentColor; }
+}
+
+/* ── Countdown Setup Modal ── */
+#countdownModal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(6px);
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+#countdownModal.open { display: flex; }
+
+.cd-modal-box {
+  background: var(--panel);
+  border: 1px solid var(--teal);
+  border-radius: 14px;
+  padding: 32px 36px;
+  min-width: 360px;
+  box-shadow: 0 0 50px rgba(0,255,213,0.2), 0 20px 60px rgba(0,0,0,0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: relative;
+}
+.cd-modal-title {
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--teal);
+  text-shadow: 0 0 12px rgba(0,255,213,0.5);
+  text-align: center;
+}
+.cd-inputs-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.cd-input-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+.cd-input-group label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--muted2);
+  text-transform: uppercase;
+}
+.cd-input-group input {
+  width: 72px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 26px;
+  font-weight: 800;
+  text-align: center;
+  padding: 10px 0;
+  outline: none;
+  transition: border-color 0.2s;
+  font-family: 'Courier New', monospace;
+}
+.cd-input-group input:focus { border-color: var(--teal); box-shadow: 0 0 10px rgba(0,255,213,0.2); }
+.cd-colon { font-size: 28px; font-weight: 900; color: var(--teal); margin-top: 18px; }
+.cd-btn-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.cd-btn {
+  padding: 9px 24px;
+  border-radius: 20px;
+  border: none;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.cd-btn.start {
+  background: var(--teal);
+  color: #000;
+}
+.cd-btn.start:hover { filter: brightness(1.2); box-shadow: 0 0 20px rgba(0,255,213,0.4); }
+.cd-btn.cancel {
+  background: transparent;
+  border: 1px solid var(--muted2);
+  color: var(--muted2);
+}
+.cd-btn.cancel:hover { border-color: var(--text); color: var(--text); }
+
+/* ── Floating Countdown Display ── */
+#cdFloating {
+  position: fixed;
+  top: 68px;
+  right: 18px;
+  z-index: 8888;
+  background: var(--panel);
+  border: 1px solid var(--teal);
+  border-radius: 12px;
+  padding: 10px 18px;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.5), 0 0 20px rgba(0,255,213,0.15);
+  min-width: 180px;
+}
+#cdFloating.show { display: flex; }
+#cdFloating.halfwarn { border-color: var(--yellow); box-shadow: 0 4px 30px rgba(0,0,0,0.5), 0 0 20px rgba(255,214,0,0.25); }
+#cdFloating.expired  { border-color: var(--red);    box-shadow: 0 4px 30px rgba(0,0,0,0.5), 0 0 20px rgba(255,51,85,0.35); }
+
+.cdf-label {
+  font-size: 8px;
+  letter-spacing: 2.5px;
+  color: var(--muted2);
+  text-transform: uppercase;
+}
+.cdf-time {
+  font-size: 28px;
+  font-weight: 900;
+  font-family: 'Courier New', monospace;
+  color: var(--teal);
+  letter-spacing: 2px;
+  line-height: 1;
+}
+#cdFloating.halfwarn .cdf-time { color: var(--yellow); }
+#cdFloating.expired  .cdf-time { color: var(--red); animation: timerPulse 0.4s ease-in-out infinite; }
+.cdf-ms {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted2);
+  font-family: 'Courier New', monospace;
+  letter-spacing: 1px;
+  min-width: 40px;
+  text-align: center;
+}
+.cdf-stop-btn {
+  margin-top: 4px;
+  background: transparent;
+  border: 1px solid var(--red);
+  color: var(--red);
+  border-radius: 10px;
+  padding: 4px 14px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-transform: uppercase;
+}
+.cdf-stop-btn:hover { background: rgba(255,51,85,0.15); }
+
+/* ── Alert Banner ── */
+#cdAlertBanner {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%) scale(0.85);
+  z-index: 99999;
+  background: var(--panel);
+  border-radius: 18px;
+  padding: 36px 48px;
+  text-align: center;
+  display: none;
+  flex-direction: column;
+  gap: 14px;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow: 0 0 80px rgba(0,0,0,0.8);
+  min-width: 320px;
+}
+#cdAlertBanner.show {
+  display: flex;
+  opacity: 1;
+  transform: translate(-50%,-50%) scale(1);
+}
+#cdAlertBanner.half-alert { border: 2px solid var(--yellow); box-shadow: 0 0 80px rgba(255,214,0,0.4); }
+#cdAlertBanner.done-alert { border: 2px solid var(--red);    box-shadow: 0 0 80px rgba(255,51,85,0.5); }
+.cd-alert-icon { font-size: 48px; line-height: 1; }
+.cd-alert-title { font-size: 20px; font-weight: 900; letter-spacing: 3px; text-transform: uppercase; }
+.cd-alert-sub   { font-size: 11px; color: var(--muted2); letter-spacing: 1px; }
+#cdAlertBanner.half-alert .cd-alert-title { color: var(--yellow); }
+#cdAlertBanner.done-alert .cd-alert-title { color: var(--red); }
+.cd-alert-dismiss {
+  background: transparent;
+  border: 1px solid var(--muted2);
+  color: var(--text);
+  border-radius: 20px;
+  padding: 8px 24px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  margin-top: 4px;
+}
+.cd-alert-dismiss:hover { border-color: var(--text); background: rgba(255,255,255,0.05); }
+
 .cl-section-title {
   font-size: 10px;
   text-transform: uppercase;
@@ -1329,6 +1576,9 @@ html, body {
     </button>
     <button class="checklist-btn" onclick="openChecklist()">
       📋 RUN CHECKLIST
+    </button>
+    <button class="countdown-timer-btn" id="countdownTimerHeaderBtn" onclick="openCountdownSetup()">
+      ⏳ TIMER
     </button>
     <span style="color: var(--muted2);">ROS Bridge:</span>
     <div class="status-badge connecting" id="rosStatus">CONNECTING</div>
@@ -3455,8 +3705,232 @@ function closeCalib() { document.getElementById('calibModal').classList.remove('
 function handleCalibOverlayClick(e) { if (e.target === document.getElementById('calibModal')) closeCalib(); }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCalib(); });
 
+// ═══════════════════════════════════════════════
+//   COUNTDOWN TIMER
+// ═══════════════════════════════════════════════
+(function() {
+  let _totalMs       = 0;
+  let _remainMs      = 0;
+  let _halfMs        = 0;
+  let _halfFired     = false;
+  let _doneFired     = false;
+  let _running       = false;
+  let _rafId         = null;
+  let _lastTs        = null;
 
+  // Update half-time preview in setup modal
+  function _updateHalfPreview() {
+    const m = parseInt(document.getElementById('cdMinInput').value) || 0;
+    const s = parseInt(document.getElementById('cdSecInput').value) || 0;
+    const totalSec = m * 60 + s;
+    const halfSec  = Math.floor(totalSec / 2);
+    const hm = Math.floor(halfSec / 60);
+    const hs = halfSec % 60;
+    document.getElementById('cdHalfPreview').textContent =
+      String(hm).padStart(2,'0') + ':' + String(hs).padStart(2,'0');
+  }
+
+  window.openCountdownSetup = function() {
+    document.getElementById('countdownModal').classList.add('open');
+    _updateHalfPreview();
+    document.getElementById('cdMinInput').addEventListener('input', _updateHalfPreview);
+    document.getElementById('cdSecInput').addEventListener('input', _updateHalfPreview);
+  };
+
+  window.closeCountdownSetup = function() {
+    document.getElementById('countdownModal').classList.remove('open');
+  };
+
+  window.handleCdOverlayClick = function(e) {
+    if (e.target === document.getElementById('countdownModal')) closeCountdownSetup();
+  };
+
+  window.startCountdown = function() {
+    const m = parseInt(document.getElementById('cdMinInput').value) || 0;
+    const s = parseInt(document.getElementById('cdSecInput').value) || 0;
+    const totalSec = m * 60 + s;
+    if (totalSec <= 0) { alert('Please enter a valid time.'); return; }
+
+    _totalMs   = totalSec * 1000;
+    _remainMs  = _totalMs;
+    _halfMs    = _totalMs / 2;
+    _halfFired = false;
+    _doneFired = false;
+    _running   = true;
+    _lastTs    = null;
+
+    closeCountdownSetup();
+    _showFloating();
+    _updateHeaderBtn();
+    if (_rafId) cancelAnimationFrame(_rafId);
+    _rafId = requestAnimationFrame(_tick);
+  };
+
+  window.stopCountdown = function() {
+    _running = false;
+    if (_rafId) { cancelAnimationFrame(_rafId); _rafId = null; }
+    _hideFloating();
+    _updateHeaderBtn();
+  };
+
+  function _tick(ts) {
+    if (!_running) return;
+    if (_lastTs !== null) {
+      const delta = ts - _lastTs;
+      _remainMs  -= delta;
+      if (_remainMs < 0) _remainMs = 0;
+    }
+    _lastTs = ts;
+
+    // Half-time alert
+    if (!_halfFired && _remainMs <= _halfMs) {
+      _halfFired = true;
+      _showAlert('half');
+    }
+
+    // Done alert
+    if (!_doneFired && _remainMs <= 0) {
+      _doneFired = true;
+      _running   = false;
+      _renderDisplay(0);
+      _showAlert('done');
+      _updateHeaderBtn();
+      return;
+    }
+
+    _renderDisplay(_remainMs);
+    _updateHeaderBtn();
+    _rafId = requestAnimationFrame(_tick);
+  }
+
+  function _renderDisplay(ms) {
+    const totalSec = Math.floor(ms / 1000);
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+    const msOnly = Math.floor(ms % 1000);
+
+    const timeStr = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    document.getElementById('cdfTime').textContent = timeStr;
+    document.getElementById('cdfMs').textContent   = '.' + String(msOnly).padStart(3,'0');
+
+    // Color state
+    const fl = document.getElementById('cdFloating');
+    fl.classList.remove('halfwarn','expired');
+    if (ms <= 0) { fl.classList.add('expired'); }
+    else if (!_halfFired && ms > _halfMs) { /* normal teal */ }
+    else { fl.classList.add('halfwarn'); }
+  }
+
+  function _showFloating() {
+    document.getElementById('cdFloating').classList.add('show');
+    document.getElementById('cdFloating').classList.remove('halfwarn','expired');
+  }
+
+  function _hideFloating() {
+    document.getElementById('cdFloating').classList.remove('show');
+  }
+
+  function _updateHeaderBtn() {
+    const btn = document.getElementById('countdownTimerHeaderBtn');
+    btn.classList.remove('running','halfwarn','expired');
+    if (!_running && !_doneFired) {
+      btn.textContent = '⏳ TIMER';
+      return;
+    }
+    if (_doneFired && _remainMs <= 0) {
+      btn.classList.add('expired');
+      btn.textContent = '⏳ EXPIRED';
+      return;
+    }
+    const totalSec = Math.floor(_remainMs / 1000);
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+    const label = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    if (_halfFired) {
+      btn.classList.add('halfwarn');
+    } else {
+      btn.classList.add('running');
+    }
+    btn.textContent = '⏳ ' + label;
+  }
+
+  function _showAlert(type) {
+    const banner = document.getElementById('cdAlertBanner');
+    const icon   = document.getElementById('cdAlertIcon');
+    const title  = document.getElementById('cdAlertTitle');
+    const sub    = document.getElementById('cdAlertSub');
+
+    banner.classList.remove('half-alert','done-alert','show');
+
+    if (type === 'half') {
+      icon.textContent  = '⚡';
+      title.textContent = 'HALF TIME!';
+      const hm = Math.floor(_halfMs / 60000);
+      const hs = Math.floor((_halfMs % 60000) / 1000);
+      sub.textContent   = `${String(hm).padStart(2,'0')}:${String(hs).padStart(2,'0')} remaining — you're halfway through!`;
+      banner.classList.add('half-alert');
+    } else {
+      icon.textContent  = '🚨';
+      title.textContent = "TIME'S UP!";
+      sub.textContent   = 'The countdown has reached zero.';
+      banner.classList.add('done-alert');
+    }
+
+    // Force reflow for transition
+    void banner.offsetWidth;
+    banner.style.display = 'flex';
+    requestAnimationFrame(() => banner.classList.add('show'));
+  }
+
+  window.dismissCdAlert = function() {
+    const banner = document.getElementById('cdAlertBanner');
+    banner.classList.remove('show');
+    setTimeout(() => { banner.style.display = 'none'; }, 300);
+  };
+})();
 
 </script>
+
+<!-- ========== COUNTDOWN TIMER SETUP MODAL ========== -->
+<div id="countdownModal" onclick="handleCdOverlayClick(event)">
+  <div class="cd-modal-box">
+    <div class="cd-modal-title">⏳ Set Countdown Timer</div>
+    <div class="cd-inputs-row">
+      <div class="cd-input-group">
+        <label>Minutes</label>
+        <input type="number" id="cdMinInput" min="0" max="99" value="5" placeholder="05">
+      </div>
+      <div class="cd-colon">:</div>
+      <div class="cd-input-group">
+        <label>Seconds</label>
+        <input type="number" id="cdSecInput" min="0" max="59" value="30" placeholder="30">
+      </div>
+    </div>
+    <div style="font-size:10px;color:var(--muted2);text-align:center;letter-spacing:1px;">
+      Half-time alert will fire at <span id="cdHalfPreview" style="color:var(--yellow);">2:45</span>
+    </div>
+    <div class="cd-btn-row">
+      <button class="cd-btn cancel" onclick="closeCountdownSetup()">Cancel</button>
+      <button class="cd-btn start" onclick="startCountdown()">▶ Start Timer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== FLOATING COUNTDOWN DISPLAY ========== -->
+<div id="cdFloating" class="">
+  <div class="cdf-label">Countdown</div>
+  <div class="cdf-time" id="cdfTime">00:00</div>
+  <div class="cdf-ms" id="cdfMs">.000</div>
+  <button class="cdf-stop-btn" onclick="stopCountdown()">■ Stop</button>
+</div>
+
+<!-- ========== COUNTDOWN ALERT BANNER ========== -->
+<div id="cdAlertBanner">
+  <div class="cd-alert-icon" id="cdAlertIcon">⏰</div>
+  <div class="cd-alert-title" id="cdAlertTitle">HALF TIME!</div>
+  <div class="cd-alert-sub"   id="cdAlertSub">Half the time has elapsed.</div>
+  <button class="cd-alert-dismiss" onclick="dismissCdAlert()">Dismiss</button>
+</div>
+
 </body>
 </html>
