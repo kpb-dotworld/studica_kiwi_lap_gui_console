@@ -218,6 +218,16 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .action-dropdown-item:last-child{border-bottom:none;}
 .action-dropdown-item:hover{background:rgba(156,39,176,.2);color:#fff;}
 
+/* FAVOURITE WAYPOINTS DROPDOWN */
+.fav-wp-dropdown{display:none;background:var(--panel2);border:1px solid var(--yellow);border-radius:4px;margin-top:4px;max-height:300px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.5);}
+.fav-wp-dropdown.open{display:block;}
+.fav-wp-list{padding:8px 0;}
+.fav-wp-item{padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;transition:all .15s;color:var(--text2);}
+.fav-wp-item:last-child{border-bottom:none;}
+.fav-wp-item:hover{background:rgba(255,193,7,.15);color:var(--text1);}
+.fav-wp-item-name{font-weight:600;color:var(--yellow);font-size:12px;}
+.fav-wp-item-detail{font-size:10px;color:var(--muted2);margin-top:2px;}
+
 /* WAYPOINT MODE CHOICE popup */
 .wpmode-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1200;display:none;align-items:center;justify-content:center;}
 .wpmode-overlay.open{display:flex;}
@@ -457,6 +467,13 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
           <button class="action-dropdown-item" onclick="addAction('detect_color')">🔍 Detect Colour</button>
           <button class="action-dropdown-item" onclick="addAction('detect_qr')">📱 Detect QR</button>
           <button class="action-dropdown-item" onclick="openAnchorListPopup()">📍 Add Saved Anchor</button>
+        </div>
+        
+        <button class="addwp-btn" onclick="openFavouriteWaypoints()" style="width:100%;margin-bottom:6px;">⭐ Favourite Waypoints</button>
+        
+        <!-- FAVOURITE WAYPOINTS DROPDOWN -->
+        <div class="fav-wp-dropdown" id="favWpDropdown">
+          <div class="fav-wp-list" id="favWpList"></div>
         </div>
         
         <button class="addwp-btn" onclick="handleQKeyPress()" style="width:100%;margin-bottom:8px;">WP</button>
@@ -944,6 +961,10 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
       <div class="wpname-modal-input">
         <label>Waypoint Name:</label>
         <input type="text" id="wpnameInput" placeholder="Enter waypoint name" value="">
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;margin-top:12px;gap:12px;">
+        <span style="font-size:11px;color:var(--muted2);">Add to Favorites:</span>
+        <button id="wpFavouriteBtn" onclick="toggleWpFavourite()" style="border:2px solid var(--yellow);background:rgba(255,193,7,.1);font-size:28px;cursor:pointer;padding:6px 10px;margin:0;border-radius:6px;transition:all 0.2s ease;box-shadow:0 0 8px rgba(255,193,7,.3);">☆</button>
       </div>
     </div>
     <div class="wpname-modal-actions">
@@ -2134,9 +2155,14 @@ function executePressFunc() {
     createdFrom: 'WP'
   };
   
+  // Reset favourite status for new waypoint
+  tmpWpIsFavourite = false;
+  
   // Open waypoint name popup
   document.getElementById('wpnamePopup').classList.add('open');
   document.getElementById('wpnameInput').value = `WP ${waypoints.length + 1}`;
+  document.getElementById('wpFavouriteBtn').textContent = '☆';
+  document.getElementById('wpFavouriteBtn').style.transform = 'scale(1)';
   // Use setTimeout to ensure modal is rendered before focusing
   setTimeout(() => {
     document.getElementById('wpnameInput').focus();
@@ -2168,11 +2194,59 @@ function markWP() {
 
 // Temporary waypoint data storage
 let tmpWaypointData = null;
+let tmpWpIsFavourite = false;
+let favouriteWaypoints = [];
+
+// Load favourite waypoints from localStorage on page load
+function loadFavouriteWaypoints() {
+  try {
+    const saved = localStorage.getItem('kiwi_favourite_waypoints');
+    if (saved) {
+      favouriteWaypoints = JSON.parse(saved);
+      console.log('✓ Loaded ' + favouriteWaypoints.length + ' favourite waypoint(s)');
+    }
+  } catch (e) {
+    console.error('Error loading favourite waypoints:', e);
+    favouriteWaypoints = [];
+  }
+}
+
+// Save favourite waypoints to localStorage
+function saveFavouriteWaypointsToStorage() {
+  try {
+    const json = JSON.stringify(favouriteWaypoints, null, 2);
+    localStorage.setItem('kiwi_favourite_waypoints', json);
+    showToast('✓ Saved ' + favouriteWaypoints.length + ' favourite waypoint(s) to storage');
+    console.log('Saved:', json);
+  } catch (e) {
+    showToast('❌ Error saving favourite waypoints');
+    console.error('Error:', e);
+  }
+}
 
 // Close waypoint name popup
 function closeWpnamePopup() {
   document.getElementById('wpnamePopup').classList.remove('open');
   tmpWaypointData = null;
+  tmpWpIsFavourite = false;
+  document.getElementById('wpFavouriteBtn').textContent = '☆';
+}
+
+// Toggle favourite status in naming dialog
+function toggleWpFavourite() {
+  tmpWpIsFavourite = !tmpWpIsFavourite;
+  const btn = document.getElementById('wpFavouriteBtn');
+  if (tmpWpIsFavourite) {
+    btn.textContent = '⭐';
+    btn.style.background = 'rgba(255,193,7,.25)';
+    btn.style.boxShadow = '0 0 12px rgba(255,193,7,.6)';
+    btn.style.transform = 'scale(1.15)';
+  } else {
+    btn.textContent = '☆';
+    btn.style.background = 'rgba(255,193,7,.1)';
+    btn.style.boxShadow = '0 0 8px rgba(255,193,7,.3)';
+    btn.style.transform = 'scale(1)';
+  }
 }
 
 // Save waypoint with the name from input
@@ -2186,15 +2260,23 @@ function saveWaypointWithName() {
   }
   
   // Create waypoint with user-provided name and previously stored data
-  waypoints.push({
+  const newWaypoint = {
     id: waypoints.length + 1,
     name: wpname,
     x_m: tmpWaypointData.x_m,
     y_m: tmpWaypointData.y_m,
     yaw_deg: tmpWaypointData.yaw_deg,
     yaw_rad: tmpWaypointData.yaw_rad,
-    createdFrom: tmpWaypointData.createdFrom
-  });
+    createdFrom: tmpWaypointData.createdFrom,
+    isFavourite: tmpWpIsFavourite
+  };
+  
+  waypoints.push(newWaypoint);
+  
+  // Add to favouriteWaypoints if marked as favourite
+  if (tmpWpIsFavourite) {
+    favouriteWaypoints.push(newWaypoint);
+  }
   
   // Visual feedback
   document.body.classList.remove('p-flash'); 
@@ -2206,7 +2288,7 @@ function saveWaypointWithName() {
   const wasWaypointMode = wpMapClickActive; // Check if we were in waypoint click mode
   closeWpnamePopup();
   
-  showToast('✓ Waypoint "' + wpname + '" saved');
+  showToast('✓ Waypoint "' + wpname + '" saved' + (tmpWpIsFavourite ? ' ⭐ (Favourite)' : ''));
   updateWPList(); 
   renderMap();
   
@@ -2285,9 +2367,10 @@ function updateWPList(){
     let circleColor = '#81C784'; // Default light green for 'wp'
     if (wp.createdFrom === 'MOVE') circleColor = '#FDD835'; // Light yellow for MOVE panel
     if (wp.createdFrom === 'P') circleColor = '#FFB74D'; // Light orange for P keypress mark
+    const favMarker = wp.isFavourite ? '⭐ ' : '';
     return `<div class="wp-item wp-${wp.type && wp.type.toLowerCase ? wp.type.toLowerCase() : 'wp'}" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragend="onWpDragEnd(event)">
       <div class="wp-num" style="background:${circleColor}; color:#fff;">${wpNum}</div>
-      <div class="wp-body"><div class="wp-xy" style="color:#00d4ff; font-weight:700;">${wp.name || 'WP ' + wpNum}</div><div class="wp-yaw">x:${wp.x_m} y:${wp.y_m} m | yaw:${wp.yaw_deg}°</div></div>
+      <div class="wp-body"><div class="wp-xy" style="color:#00d4ff; font-weight:700;">${favMarker}${wp.name || 'WP ' + wpNum}</div><div class="wp-yaw">x:${wp.x_m} y:${wp.y_m} m | yaw:${wp.yaw_deg}°</div></div>
       <button class="wp-del" onclick="delWP(${i})">✕</button>
     </div>`;
   }).join('');
@@ -2379,6 +2462,43 @@ function editWpNum(idx) {
 function delWP(i){ waypoints.splice(i,1); waypoints.forEach((w,j)=>w.id=j+1); updateWPList(); renderMap(); }
 function clearWP(){ if(!waypoints.length)return; waypoints=[]; updateWPList(); renderMap(); }
 
+function openFavouriteWaypoints(){
+  const dropdown = document.getElementById('favWpDropdown');
+  const list = document.getElementById('favWpList');
+  if (!dropdown || !list) return;
+  
+  if (dropdown.classList.contains('open')) {
+    dropdown.classList.remove('open');
+    return;
+  }
+  
+  if (favouriteWaypoints.length === 0) {
+    showToast('⭐ No favourite waypoints yet. Mark waypoints with ⭐ when naming them!');
+    return;
+  }
+  
+  // Build list of favourite waypoints with save button at top
+  let html = '<button class="fav-wp-save-btn" onclick="saveFavouriteWaypointsToStorage()" style="width:100%;padding:10px;margin:8px;background:rgba(76,175,80,.2);border:1px solid #4caf50;color:#4caf50;border-radius:4px;cursor:pointer;font-weight:600;transition:all .2s;">💾 Save All to Storage</button>';
+  for (let i = 0; i < favouriteWaypoints.length; i++) {
+    const fav = favouriteWaypoints[i];
+    html += `<div class="fav-wp-item" onclick="selectFavouriteWP(${i})">
+      <div class="fav-wp-item-name">⭐ ${fav.name}</div>
+      <div class="fav-wp-item-detail">x:${fav.x_m.toFixed(2)} y:${fav.y_m.toFixed(2)} m | yaw:${fav.yaw_deg.toFixed(1)}°</div>
+    </div>`;
+  }
+  list.innerHTML = html;
+  dropdown.classList.add('open');
+}
+
+// Select a favourite waypoint from dropdown
+function selectFavouriteWP(index) {
+  const fav = favouriteWaypoints[index];
+  if (!fav) return;
+  showToast(`✓ Selected favourite: ${fav.name}`);
+  document.getElementById('favWpDropdown').classList.remove('open');
+  // Optional: Add to sequence or highlight on map
+  // highlightWaypoint(waypoints.indexOf(fav));
+}
 // ── ACTION POPUP ──────────────────────────────────────────────────────────────
 function toggleActionDropdown(){
   const dropdown = document.getElementById('actionDropdown');
@@ -3415,9 +3535,14 @@ function confirmAddWP(){
     createdFrom: wpModeSelection === 'waypoint' ? 'WP' : 'MOVE'
   };
   
+  // Reset favourite status for new waypoint
+  tmpWpIsFavourite = false;
+  
   // Open waypoint name popup
   document.getElementById('wpnamePopup').classList.add('open');
   document.getElementById('wpnameInput').value = `WP ${waypoints.length + 1}`;
+  document.getElementById('wpFavouriteBtn').textContent = '☆';
+  document.getElementById('wpFavouriteBtn').style.transform = 'scale(1)';
   // Use setTimeout to ensure modal is rendered before focusing
   setTimeout(() => {
     document.getElementById('wpnameInput').focus();
@@ -4979,6 +5104,7 @@ function updateMissionPanel(d){
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
+loadFavouriteWaypoints(); // Load saved favourites from localStorage
 initCanvas();
 window.addEventListener('resize',initCanvas);
 
