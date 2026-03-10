@@ -312,6 +312,21 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .move-modal-actions{display:flex;gap:5px;}
 .move-modal-actions button{flex:1;padding:10px;font-family:inherit;font-size:12px;cursor:pointer;border-radius:3px;border:1px solid var(--accent);background:rgba(0,212,255,.12);color:var(--accent);}
 
+/* Waypoint Name Modal */
+.wpname-modal-overlay{position:fixed;right:10px;bottom:10px;background:transparent;z-index:1050;display:none;flex-direction:column;align-items:center;justify-content:center;width:280px;height:auto;}
+.wpname-modal-overlay.open{display:flex;}
+.wpname-modal-box{background:var(--panel);border:1px solid var(--accent);border-radius:8px;padding:14px;width:100%;box-shadow:0 4px 32px rgba(0,0,0,.8);position:relative;}
+.wpname-modal-title{font-size:13px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;font-weight:700;}
+.wpname-modal-close{position:absolute;top:8px;right:8px;background:none;border:none;color:var(--red);font-size:20px;cursor:pointer;padding:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;transition:color .15s;}
+.wpname-modal-close:hover{color:#ff6655;}
+.wpname-modal-content{background:var(--panel2);border:1px solid var(--border);border-radius:4px;padding:12px;text-align:left;margin-bottom:9px;}
+.wpname-modal-input{display:flex;flex-direction:column;gap:6px;}
+.wpname-modal-input label{font-size:10px;color:var(--muted2);}
+.wpname-modal-input input{background:#21262d;border:1px solid var(--border);color:var(--accent);font-family:inherit;font-size:13px;padding:8px;border-radius:3px;}
+.wpname-modal-actions{display:flex;gap:5px;}
+.wpname-modal-actions button{flex:1;padding:8px;font-family:inherit;font-size:11px;cursor:pointer;border-radius:3px;border:1px solid var(--accent);background:rgba(0,212,255,.12);color:var(--accent);font-weight:700;transition:all .15s;}
+.wpname-modal-actions button:hover{background:rgba(0,212,255,.25);}
+
 /* ═══════════════════════════════════════════════
    MAP EDITOR MODAL
 ═══════════════════════════════════════════════ */
@@ -900,6 +915,24 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
         <button class="run-btn" onclick="sendOriginAsMove()" style="margin:0; background-color: #4dff91; color: #000;">▶ RUN MOVE</button>
         <button onclick="addOriginAsWaypoint()" style="margin:0;padding:10px;background:rgba(0,212,255,.12);border:1px solid var(--accent);color:var(--accent);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;border-radius:3px;letter-spacing:2px;text-transform:uppercase;">+ ADD TO WP</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Waypoint Name Modal -->
+<div class="wpname-modal-overlay" id="wpnamePopup">
+  <div class="wpname-modal-box">
+    <button class="wpname-modal-close" onclick="closeWpnamePopup()">✕</button>
+    <div class="wpname-modal-title">📍 Name Waypoint</div>
+    <div class="wpname-modal-content">
+      <div class="wpname-modal-input">
+        <label>Waypoint Name:</label>
+        <input type="text" id="wpnameInput" placeholder="Enter waypoint name" value="">
+      </div>
+    </div>
+    <div class="wpname-modal-actions">
+      <button onclick="saveWaypointWithName()">✓ Save</button>
+      <button onclick="closeWpnamePopup()" style="background:rgba(255,68,85,.12);border-color:var(--red);color:var(--red);">✕ Cancel</button>
     </div>
   </div>
 </div>
@@ -2084,18 +2117,24 @@ function executePressFunc() {
     showToast('⚠️ Duplicate waypoint — already exists in WP DATA');
     return;
   }
-  waypoints.push({
-    id: waypoints.length + 1,
-    name: `WP ${waypoints.length + 1}`,
+  
+  // Store temporary waypoint data
+  tmpWaypointData = {
     x_m: _dupX,
     y_m: _dupY,
     yaw_deg: _dupYaw,
     yaw_rad: robot.yaw,
     createdFrom: 'WP'
-  });
-  document.body.classList.remove('p-flash'); void document.body.offsetWidth; document.body.classList.add('p-flash');
-  setTimeout(()=>document.body.classList.remove('p-flash'),500);
-  updateWPList(); renderMap();
+  };
+  
+  // Open waypoint name popup
+  document.getElementById('wpnamePopup').classList.add('open');
+  document.getElementById('wpnameInput').value = `WP ${waypoints.length + 1}`;
+  // Use setTimeout to ensure modal is rendered before focusing
+  setTimeout(() => {
+    document.getElementById('wpnameInput').focus();
+    document.getElementById('wpnameInput').select();
+  }, 10);
 }
 
 function markWP() {
@@ -2119,6 +2158,70 @@ function markWP() {
     executePressFunc();
   }
 }
+
+// Temporary waypoint data storage
+let tmpWaypointData = null;
+
+// Close waypoint name popup
+function closeWpnamePopup() {
+  document.getElementById('wpnamePopup').classList.remove('open');
+  tmpWaypointData = null;
+}
+
+// Save waypoint with the name from input
+function saveWaypointWithName() {
+  if (!tmpWaypointData) return;
+  
+  const wpname = document.getElementById('wpnameInput').value.trim();
+  if (!wpname) {
+    showToast('⚠️ Waypoint name cannot be empty');
+    return;
+  }
+  
+  // Create waypoint with user-provided name and previously stored data
+  waypoints.push({
+    id: waypoints.length + 1,
+    name: wpname,
+    x_m: tmpWaypointData.x_m,
+    y_m: tmpWaypointData.y_m,
+    yaw_deg: tmpWaypointData.yaw_deg,
+    yaw_rad: tmpWaypointData.yaw_rad,
+    createdFrom: tmpWaypointData.createdFrom
+  });
+  
+  // Visual feedback
+  document.body.classList.remove('p-flash'); 
+  void document.body.offsetWidth; 
+  document.body.classList.add('p-flash');
+  setTimeout(()=>document.body.classList.remove('p-flash'),500);
+  
+  // Close popup and update UI
+  const wasWaypointMode = wpMapClickActive; // Check if we were in waypoint click mode
+  closeWpnamePopup();
+  
+  showToast('✓ Waypoint "' + wpname + '" saved');
+  updateWPList(); 
+  renderMap();
+  
+  // If this was from map click mode, reset selection and stay in mode
+  if (wasWaypointMode && wpModeSelection === 'waypoint') {
+    wpSelectedX = null;
+    wpSelectedY = null;
+    wpOrientation = robot.yaw;
+    showToast('📍 Click map again or press ESC to exit waypoint mode');
+  } else if (wasWaypointMode && wpModeSelection === 'move') {
+    // Close move mode after adding waypoint
+    closeAddWP();
+  }
+}
+
+// Allow Enter key to save waypoint
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && document.getElementById('wpnamePopup').classList.contains('open')) {
+    e.preventDefault();
+    saveWaypointWithName();
+  }
+});
 
 // Double-press tracking for 'Q' key
 let qPressCount = 0;
@@ -2177,7 +2280,7 @@ function updateWPList(){
     if (wp.createdFrom === 'P') circleColor = '#FFB74D'; // Light orange for P keypress mark
     return `<div class="wp-item wp-${wp.type && wp.type.toLowerCase ? wp.type.toLowerCase() : 'wp'}" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragend="onWpDragEnd(event)">
       <div class="wp-num" style="background:${circleColor}; color:#fff;">${wpNum}</div>
-      <div class="wp-body"><div class="wp-xy">x:${wp.x_m} y:${wp.y_m} m</div><div class="wp-yaw">yaw:${wp.yaw_deg}°</div></div>
+      <div class="wp-body"><div class="wp-xy" style="color:#00d4ff; font-weight:700;">${wp.name || 'WP ' + wpNum}</div><div class="wp-yaw">x:${wp.x_m} y:${wp.y_m} m | yaw:${wp.yaw_deg}°</div></div>
       <button class="wp-del" onclick="delWP(${i})">✕</button>
     </div>`;
   }).join('');
@@ -3279,28 +3382,24 @@ function confirmAddWP(){
     showToast('⚠️ Duplicate waypoint — already exists in WP DATA');
     return;
   }
-  waypoints.push({
-    id: waypoints.length + 1,
+  
+  // Store temporary waypoint data and open naming dialog
+  tmpWaypointData = {
     x_m: +finalX.toFixed(4),
     y_m: +finalY.toFixed(4),
     yaw_deg: yaw_deg,
     yaw_rad: finalYaw,
     createdFrom: wpModeSelection === 'waypoint' ? 'WP' : 'MOVE'
-  });
+  };
   
-  updateWPList(); renderMap();
-  
-  if(wpModeSelection === 'waypoint') {
-    // Stay in waypoint mode - reset selection for next waypoint
-    wpSelectedX = null;
-    wpSelectedY = null;
-    wpOrientation = robot.yaw;
-    showToast(`✅ WP ${waypoints.length} added — click map again or press ESC to exit`);
-  } else {
-    // Close move mode after adding waypoint
-    closeAddWP();
-    showToast(`✅ WP ${waypoints.length} added (${finalX.toFixed(2)}, ${finalY.toFixed(2)}, ${Math.round(finalYaw*180/Math.PI)}°)`);
-  }
+  // Open waypoint name popup
+  document.getElementById('wpnamePopup').classList.add('open');
+  document.getElementById('wpnameInput').value = `WP ${waypoints.length + 1}`;
+  // Use setTimeout to ensure modal is rendered before focusing
+  setTimeout(() => {
+    document.getElementById('wpnameInput').focus();
+    document.getElementById('wpnameInput').select();
+  }, 10);
 }
 
 // Event listeners for waypoint dialogs
