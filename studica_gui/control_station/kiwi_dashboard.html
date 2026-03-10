@@ -1862,6 +1862,17 @@ function renderMap(){
     mctx.textBaseline = 'middle';
     mctx.fillText(seqNum.toString(), p.x, p.y);
     mctx.restore();
+
+    if (routeNode.caseName) {
+      mctx.save();
+      mctx.font = 'bold 8px Courier New';
+      mctx.textAlign = 'left';
+      mctx.textBaseline = 'alphabetic';
+      mctx.fillStyle = routeFill;
+      const caseLabel = `[${routeNode.caseName}]`;
+      mctx.fillText(caseLabel, p.x + 16, p.y + 9);
+      mctx.restore();
+    }
   });
 
   const selectedWaypoint = getSelectedWaypoint();
@@ -6061,11 +6072,11 @@ function nextSequenceKey() {
 }
 
 function createDefaultConditionalCases() {
-  return { 1: { name: 'Default', wps: [] } };
+  return { 0: { name: 'Default', wps: [] } };
 }
 
 function isDefaultConditionalCase(caseNum) {
-  return Number(caseNum) === 1;
+  return Number(caseNum) === 0;
 }
 
 function normalizeConditionalCases(cases) {
@@ -6073,18 +6084,18 @@ function normalizeConditionalCases(cases) {
     ? { ...cases }
     : createDefaultConditionalCases();
 
-  if (!normalized[1] || typeof normalized[1] !== 'object') {
-    normalized[1] = { name: 'Default', wps: [] };
+  if (!normalized[0] || typeof normalized[0] !== 'object') {
+    normalized[0] = { name: 'Default', wps: [] };
   }
 
-  normalized[1] = {
-    ...normalized[1],
+  normalized[0] = {
+    ...normalized[0],
     name: 'Default',
-    wps: Array.isArray(normalized[1].wps) ? normalized[1].wps : []
+    wps: Array.isArray(normalized[0].wps) ? normalized[0].wps : []
   };
 
   Object.keys(normalized).forEach(key => {
-    if (Number(key) === 1) return;
+    if (Number(key) === 0) return;
     if (!normalized[key] || typeof normalized[key] !== 'object') {
       normalized[key] = { name: '', wps: [] };
       return;
@@ -6196,7 +6207,7 @@ function addToSequence(itemId, itemType, itemData) {
     
     const indexSpan = document.createElement('span');
     indexSpan.className = 'seq-cond-index';
-    indexSpan.textContent = '< 1 >';
+    indexSpan.textContent = '< Default >';
     casesUI.appendChild(indexSpan);
     
     const input = document.createElement('input');
@@ -6225,19 +6236,19 @@ function addToSequence(itemId, itemType, itemData) {
     const dropZone = document.createElement('div');
     dropZone.className = 'seq-cond-dropzone';
     dropZone.innerHTML = '<div class="seq-cond-empty">Drop waypoints or actions here</div>';
-    dropZone.dataset.caseNum = 1;
+    dropZone.dataset.caseNum = 0;
     dropZone.ondragover = (e) => {
       e.preventDefault();
       dropZone.classList.add('dragover');
     };
     dropZone.ondragleave = () => dropZone.classList.remove('dragover');
-    dropZone.ondrop = (e) => handleConditionalCaseDrop(e, seqKey, '', parseInt(dropZone.dataset.caseNum, 10) || 1);
+    dropZone.ondrop = (e) => handleConditionalCaseDrop(e, seqKey, '', parseInt(dropZone.dataset.caseNum, 10) || 0);
     condWrapper.appendChild(dropZone);
     
     seqItem.appendChild(condWrapper);
     seqItem.dataset.hasConditional = 'true';
     seqItem.dataset.cases = JSON.stringify(createDefaultConditionalCases());
-    updateConditionalUI(seqItem, 0, 1, createDefaultConditionalCases());
+    updateConditionalUI(seqItem, 0, 0, createDefaultConditionalCases());
     
     // NOW set up the toggle handler after condWrapper is complete
     toggle.onchange = function() {
@@ -6246,7 +6257,7 @@ function addToSequence(itemId, itemType, itemData) {
         seqItem.dataset.hasConditional = 'true';
         const cases = normalizeConditionalCases(seqItem.dataset.cases ? JSON.parse(seqItem.dataset.cases) : null);
         seqItem.dataset.cases = JSON.stringify(cases);
-        updateConditionalUI(seqItem, parseInt(condWrapper.dataset.caseIndex, 10) || 0, 1, cases);
+        updateConditionalUI(seqItem, parseInt(condWrapper.dataset.caseIndex, 10) || 0, 0, cases);
       } else {
         condWrapper.style.display = 'none';
         seqItem.dataset.hasConditional = 'false';
@@ -6338,7 +6349,7 @@ function getOrderedCaseNumbers(cases) {
 function getCaseNumberAtIndex(cases, caseIdx) {
   const caseNums = getOrderedCaseNumbers(cases);
   if (!caseNums.length) {
-    return { caseNums: [1], caseIdx: 0, caseNum: 1 };
+    return { caseNums: [0], caseIdx: 0, caseNum: 0 };
   }
 
   const normalizedIdx = ((parseInt(caseIdx, 10) || 0) % caseNums.length + caseNums.length) % caseNums.length;
@@ -6496,7 +6507,7 @@ function getWaypointFromConditionalEntry(entry) {
   return waypoints.find(w => w.id === entry.wpId && w.type !== 'ACTION' && w.type !== 'ANCHOR') || null;
 }
 
-function collectActiveConditionalRouteNodes(entries, variant = 'branch') {
+function collectActiveConditionalRouteNodes(entries, variant = 'branch', caseName = '') {
   const collected = [];
   (entries || []).forEach(entry => {
     if (!entry) return;
@@ -6506,7 +6517,8 @@ function collectActiveConditionalRouteNodes(entries, variant = 'branch') {
         const nestedInfo = getCaseNumberAtIndex(entry.nestedCases, entry.nestedCaseIndex || 0);
         const activeNestedCase = entry.nestedCases[nestedInfo.caseNum];
         if (activeNestedCase && Array.isArray(activeNestedCase.wps)) {
-          collected.push(...collectActiveConditionalRouteNodes(activeNestedCase.wps, 'branch'));
+          const activeCaseName = isDefaultConditionalCase(nestedInfo.caseNum) ? 'Default' : (activeNestedCase.name || `Case ${nestedInfo.caseNum}`);
+          collected.push(...collectActiveConditionalRouteNodes(activeNestedCase.wps, 'branch', activeCaseName));
         }
       }
       return;
@@ -6514,7 +6526,7 @@ function collectActiveConditionalRouteNodes(entries, variant = 'branch') {
 
     const waypoint = getWaypointFromConditionalEntry(entry);
     if (waypoint && waypoint.x_m !== undefined) {
-      collected.push({ waypoint, variant });
+      collected.push({ waypoint, variant, caseName });
     }
   });
   return collected;
@@ -6544,7 +6556,8 @@ function getActiveSequenceRouteNodes() {
     const caseInfo = getCaseNumberAtIndex(cases, parseInt(condWrapper?.dataset.caseIndex, 10) || 0);
     const activeCase = cases[caseInfo.caseNum];
     if (activeCase && Array.isArray(activeCase.wps)) {
-      collected.push(...collectActiveConditionalRouteNodes(activeCase.wps, 'branch'));
+      const activeCaseName = isDefaultConditionalCase(caseInfo.caseNum) ? 'Default' : (activeCase.name || `Case ${caseInfo.caseNum}`);
+      collected.push(...collectActiveConditionalRouteNodes(activeCase.wps, 'branch', activeCaseName));
     }
   });
 
