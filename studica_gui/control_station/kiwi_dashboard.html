@@ -1106,7 +1106,6 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
     <div class="action-title">⚡ Add Action to Mission</div>
     <div class="action-list">
       <button class="action-item-btn" onclick="addAction('detect_color')">🔍 Detect Colour</button>
-      <button class="action-item-btn" onclick="addAction('detect_qr')">📱 Detect QR</button>
       <button class="action-item-btn" onclick="openAnchorListPopup()">📍 Add Saved Anchor</button>
     </div>
     <button class="action-close-btn" onclick="closeActionPopup()">✕ Cancel</button>
@@ -2152,7 +2151,7 @@ function updateWPList(){
   el.innerHTML = waypoints.map((wp, i) => {
     // Action items render differently
     if(wp.type === 'ACTION'){
-      const actionLabels = {detect_color: '🔍 Detect Colour', detect_qr: '📱 Detect QR'};
+      const actionLabels = {detect_color: '🔍 Detect Colour'};
       const label = actionLabels[wp.node] || wp.node;
       return `<div class="wp-item wp-action" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragend="onWpDragEnd(event)">
         <div class="wp-num" style="background:#9c27b0; color:#fff;">⚡</div>
@@ -4100,10 +4099,10 @@ function addToSequence(itemId, itemType, itemData) {
   label.textContent = `${itemType === 'action' ? '⚡ ' : itemType === 'anchor' ? '📍 ' : '🎯 '}${itemId}`;
   leftGroup.appendChild(label);
   
-  // Create toggle for detect_color and detect_qr EARLY so it's in the header
+  // Create toggle for detect_color EARLY so it's in the header
   let condWrapper = null;
   let toggle = null;
-  if (itemType === 'action' && (itemId === 'detect_color' || itemId === 'detect_qr')) {
+  if (itemType === 'action' && itemId === 'detect_color') {
     toggle = document.createElement('input');
     toggle.type = 'checkbox';
     toggle.className = 'seq-cond-toggle';
@@ -4123,8 +4122,8 @@ function addToSequence(itemId, itemType, itemData) {
   headerDiv.appendChild(removeBtn);
   seqItem.appendChild(headerDiv);
   
-  // Add conditional UI for detect_color and detect_qr
-  if (itemType === 'action' && (itemId === 'detect_color' || itemId === 'detect_qr')) {
+  // Add conditional UI for detect_color
+  if (itemType === 'action' && itemId === 'detect_color') {
     condWrapper = document.createElement('div');
     condWrapper.className = 'seq-conditional-wrapper';
     condWrapper.style.display = 'none';
@@ -4312,9 +4311,8 @@ function updateConditionalUI(seqItem, caseIdx, caseNum, cases) {
           const wpIdx = waypoints.findIndex(w => w.id === wp.wpId);
           if (wpIdx !== -1) {
             const wpData = waypoints[wpIdx];
-            const actionLabel = wpData.node === 'detect_color' ? '🔍 Detect Colour' : wpData.node === 'detect_qr' ? '📱 Detect QR' : wpData.node;
             displayName = wpData.type === 'ANCHOR' ? `📍 Anchor ${wpData.id}` : 
-                         wpData.type === 'ACTION' ? `⚡ ${actionLabel}` :
+                         wpData.type === 'ACTION' ? `⚡ ${wpData.node || 'detect_color'}` :
                          `🎯 WP ${wpData.id}`;
           }
         }
@@ -4500,8 +4498,7 @@ if (seqContainer) {
         if (!isNaN(wpIdx) && waypoints[wpIdx]) {
           const wp = waypoints[wpIdx];
           if (wp.type === 'ACTION') {
-            if (wp.node === 'detect_color') addToSequence('detect_color', 'action', wp);
-            else if (wp.node === 'detect_qr') addToSequence('detect_qr', 'action', wp);
+            addToSequence('detect_color', 'action', wp);
           } else if (wp.type === 'ANCHOR') {
             addToSequence('anchor' + wp.id, 'anchor', wp);
           } else {
@@ -4554,8 +4551,7 @@ function runMission(){
   waypoints.forEach(wp => {
     if (wp.type === 'ACTION') {
       // Actions go in data keyed by node name
-      const actionNode = wp.node || 'detect_color';
-      data[actionNode] = { action: actionNode };
+      data[wp.node || 'detect_color'] = { action: wp.node || 'detect_color' };
     } else if (wp.type === 'ANCHOR') {
       data['anchor' + wp.id] = {
         forward: parseFloat(wp.average || 0),
@@ -4607,38 +4603,6 @@ function runMission(){
             if (Object.keys(switchCases).length > 0) {
               seqRefs.push({
                 node: 'switch_color',
-                cases: switchCases,
-                default: [] // Empty default for now
-              });
-            }
-          }
-        }
-      } else if (seqItem.id === 'detect_qr') {
-        // Add detect_qr node
-        seqRefs.push({node: 'detect_qr'});
-        
-        // Check if this seqItem has conditional data in DOM
-        if (seqItemElement && seqItemElement.dataset.hasConditional === 'true') {
-          const casesData = seqItemElement.dataset.cases;
-          if (casesData) {
-            const cases = JSON.parse(casesData);
-            
-            // Convert cases format for run.py
-            const switchCases = {};
-            Object.entries(cases).forEach(([caseNum, caseObj]) => {
-              if (caseObj.name && caseObj.wps && caseObj.wps.length > 0) {
-                // Build sequence for this case
-                switchCases[caseObj.name] = caseObj.wps.map(wp => ({
-                  node: 'goto',
-                  target: 'wp' + wp.wpId  // Use actual waypoint ID, not array index
-                }));
-              }
-            });
-            
-            // Only add switch_qr if there are actual cases with content
-            if (Object.keys(switchCases).length > 0) {
-              seqRefs.push({
-                node: 'switch_qr',
                 cases: switchCases,
                 default: [] // Empty default for now
               });
