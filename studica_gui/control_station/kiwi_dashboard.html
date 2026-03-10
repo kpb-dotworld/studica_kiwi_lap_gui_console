@@ -350,6 +350,7 @@ body.is-resizing-sequence,body.is-resizing-sequence *{cursor:col-resize !importa
 .seq-item.dragging{opacity:0.6;background:var(--panel2);}
 .seq-item-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;width:100%;min-width:0;}
 .seq-item-main{display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap;min-width:0;}
+.seq-item--nested-action{cursor:default;}
 .seq-label{font-size:12px;color:var(--accent);font-weight:600;letter-spacing:0.5px;line-height:1.4;overflow-wrap:anywhere;min-width:0;}
 .seq-remove{background:none;border:none;color:var(--muted);cursor:pointer;padding:2px 6px;border-radius:2px;font-size:12px;transition:color 0.2s;font-family:inherit;}
 .seq-remove:hover{color:var(--red);}
@@ -362,37 +363,32 @@ body.is-resizing-sequence,body.is-resizing-sequence *{cursor:col-resize !importa
 .seq-cond-toggle:checked{background:#4dff91;}
 .seq-cond-toggle::before{content:'';position:absolute;width:16px;height:16px;background:#fff;border-radius:50%;top:2px;left:2px;transition:left 0.3s;}
 .seq-cond-toggle:checked::before{left:22px;}
-.seq-cond-cases{display:flex;align-items:center;gap:6px;padding:8px 10px;background:rgba(12,24,40,.8);border:1px solid rgba(36,67,92,.9);border-radius:8px;flex-wrap:wrap;min-width:0;}
-.seq-cond-nav{display:inline-flex;align-items:center;justify-content:center;min-width:32px;min-height:30px;background:transparent;border:1px solid var(--muted);color:var(--muted);padding:4px 8px;border-radius:6px;cursor:pointer;font-size:11px;font-family:inherit;transition:border-color .15s ease,color .15s ease,background .15s ease;}
+.seq-cond-cases{display:grid;grid-template-columns:42px minmax(42px,auto) minmax(0,1fr) auto 42px;align-items:center;gap:6px;padding:8px 10px;background:rgba(12,24,40,.8);border:1px solid rgba(36,67,92,.9);border-radius:8px;min-width:0;}
+.seq-cond-nav{display:inline-flex;align-items:center;justify-content:center;width:42px;min-width:42px;min-height:30px;background:transparent;border:1px solid var(--muted);color:var(--muted);padding:4px 0;border-radius:6px;cursor:pointer;font-size:11px;font-family:inherit;transition:border-color .15s ease,color .15s ease,background .15s ease;}
 .seq-cond-nav:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.08);}
-.seq-cond-index{color:#4dff91;font-weight:700;font-size:11px;min-width:48px;text-align:center;letter-spacing:.04em;}
+.seq-cond-index{color:#4dff91;font-weight:700;font-size:11px;min-width:0;text-align:center;letter-spacing:.04em;white-space:nowrap;}
 .seq-cond-input{flex:1 1 120px;min-width:0;background:var(--bg);border:1px solid var(--border);color:var(--accent);padding:7px 8px;border-radius:6px;font-family:inherit;font-size:11px;}
-.seq-cond-add{display:inline-flex;align-items:center;justify-content:center;background:rgba(77,255,145,.14);border:1px solid #4dff91;color:#4dff91;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;letter-spacing:.04em;}
+.seq-cond-add{display:inline-flex;align-items:center;justify-content:center;background:rgba(77,255,145,.14);border:1px solid #4dff91;color:#4dff91;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;letter-spacing:.04em;white-space:nowrap;}
 .seq-cond-add:hover{background:rgba(77,255,145,.3);}
 .seq-cond-dropzone{padding:10px;background:rgba(7,15,24,.38);border:2px dashed var(--accent);border-radius:10px;min-height:72px;text-align:center;color:var(--accent);font-size:10px;transition:all 0.2s;display:flex;align-items:stretch;justify-content:flex-start;flex-direction:column;gap:8px;min-width:0;}
 .seq-cond-dropzone.dragover{background:rgba(77,255,145,.1);border-color:#4dff91;}
 .seq-cond-empty{display:flex;align-items:center;justify-content:center;min-height:48px;color:rgba(189,239,255,.72);font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:6px;}
 .seq-case-chip{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;background:rgba(77,255,145,.1);border:1px solid rgba(0,212,255,.38);border-radius:8px;font-size:11px;color:var(--accent);min-width:0;}
-.seq-case-chip--action{flex-direction:column;align-items:stretch;padding:10px;background:linear-gradient(180deg,rgba(77,255,145,.14),rgba(0,212,255,.08));border-color:rgba(77,255,145,.42);color:#ddfff0;}
 .seq-case-chip-header{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;}
 .seq-case-chip-title,.seq-case-chip-label{min-width:0;overflow-wrap:anywhere;line-height:1.4;}
 .seq-case-chip-title{font-weight:700;}
 .seq-chip-actions{display:flex;align-items:center;gap:6px;flex-shrink:0;}
 .seq-chip-remove{background:none;border:none;color:var(--accent);cursor:pointer;font-size:14px;padding:0;margin:0;width:18px;height:18px;display:flex;align-items:center;justify-content:center;transition:color .15s ease;}
 .seq-chip-remove:hover{color:var(--red);}
-.seq-nested-toggle{width:16px;height:16px;margin:0;accent-color:#4dff91;cursor:pointer;flex-shrink:0;}
-.seq-nested-body{display:flex;flex-direction:column;gap:8px;margin-top:8px;padding:10px;background:rgba(0,0,0,.18);border:1px solid rgba(77,255,145,.18);border-radius:8px;min-width:0;}
-.seq-nested-caption{font-size:10px;color:var(--muted2);letter-spacing:.08em;text-transform:uppercase;}
-.seq-case-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;}
-.seq-case-add{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;background:transparent;border:1px solid var(--accent);color:var(--accent);font-size:10px;font-family:inherit;cursor:pointer;border-radius:6px;letter-spacing:.04em;}
-.seq-case-add:hover{background:rgba(0,212,255,.12);}
+.seq-nested-body{display:flex;flex-direction:column;gap:8px;margin-top:8px;min-width:0;}
 @media (max-width:1100px){
   .sequence-outer-panel{width:clamp(250px,30vw,320px);min-width:220px;max-width:360px;flex-basis:clamp(250px,30vw,320px);}
   .sequence-resizer{width:8px;flex-basis:8px;}
   .seq-item-header{align-items:stretch;}
   .seq-item-main{align-items:flex-start;}
-  .seq-cond-cases,.seq-case-toolbar{align-items:stretch;}
-  .seq-cond-nav,.seq-cond-add,.seq-case-add{min-height:32px;}
+  .seq-cond-cases{grid-template-columns:38px minmax(38px,auto) minmax(0,1fr) auto 38px;padding:8px;gap:5px;}
+  .seq-cond-nav{width:38px;min-width:38px;min-height:32px;}
+  .seq-cond-add{min-height:32px;padding:6px 8px;}
 }
 
 .popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1000;display:flex;align-items:center;justify-content:center;}
@@ -6357,13 +6353,12 @@ function renderConditionalEntries(seqItem, parentPathValue, caseNum, entries) {
       const nestedCaseNum = nestedInfo.caseNum;
       const nestedCase = nestedCases[nestedCaseNum] || { name: '', wps: [] };
       const nestedBody = entry.nestedToggled
-        ? `<div class="seq-nested-body">
-             <div class="seq-nested-caption">Active nested case for ${escapeHtml(getConditionalWaypointLabel(entry))}</div>
-             <div class="seq-case-toolbar">
+        ? `<div class="seq-conditional-wrapper seq-nested-body">
+             <div class="seq-cond-cases">
                <button class="seq-cond-nav" type="button" onclick="navigateConditionalCase(event, '${seqItem.dataset.seqKey}', '${entryPathValue}', -1)">◀</button>
                <span class="seq-cond-index">&lt; ${nestedCaseNum} &gt;</span>
                <input type="text" class="seq-cond-input" placeholder="e.g., GREEN" value="${escapeHtml(nestedCase.name || '')}" oninput="updateConditionalCaseName('${seqItem.dataset.seqKey}', '${entryPathValue}', ${nestedCaseNum}, this.value)">
-               <button class="seq-case-add" type="button" onclick="addConditionalNestedCase(event, '${seqItem.dataset.seqKey}', '${entryPathValue}')">+ Add Case</button>
+               <button class="seq-cond-add" type="button" onclick="addConditionalNestedCase(event, '${seqItem.dataset.seqKey}', '${entryPathValue}')">+ ADD</button>
                <button class="seq-cond-nav" type="button" onclick="navigateConditionalCase(event, '${seqItem.dataset.seqKey}', '${entryPathValue}', 1)">▶</button>
              </div>
              <div class="seq-cond-dropzone" data-case-num="${nestedCaseNum}" ondragover="event.preventDefault(); this.classList.add('dragover');" ondragleave="this.classList.remove('dragover');" ondrop="handleConditionalCaseDrop(event, '${seqItem.dataset.seqKey}', '${entryPathValue}', ${nestedCaseNum})">
@@ -6372,13 +6367,13 @@ function renderConditionalEntries(seqItem, parentPathValue, caseNum, entries) {
            </div>`
         : '';
 
-      return `<div class="seq-case-chip seq-case-chip--action" data-wp-index="${entryIndex}" data-case-num="${caseNum}">
-        <div class="seq-case-chip-header">
-          <span class="seq-case-chip-title">${escapeHtml(getConditionalWaypointLabel(entry))}</span>
-          <div class="seq-chip-actions">
-            <input class="seq-nested-toggle" type="checkbox" title="Enable nested cases" onchange="toggleConditionalEntry(event, '${seqItem.dataset.seqKey}', '${entryPathValue}')" ${entry.nestedToggled ? 'checked' : ''}>
-            <button class="seq-chip-remove" type="button" onclick="removeConditionalEntry(event, '${seqItem.dataset.seqKey}', '${parentPathValue}', ${caseNum}, ${entryIndex})" title="Delete item">✕</button>
+      return `<div class="seq-item seq-item--nested-action" data-wp-index="${entryIndex}" data-case-num="${caseNum}">
+        <div class="seq-item-header">
+          <div class="seq-item-main">
+            <span class="seq-label">⚡ ${escapeHtml(entry.actionType || 'detect_color')}</span>
+            <input class="seq-cond-toggle" type="checkbox" title="Enable conditional branching" onchange="toggleConditionalEntry(event, '${seqItem.dataset.seqKey}', '${entryPathValue}')" ${entry.nestedToggled ? 'checked' : ''}>
           </div>
+          <button class="seq-remove" type="button" onclick="removeConditionalEntry(event, '${seqItem.dataset.seqKey}', '${parentPathValue}', ${caseNum}, ${entryIndex})" title="Delete item">✕</button>
         </div>
         ${nestedBody}
       </div>`;
