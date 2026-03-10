@@ -1106,6 +1106,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
     <div class="action-title">⚡ Add Action to Mission</div>
     <div class="action-list">
       <button class="action-item-btn" onclick="addAction('detect_color')">🔍 Detect Colour</button>
+      <button class="action-item-btn" onclick="addAction('detect_qr')">📱 Detect QR</button>
       <button class="action-item-btn" onclick="openAnchorListPopup()">📍 Add Saved Anchor</button>
     </div>
     <button class="action-close-btn" onclick="closeActionPopup()">✕ Cancel</button>
@@ -2151,7 +2152,7 @@ function updateWPList(){
   el.innerHTML = waypoints.map((wp, i) => {
     // Action items render differently
     if(wp.type === 'ACTION'){
-      const actionLabels = {detect_color: '🔍 Detect Colour'};
+      const actionLabels = {detect_color: '🔍 Detect Colour', detect_qr: '📱 Detect QR'};
       const label = actionLabels[wp.node] || wp.node;
       return `<div class="wp-item wp-action" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragend="onWpDragEnd(event)">
         <div class="wp-num" style="background:#9c27b0; color:#fff;">⚡</div>
@@ -4099,10 +4100,10 @@ function addToSequence(itemId, itemType, itemData) {
   label.textContent = `${itemType === 'action' ? '⚡ ' : itemType === 'anchor' ? '📍 ' : '🎯 '}${itemId}`;
   leftGroup.appendChild(label);
   
-  // Create toggle for detect_color EARLY so it's in the header
+  // Create toggle for detect_color and detect_qr EARLY so it's in the header
   let condWrapper = null;
   let toggle = null;
-  if (itemType === 'action' && itemId === 'detect_color') {
+  if (itemType === 'action' && (itemId === 'detect_color' || itemId === 'detect_qr')) {
     toggle = document.createElement('input');
     toggle.type = 'checkbox';
     toggle.className = 'seq-cond-toggle';
@@ -4122,8 +4123,8 @@ function addToSequence(itemId, itemType, itemData) {
   headerDiv.appendChild(removeBtn);
   seqItem.appendChild(headerDiv);
   
-  // Add conditional UI for detect_color
-  if (itemType === 'action' && itemId === 'detect_color') {
+  // Add conditional UI for detect_color and detect_qr
+  if (itemType === 'action' && (itemId === 'detect_color' || itemId === 'detect_qr')) {
     condWrapper = document.createElement('div');
     condWrapper.className = 'seq-conditional-wrapper';
     condWrapper.style.display = 'none';
@@ -4305,14 +4306,37 @@ function updateConditionalUI(seqItem, caseIdx, caseNum, cases) {
   dropZone.dataset.caseNum = caseNum;
   dropZone.innerHTML = (cases[caseNum].wps && cases[caseNum].wps.length > 0)
     ? cases[caseNum].wps.map((wp, wpIndex) => {
+        // Handle nested actions (detect_color/detect_qr)
+        if (wp.isAction) {
+          const actionLabel = wp.actionType === 'detect_color' ? '🔍 Detect Colour' : '📱 Detect QR';
+          const nestedCasesStr = JSON.stringify(wp.nestedCases || {1: {name: "", wps: []}});
+          const nestedToggled = wp.nestedToggled ? 'style="display:flex;"' : 'style="display:none;"';
+          return `<div style="padding:8px;background:rgba(100,150,200,.15);border:1px solid #4dff91;border-radius:3px;font-size:11px;color:var(--accent);margin:4px 0;" data-wp-index="${wpIndex}" data-case-num="${caseNum}">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+              <span>⚡ ${actionLabel}</span>
+              <div style="display:flex;gap:4px;">
+                <input type="checkbox" style="cursor:pointer;" title="Toggle nested conditions" onchange="toggleNestedAction(event, '${seqItem.dataset.id}', ${caseNum}, ${wpIndex})">
+                <button style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:14px;padding:0;margin:0;width:16px;height:16px;display:flex;align-items:center;justify-content:center;" onclick="removeWaypointFromConditionalCase(event)" title="Delete">✕</button>
+              </div>
+            </div>
+            <div class="nested-cond-ui" ${nestedToggled} data-nested-cases='${nestedCasesStr}' style="margin-top:8px;padding:8px;background:rgba(0,0,0,.2);border-radius:3px;gap:4px;">
+              <div style="font-size:10px;color:var(--muted);">Nested cases for ${actionLabel}:</div>
+              <div style="display:flex;gap:4px;margin-top:4px;">
+                <button style="padding:2px 6px;background:transparent;border:1px solid var(--accent);color:var(--accent);font-size:10px;cursor:pointer;border-radius:2px;" onclick="addNestedCase(event, '${seqItem.dataset.id}', ${caseNum}, ${wpIndex})">+ Add Case</button>
+              </div>
+            </div>
+          </div>`;
+        }
+        
         let displayName = wp.name;
         // If name is undefined or empty, reconstruct from waypoint data using wpId
         if (!displayName && wp.wpId !== undefined) {
           const wpIdx = waypoints.findIndex(w => w.id === wp.wpId);
           if (wpIdx !== -1) {
             const wpData = waypoints[wpIdx];
+            const actionLabel = wpData.node === 'detect_color' ? '🔍 Detect Colour' : wpData.node === 'detect_qr' ? '📱 Detect QR' : wpData.node;
             displayName = wpData.type === 'ANCHOR' ? `📍 Anchor ${wpData.id}` : 
-                         wpData.type === 'ACTION' ? `⚡ ${wpData.node || 'detect_color'}` :
+                         wpData.type === 'ACTION' ? `⚡ ${actionLabel}` :
                          `🎯 WP ${wpData.id}`;
           }
         }
@@ -4339,14 +4363,29 @@ function addSeqToConditionalCase(seqItem, wpIdx, dropZone) {
   
   if (!cases[caseNum].wps) cases[caseNum].wps = [];
   
-  const wp = {
-    name: waypoints[wpIdx].name,
-    wpId: waypoints[wpIdx].id,  // Store actual waypoint ID, not array index
-    lat: waypoints[wpIdx].lat,
-    lon: waypoints[wpIdx].lon
-  };
+  const droppedWp = waypoints[wpIdx];
   
-  cases[caseNum].wps.push(wp);
+  // Check if it's an action (detect_color or detect_qr) for nesting
+  if (droppedWp.type === 'ACTION' && (droppedWp.node === 'detect_color' || droppedWp.node === 'detect_qr')) {
+    const wp = {
+      name: droppedWp.name,
+      isAction: true,
+      actionType: droppedWp.node,
+      wpId: droppedWp.id,
+      nestedCases: {1: {name: "", wps: []}}  // Start with one empty case for nesting
+    };
+    cases[caseNum].wps.push(wp);
+  } else {
+    const wp = {
+      name: droppedWp.name,
+      wpId: droppedWp.id,  // Store actual waypoint ID, not array index
+      lat: droppedWp.lat,
+      lon: droppedWp.lon,
+      isAction: false
+    };
+    cases[caseNum].wps.push(wp);
+  }
+  
   seqItem.dataset.cases = JSON.stringify(cases);
   
   updateConditionalUI(seqItem, caseIdx, caseNum, cases);
@@ -4372,6 +4411,49 @@ function removeWaypointFromConditionalCase(event) {
     cases[caseNum].wps.splice(wpIndex, 1);
     seqItem.dataset.cases = JSON.stringify(cases);
     
+    const caseIdx = parseInt(condWrapper.dataset.caseIndex);
+    updateConditionalUI(seqItem, caseIdx, caseNum, cases);
+  }
+}
+
+function toggleNestedAction(event, seqItemId, caseNum, wpIndex) {
+  event.stopPropagation();
+  const checkbox = event.target;
+  const seqItem = document.querySelector(`[data-id="${seqItemId}"]`);
+  
+  if (!seqItem || !seqItem.dataset.cases) return;
+  
+  const cases = JSON.parse(seqItem.dataset.cases);
+  if (cases[caseNum] && cases[caseNum].wps && cases[caseNum].wps[wpIndex]) {
+    const wp = cases[caseNum].wps[wpIndex];
+    wp.nestedToggled = checkbox.checked;
+    seqItem.dataset.cases = JSON.stringify(cases);
+    
+    const condWrapper = seqItem.querySelector('.seq-conditional-wrapper');
+    const caseIdx = parseInt(condWrapper.dataset.caseIndex);
+    updateConditionalUI(seqItem, caseIdx, caseNum, cases);
+  }
+}
+
+function addNestedCase(event, seqItemId, caseNum, wpIndex) {
+  event.stopPropagation();
+  const seqItem = document.querySelector(`[data-id="${seqItemId}"]`);
+  
+  if (!seqItem || !seqItem.dataset.cases) return;
+  
+  const cases = JSON.parse(seqItem.dataset.cases);
+  if (cases[caseNum] && cases[caseNum].wps && cases[caseNum].wps[wpIndex]) {
+    const wp = cases[caseNum].wps[wpIndex];
+    if (!wp.nestedCases) wp.nestedCases = {};
+    
+    // Find next case number
+    const nestedCaseNums = Object.keys(wp.nestedCases).map(Number);
+    const nextNum = Math.max(0, ...nestedCaseNums) + 1;
+    
+    wp.nestedCases[nextNum] = {name: "", wps: []};
+    seqItem.dataset.cases = JSON.stringify(cases);
+    
+    const condWrapper = seqItem.querySelector('.seq-conditional-wrapper');
     const caseIdx = parseInt(condWrapper.dataset.caseIndex);
     updateConditionalUI(seqItem, caseIdx, caseNum, cases);
   }
@@ -4498,7 +4580,8 @@ if (seqContainer) {
         if (!isNaN(wpIdx) && waypoints[wpIdx]) {
           const wp = waypoints[wpIdx];
           if (wp.type === 'ACTION') {
-            addToSequence('detect_color', 'action', wp);
+            if (wp.node === 'detect_color') addToSequence('detect_color', 'action', wp);
+            else if (wp.node === 'detect_qr') addToSequence('detect_qr', 'action', wp);
           } else if (wp.type === 'ANCHOR') {
             addToSequence('anchor' + wp.id, 'anchor', wp);
           } else {
@@ -4551,7 +4634,8 @@ function runMission(){
   waypoints.forEach(wp => {
     if (wp.type === 'ACTION') {
       // Actions go in data keyed by node name
-      data[wp.node || 'detect_color'] = { action: wp.node || 'detect_color' };
+      const actionNode = wp.node || 'detect_color';
+      data[actionNode] = { action: actionNode };
     } else if (wp.type === 'ANCHOR') {
       data['anchor' + wp.id] = {
         forward: parseFloat(wp.average || 0),
@@ -4567,6 +4651,33 @@ function runMission(){
   });
 
   // Build sequence from SEQUENCE panel with new format
+  const buildCaseSequence = (wps) => {
+    // Helper function to build sequence for a list of wps (can contain nested actions)
+    return wps.map(wp => {
+      if (wp.isAction && wp.nestedToggled && wp.nestedCases) {
+        // Nested action with conditions
+        const switchNode = wp.actionType === 'detect_color' ? 'switch_color' : 'switch_qr';
+        const nestedSwitchCases = {};
+        Object.entries(wp.nestedCases).forEach(([nestedCaseNum, nestedCaseObj]) => {
+          if (nestedCaseObj.name && nestedCaseObj.wps && nestedCaseObj.wps.length > 0) {
+            nestedSwitchCases[nestedCaseObj.name] = buildCaseSequence(nestedCaseObj.wps);
+          }
+        });
+        return {
+          node: switchNode,
+          cases: nestedSwitchCases,
+          default: []
+        };
+      } else if (wp.isAction) {
+        // Nested action without conditions, return the action node directly
+        return {node: wp.actionType};
+      } else {
+        // Regular waypoint
+        return {node: 'goto', target: 'wp' + wp.wpId};
+      }
+    });
+  };
+  
   const seqRefs = [];
   const seqItemElements = document.querySelectorAll('#seqList .seq-item');
   runList.forEach((seqItem, idx) => {
@@ -4591,11 +4702,8 @@ function runMission(){
             const switchCases = {};
             Object.entries(cases).forEach(([caseNum, caseObj]) => {
               if (caseObj.name && caseObj.wps && caseObj.wps.length > 0) {
-                // Build sequence for this case
-                switchCases[caseObj.name] = caseObj.wps.map(wp => ({
-                  node: 'goto',
-                  target: 'wp' + wp.wpId  // Use actual waypoint ID, not array index
-                }));
+                // Build sequence for this case (handles nested conditions)
+                switchCases[caseObj.name] = buildCaseSequence(caseObj.wps);
               }
             });
             
@@ -4603,6 +4711,35 @@ function runMission(){
             if (Object.keys(switchCases).length > 0) {
               seqRefs.push({
                 node: 'switch_color',
+                cases: switchCases,
+                default: [] // Empty default for now
+              });
+            }
+          }
+        }
+      } else if (seqItem.id === 'detect_qr') {
+        // Add detect_qr node
+        seqRefs.push({node: 'detect_qr'});
+        
+        // Check if this seqItem has conditional data in DOM
+        if (seqItemElement && seqItemElement.dataset.hasConditional === 'true') {
+          const casesData = seqItemElement.dataset.cases;
+          if (casesData) {
+            const cases = JSON.parse(casesData);
+            
+            // Convert cases format for run.py
+            const switchCases = {};
+            Object.entries(cases).forEach(([caseNum, caseObj]) => {
+              if (caseObj.name && caseObj.wps && caseObj.wps.length > 0) {
+                // Build sequence for this case (handles nested conditions)
+                switchCases[caseObj.name] = buildCaseSequence(caseObj.wps);
+              }
+            });
+            
+            // Only add switch_qr if there are actual cases with content
+            if (Object.keys(switchCases).length > 0) {
+              seqRefs.push({
+                node: 'switch_qr',
                 cases: switchCases,
                 default: [] // Empty default for now
               });
