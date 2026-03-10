@@ -179,12 +179,26 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .waypoint-toolbar-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .waypoint-toolbar-row.single{grid-template-columns:1fr;}
 .sidebar-btn{width:100%;margin:0;padding:10px 12px;}
-.waypoint-primary-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:16px 14px;border-radius:12px;border:1px solid rgba(0,212,255,.7);background:linear-gradient(180deg,rgba(0,212,255,.16),rgba(0,212,255,.07));color:#dff9ff;font-family:inherit;cursor:pointer;transition:transform .15s ease,border-color .15s ease,background .15s ease,box-shadow .15s ease;box-shadow:0 8px 24px rgba(0,212,255,.08);}
+.waypoint-primary-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:16px 14px;border-radius:12px;border:1px solid rgba(0,212,255,.7);background:linear-gradient(180deg,rgba(0,212,255,.16),rgba(0,212,255,.07));color:#dff9ff;font-family:inherit;cursor:pointer;transition:transform .15s ease,border-color .15s ease,background .15s ease,box-shadow .15s ease,color .15s ease;box-shadow:0 8px 24px rgba(0,212,255,.08);position:relative;overflow:hidden;isolation:isolate;}
 .waypoint-primary-btn:hover{transform:translateY(-1px);border-color:var(--accent);background:linear-gradient(180deg,rgba(0,212,255,.24),rgba(0,212,255,.1));}
+.waypoint-primary-btn::after{content:'';position:absolute;inset:-20%;background:linear-gradient(115deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.3) 48%,rgba(255,255,255,0) 64%);transform:translateX(-140%) skewX(-18deg);opacity:0;pointer-events:none;z-index:0;}
+.waypoint-primary-btn.is-active{border-color:#ffd08c;background:linear-gradient(135deg,rgba(255,138,61,.9),rgba(255,107,53,.84) 48%,rgba(255,169,87,.74));color:#fff7ef;box-shadow:0 0 0 1px rgba(255,208,140,.34) inset,0 14px 34px rgba(255,107,53,.28),0 0 26px rgba(255,149,77,.22);animation:waypointButtonPulse 1.15s ease-in-out infinite;}
+.waypoint-primary-btn.is-active::after{opacity:1;animation:waypointButtonSweep 1.8s linear infinite;}
+.waypoint-primary-btn.is-active .waypoint-primary-title{color:#ffffff;}
+.waypoint-primary-btn.is-active .waypoint-primary-sub{color:rgba(255,247,239,.88);}
+.waypoint-primary-btn.is-active .waypoint-primary-icon{color:#fff7ef;transform:scale(1.1);text-shadow:0 0 16px rgba(255,244,224,.35);}
 .waypoint-primary-icon{font-size:18px;line-height:1;}
-.waypoint-primary-copy{display:flex;flex-direction:column;align-items:flex-start;gap:2px;}
+.waypoint-primary-copy{display:flex;flex-direction:column;align-items:flex-start;gap:2px;position:relative;z-index:1;}
 .waypoint-primary-title{font-size:15px;font-weight:700;letter-spacing:.02em;}
 .waypoint-primary-sub{font-size:10px;color:rgba(221,238,255,.68);letter-spacing:.12em;text-transform:uppercase;}
+@keyframes waypointButtonPulse{
+  0%,100%{border-color:#ffd08c;box-shadow:0 0 0 1px rgba(255,208,140,.28) inset,0 12px 28px rgba(255,107,53,.22),0 0 0 rgba(255,173,96,0);}
+  50%{border-color:#fff0c9;box-shadow:0 0 0 1px rgba(255,240,201,.44) inset,0 18px 38px rgba(255,107,53,.34),0 0 24px rgba(255,173,96,.28);}
+}
+@keyframes waypointButtonSweep{
+  0%{transform:translateX(-140%) skewX(-18deg);}
+  100%{transform:translateX(140%) skewX(-18deg);}
+}
 .waypoint-secondary-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .waypoint-secondary-btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:10px 12px;border-radius:10px;border:1px solid rgba(49,89,120,.9);background:rgba(10,24,40,.9);color:var(--text);font-family:inherit;font-size:12px;font-weight:600;letter-spacing:.02em;cursor:pointer;transition:border-color .15s ease,background .15s ease,transform .15s ease,color .15s ease;}
 .waypoint-secondary-btn:hover{transform:translateY(-1px);border-color:var(--accent);background:rgba(13,31,51,.98);color:#fff;}
@@ -543,11 +557,11 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
           </button>
           <div class="panel-accordion-content">
             <div class="waypoint-toolbar">
-              <button class="waypoint-primary-btn" onclick="handleQKeyPress()">
+              <button class="waypoint-primary-btn" id="waypointPrimaryBtn" onclick="handleQKeyPress()">
                 <span class="waypoint-primary-icon">➕</span>
                 <span class="waypoint-primary-copy">
                   <span class="waypoint-primary-title">Add Waypoint</span>
-                  <span class="waypoint-primary-sub">Press P or click</span>
+                  <span class="waypoint-primary-sub" id="waypointPrimarySub">Click once to enter</span>
                 </span>
               </button>
               <div class="waypoint-secondary-grid">
@@ -1323,7 +1337,7 @@ document.addEventListener('keydown', function(e) {
       e.preventDefault();
     }
   }
-  // Q key: open waypoint mode (same as WP button) - double-press required
+  // W key: toggle waypoint click mode (same as WP button)
   if ((e.key === 'w' || e.key === 'W') && !e.target.matches('input,textarea')) {
     handleQKeyPress();
     e.preventDefault();
@@ -2485,30 +2499,14 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-// Double-press tracking for 'Q' key
-let qPressCount = 0;
-let qPressTimeout = null;
-
 function handleQKeyPress() {
-  qPressCount++;
-  
-  // Clear existing timeout
-  if (qPressTimeout) clearTimeout(qPressTimeout);
-  
-  if (qPressCount === 1) {
-    // First press: show toast indicator
-    showToast('Press again to open Waypoint Mode');
-    // Reset counter after 500ms if second press doesn't happen
-    qPressTimeout = setTimeout(() => {
-      qPressCount = 0;
-      qPressTimeout = null;
-    }, 500);
-  } else if (qPressCount === 2) {
-    // Second press: execute the function
-    qPressCount = 0;
-    qPressTimeout = null;
-    selectWaypointMode();
+  if (wpMapClickActive && wpModeSelection === 'waypoint' && !wpEditMode) {
+    closeAddWP();
+    showToast('Waypoint click mode off');
+    return;
   }
+
+  selectWaypointMode();
 }
 
 document.addEventListener('keydown',e=>{ if((e.key==='p'||e.key==='P')&&!e.target.matches('input,textarea')) markWP(); });
@@ -3242,17 +3240,28 @@ function openAddWP(){
   document.getElementById('wpmodeOverlay').classList.add('open');
 }
 
+function updateWaypointModeUI(){
+  const clickModeActive = wpMapClickActive && wpModeSelection === 'waypoint' && !wpEditMode;
+  const primaryBtn = document.getElementById('waypointPrimaryBtn');
+  const primarySub = document.getElementById('waypointPrimarySub');
+
+  if(primaryBtn) primaryBtn.classList.toggle('is-active', clickModeActive);
+  if(primarySub) primarySub.textContent = clickModeActive ? 'Click map to keep adding' : 'Click once to enter';
+}
+
 function selectWaypointMode(){
   wpModeSelection = 'waypoint';
   document.getElementById('wpmodeOverlay').classList.remove('open');
   document.getElementById('addWpOverlay').classList.remove('open');  // Don't block map!
   document.getElementById('waypointModeContent').style.display = 'block';
   document.getElementById('moveModeContent').style.display = 'none';
+  document.getElementById('addwpTitle').textContent = '➕ Add Waypoint';
   wpMapClickActive = true;
   wpOrientation = robot.yaw;
   updateWaypointDisplay();
   mapCanvas.style.cursor = 'crosshair';
-  showToast('🎯 Click map → select pos • WASD adjust • ⬅️➡️ rotate • ENTER save • ESC cancel');
+  updateWaypointModeUI();
+  showToast('🎯 Waypoint click mode on • click map to keep adding • ⬅️➡️ rotate • ENTER save • ESC cancel');
 }
 
 function selectMoveMode(){
@@ -3263,6 +3272,7 @@ function selectMoveMode(){
   document.getElementById('moveModeContent').style.display = 'block';
   document.getElementById('addwpTitle').textContent = '➤ Enter Relative Movement from Last WP';
   wpMapClickActive = false;
+  updateWaypointModeUI();
   document.getElementById('awX').value = '0.00';
   document.getElementById('awY').value = '0.00';
   document.getElementById('awYaw').value = '0';
@@ -3280,8 +3290,8 @@ function selectMoveMode(){
 }
 
 function updateWaypointDisplay(){
-  document.getElementById('awX_display').textContent = wpSelectedX ? wpSelectedX.toFixed(3) : robot.x.toFixed(3);
-  document.getElementById('awY_display').textContent = wpSelectedY ? wpSelectedY.toFixed(3) : robot.y.toFixed(3);
+  document.getElementById('awX_display').textContent = wpSelectedX !== null ? wpSelectedX.toFixed(3) : robot.x.toFixed(3);
+  document.getElementById('awY_display').textContent = wpSelectedY !== null ? wpSelectedY.toFixed(3) : robot.y.toFixed(3);
   document.getElementById('awYaw_display').textContent = Math.round(wpOrientation * 180 / Math.PI);
 }
 
@@ -3431,6 +3441,7 @@ mapCanvas.addEventListener('dblclick', e=>{
       wpSelectedY = wp.y_m;
       wpOrientation = wp.yaw_rad;
       mapCanvas.style.cursor = 'crosshair';
+      updateWaypointModeUI();
       renderMap();
       showToast(`📝 Editing WP ${i+1} — drag to move, arrows to rotate, ENTER to save, ESC to cancel`);
       return;
@@ -3530,6 +3541,7 @@ function closeAddWP(){
   wpEditIndex = -1;
   wpDragging = false;
   mapCanvas.style.cursor = 'default';
+  updateWaypointModeUI();
   renderMap();
 }
 
@@ -3570,6 +3582,7 @@ function confirmWPEdit(){
   wpSelectedX = null;
   wpSelectedY = null;
   mapCanvas.style.cursor = simEditMode ? 'crosshair' : 'default';
+  updateWaypointModeUI();
   
   updateWPList();
   renderMap();
@@ -3585,6 +3598,7 @@ function cancelWPEdit(){
   wpSelectedX = null;
   wpSelectedY = null;
   mapCanvas.style.cursor = simEditMode ? 'crosshair' : 'default';
+  updateWaypointModeUI();
   renderMap();
 }
 
