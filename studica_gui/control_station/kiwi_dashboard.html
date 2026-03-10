@@ -6060,6 +6060,46 @@ function nextSequenceKey() {
   return `seq_${sequenceItemCounter}`;
 }
 
+function createDefaultConditionalCases() {
+  return { 1: { name: 'Default', wps: [] } };
+}
+
+function isDefaultConditionalCase(caseNum) {
+  return Number(caseNum) === 1;
+}
+
+function normalizeConditionalCases(cases) {
+  const normalized = cases && typeof cases === 'object'
+    ? { ...cases }
+    : createDefaultConditionalCases();
+
+  if (!normalized[1] || typeof normalized[1] !== 'object') {
+    normalized[1] = { name: 'Default', wps: [] };
+  }
+
+  normalized[1] = {
+    ...normalized[1],
+    name: 'Default',
+    wps: Array.isArray(normalized[1].wps) ? normalized[1].wps : []
+  };
+
+  Object.keys(normalized).forEach(key => {
+    if (Number(key) === 1) return;
+    if (!normalized[key] || typeof normalized[key] !== 'object') {
+      normalized[key] = { name: '', wps: [] };
+      return;
+    }
+
+    normalized[key] = {
+      ...normalized[key],
+      name: normalized[key].name || '',
+      wps: Array.isArray(normalized[key].wps) ? normalized[key].wps : []
+    };
+  });
+
+  return normalized;
+}
+
 function getDraggedSequenceSource(dataTransfer) {
   const actionNode = dataTransfer.getData('application/x-kiwi-action');
   if (actionNode) {
@@ -6118,6 +6158,7 @@ function addToSequence(itemId, itemType, itemData) {
     toggle.className = 'seq-cond-toggle';
     toggle.style.cursor = 'pointer';
     toggle.title = 'Enable conditional branching';
+    toggle.checked = true;
     leftGroup.appendChild(toggle);
   }
   
@@ -6139,7 +6180,7 @@ function addToSequence(itemId, itemType, itemData) {
   if (itemType === 'action' && (itemId === 'detect_color' || itemId === 'detect_qr')) {
     condWrapper = document.createElement('div');
     condWrapper.className = 'seq-conditional-wrapper';
-    condWrapper.style.display = 'none';
+    condWrapper.style.display = 'flex';
     condWrapper.dataset.caseIndex = 0;
     
     // Cases UI
@@ -6194,31 +6235,18 @@ function addToSequence(itemId, itemType, itemData) {
     condWrapper.appendChild(dropZone);
     
     seqItem.appendChild(condWrapper);
-    seqItem.dataset.hasConditional = 'false';
+    seqItem.dataset.hasConditional = 'true';
+    seqItem.dataset.cases = JSON.stringify(createDefaultConditionalCases());
+    updateConditionalUI(seqItem, 0, 1, createDefaultConditionalCases());
     
     // NOW set up the toggle handler after condWrapper is complete
     toggle.onchange = function() {
       if (this.checked) {
         condWrapper.style.display = 'flex';
         seqItem.dataset.hasConditional = 'true';
-        
-        // Initialize cases if not already done
-        if (!seqItem.dataset.cases) {
-          seqItem.dataset.cases = JSON.stringify({1: {name: "", wps: []}});
-          condWrapper.dataset.caseIndex = 0;
-          // Initialize UI for the first case
-          const indexSpan = condWrapper.querySelector('.seq-cond-index');
-          const input = condWrapper.querySelector('.seq-cond-input');
-          if (indexSpan) indexSpan.textContent = '< 1 >';
-          if (input) {
-            input.value = '';
-            input.oninput = () => {
-              const cases = JSON.parse(seqItem.dataset.cases);
-              cases[1].name = input.value;
-              seqItem.dataset.cases = JSON.stringify(cases);
-            };
-          }
-        }
+        const cases = normalizeConditionalCases(seqItem.dataset.cases ? JSON.parse(seqItem.dataset.cases) : null);
+        seqItem.dataset.cases = JSON.stringify(cases);
+        updateConditionalUI(seqItem, parseInt(condWrapper.dataset.caseIndex, 10) || 0, 1, cases);
       } else {
         condWrapper.style.display = 'none';
         seqItem.dataset.hasConditional = 'false';
@@ -6268,10 +6296,11 @@ function removeFromSequence(btn) {
 
 function navigateCase(seqItem, direction) {
   if (!seqItem.dataset.cases) {
-    seqItem.dataset.cases = JSON.stringify({1: {name: "", wps: []}});
+    seqItem.dataset.cases = JSON.stringify(createDefaultConditionalCases());
   }
   
-  const cases = JSON.parse(seqItem.dataset.cases);
+  const cases = normalizeConditionalCases(JSON.parse(seqItem.dataset.cases));
+  seqItem.dataset.cases = JSON.stringify(cases);
   const caseNums = getOrderedCaseNumbers(cases);
   let currentIdx = parseInt(seqItem.querySelector('.seq-conditional-wrapper').dataset.caseIndex, 10) || 0;
   
@@ -6284,10 +6313,10 @@ function navigateCase(seqItem, direction) {
 
 function addConditionalCase(seqItem) {
   if (!seqItem.dataset.cases) {
-    seqItem.dataset.cases = JSON.stringify({1: {name: "", wps: []}});
+    seqItem.dataset.cases = JSON.stringify(createDefaultConditionalCases());
   }
   
-  const cases = JSON.parse(seqItem.dataset.cases);
+  const cases = normalizeConditionalCases(JSON.parse(seqItem.dataset.cases));
   const newCaseNum = Math.max(...Object.keys(cases).map(Number)) + 1;
   cases[newCaseNum] = {name: "", wps: []};
   seqItem.dataset.cases = JSON.stringify(cases);
@@ -6336,9 +6365,9 @@ function createConditionalWaypointEntry(droppedWp) {
       isAction: true,
       actionType: droppedWp.node,
       wpId: droppedWp.id,
-      nestedCases: {1: {name: "", wps: []}},
+      nestedCases: createDefaultConditionalCases(),
       nestedCaseIndex: 0,
-      nestedToggled: false
+      nestedToggled: true
     };
   }
 
@@ -6391,10 +6420,11 @@ function getConditionalCasesContext(seqItemId, parentPathValue) {
     : seqItemId;
   if (!seqItem) return null;
   if (!seqItem.dataset.cases) {
-    seqItem.dataset.cases = JSON.stringify({1: {name: '', wps: []}});
+    seqItem.dataset.cases = JSON.stringify(createDefaultConditionalCases());
   }
 
-  const cases = JSON.parse(seqItem.dataset.cases);
+  const cases = normalizeConditionalCases(JSON.parse(seqItem.dataset.cases));
+  seqItem.dataset.cases = JSON.stringify(cases);
   const parentPath = decodeConditionalPath(parentPathValue);
   let currentCases = cases;
   let ownerAction = null;
@@ -6407,8 +6437,9 @@ function getConditionalCasesContext(seqItemId, parentPathValue) {
 
     ownerAction = caseBucket.wps[step.wpIndex];
     if (!ownerAction.nestedCases || !Object.keys(ownerAction.nestedCases).length) {
-      ownerAction.nestedCases = {1: {name: '', wps: []}};
+      ownerAction.nestedCases = createDefaultConditionalCases();
     }
+    ownerAction.nestedCases = normalizeConditionalCases(ownerAction.nestedCases);
     if (ownerAction.nestedCaseIndex === undefined) {
       ownerAction.nestedCaseIndex = 0;
     }
@@ -6434,8 +6465,9 @@ function getConditionalActionTarget(seqItemId, entryPathValue) {
   const entry = caseBucket.wps[step.wpIndex];
   if (!entry.isAction) return null;
   if (!entry.nestedCases || !Object.keys(entry.nestedCases).length) {
-    entry.nestedCases = {1: {name: '', wps: []}};
+    entry.nestedCases = createDefaultConditionalCases();
   }
+  entry.nestedCases = normalizeConditionalCases(entry.nestedCases);
   if (entry.nestedCaseIndex === undefined) {
     entry.nestedCaseIndex = 0;
   }
@@ -6533,17 +6565,18 @@ function renderConditionalEntries(seqItem, parentPathValue, caseNum, entries) {
     const entryPathValue = encodeConditionalPath([...parentPath, { caseNum, wpIndex: entryIndex }]);
     if (entry.isAction) {
       const nestedCases = entry.nestedCases && Object.keys(entry.nestedCases).length
-        ? entry.nestedCases
-        : {1: {name: '', wps: []}};
+        ? normalizeConditionalCases(entry.nestedCases)
+        : createDefaultConditionalCases();
       const nestedInfo = getCaseNumberAtIndex(nestedCases, entry.nestedCaseIndex || 0);
       const nestedCaseNum = nestedInfo.caseNum;
       const nestedCase = nestedCases[nestedCaseNum] || { name: '', wps: [] };
+      const isDefaultNestedCase = isDefaultConditionalCase(nestedCaseNum);
       const nestedBody = entry.nestedToggled
         ? `<div class="seq-conditional-wrapper seq-nested-body">
              <div class="seq-cond-cases">
                <button class="seq-cond-nav" type="button" onclick="navigateConditionalCase(event, '${seqItem.dataset.seqKey}', '${entryPathValue}', -1)">◀</button>
-               <span class="seq-cond-index">&lt; ${nestedCaseNum} &gt;</span>
-               <input type="text" class="seq-cond-input" placeholder="e.g., GREEN" value="${escapeHtml(nestedCase.name || '')}" oninput="updateConditionalCaseName('${seqItem.dataset.seqKey}', '${entryPathValue}', ${nestedCaseNum}, this.value)">
+               <span class="seq-cond-index">${isDefaultNestedCase ? '&lt; Default &gt;' : `&lt; ${nestedCaseNum} &gt;`}</span>
+               <input type="text" class="seq-cond-input" placeholder="${isDefaultNestedCase ? 'Default branch' : 'e.g., GREEN'}" value="${escapeHtml(isDefaultNestedCase ? 'Default' : (nestedCase.name || ''))}" ${isDefaultNestedCase ? 'disabled' : ''} oninput="updateConditionalCaseName('${seqItem.dataset.seqKey}', '${entryPathValue}', ${nestedCaseNum}, this.value)">
                <button class="seq-cond-add" type="button" onclick="addConditionalNestedCase(event, '${seqItem.dataset.seqKey}', '${entryPathValue}')">+ ADD</button>
                <button class="seq-cond-nav" type="button" onclick="navigateConditionalCase(event, '${seqItem.dataset.seqKey}', '${entryPathValue}', 1)">▶</button>
              </div>
@@ -6573,6 +6606,7 @@ function renderConditionalEntries(seqItem, parentPathValue, caseNum, entries) {
 }
 
 function updateConditionalUI(seqItem, caseIdx, caseNum, cases) {
+  cases = normalizeConditionalCases(cases);
   const condWrapper = seqItem.querySelector('.seq-conditional-wrapper');
   const indexSpan = condWrapper.querySelector('.seq-cond-index');
   const input = condWrapper.querySelector('.seq-cond-input');
@@ -6580,15 +6614,19 @@ function updateConditionalUI(seqItem, caseIdx, caseNum, cases) {
   const caseInfo = getCaseNumberAtIndex(cases, caseIdx);
   const activeCaseNum = caseInfo.caseNum;
   const activeCase = cases[activeCaseNum] || { name: '', wps: [] };
+  const isDefaultCase = isDefaultConditionalCase(activeCaseNum);
   
+  seqItem.dataset.cases = JSON.stringify(cases);
   condWrapper.dataset.caseIndex = caseInfo.caseIdx;
-  indexSpan.textContent = `< ${activeCaseNum} >`;
-  input.value = activeCase.name || '';
+  indexSpan.textContent = isDefaultCase ? '< Default >' : `< ${activeCaseNum} >`;
+  input.value = isDefaultCase ? 'Default' : (activeCase.name || '');
+  input.placeholder = isDefaultCase ? 'Default branch' : 'e.g., GREEN';
+  input.disabled = isDefaultCase;
   dropZone.dataset.caseNum = activeCaseNum;
   dropZone.innerHTML = renderConditionalEntries(seqItem, '', activeCaseNum, activeCase.wps || []);
   
   // Bind input change to update case name
-  input.oninput = () => {
+  input.oninput = isDefaultCase ? null : () => {
     cases[activeCaseNum].name = input.value;
     seqItem.dataset.cases = JSON.stringify(cases);
   };
@@ -6640,6 +6678,7 @@ function addConditionalNestedCase(event, seqItemId, entryPathValue) {
   const target = getConditionalActionTarget(seqItemId, entryPathValue);
   if (!target) return;
 
+  target.entry.nestedCases = normalizeConditionalCases(target.entry.nestedCases);
   const nestedCaseNums = getOrderedCaseNumbers(target.entry.nestedCases);
   const nextNum = (nestedCaseNums[nestedCaseNums.length - 1] || 0) + 1;
 
@@ -6654,6 +6693,7 @@ function navigateConditionalCase(event, seqItemId, entryPathValue, direction) {
   const target = getConditionalActionTarget(seqItemId, entryPathValue);
   if (!target) return;
 
+  target.entry.nestedCases = normalizeConditionalCases(target.entry.nestedCases);
   const nestedCaseNums = getOrderedCaseNumbers(target.entry.nestedCases);
   if (!nestedCaseNums.length) return;
 
@@ -6665,6 +6705,8 @@ function navigateConditionalCase(event, seqItemId, entryPathValue, direction) {
 function updateConditionalCaseName(seqItemId, entryPathValue, nestedCaseNum, value) {
   const target = getConditionalActionTarget(seqItemId, entryPathValue);
   if (!target) return;
+
+  if (isDefaultConditionalCase(nestedCaseNum)) return;
 
   if (!target.entry.nestedCases[nestedCaseNum]) {
     target.entry.nestedCases[nestedCaseNum] = {name: '', wps: []};
@@ -6893,16 +6935,26 @@ function runMission(){
       if (wp.isAction && wp.nestedToggled && wp.nestedCases) {
         // Nested action with conditions
         const switchNode = wp.actionType === 'detect_color' ? 'switch_color' : 'switch_qr';
+        const normalizedNestedCases = normalizeConditionalCases(wp.nestedCases);
         const nestedSwitchCases = {};
-        Object.entries(wp.nestedCases).forEach(([nestedCaseNum, nestedCaseObj]) => {
-          if (nestedCaseObj.name && nestedCaseObj.wps && nestedCaseObj.wps.length > 0) {
+        let nestedDefault = [];
+        Object.entries(normalizedNestedCases).forEach(([nestedCaseNum, nestedCaseObj]) => {
+          if (!nestedCaseObj.wps || !nestedCaseObj.wps.length) return;
+          if (isDefaultConditionalCase(nestedCaseNum)) {
+            nestedDefault = buildCaseSequence(nestedCaseObj.wps);
+            return;
+          }
+          if (nestedCaseObj.name) {
             nestedSwitchCases[nestedCaseObj.name] = buildCaseSequence(nestedCaseObj.wps);
           }
         });
+        if (!nestedDefault.length && !Object.keys(nestedSwitchCases).length) {
+          return {node: wp.actionType};
+        }
         return {
           node: switchNode,
           cases: nestedSwitchCases,
-          default: []
+          default: nestedDefault
         };
       } else if (wp.isAction) {
         // Nested action without conditions, return the action node directly
@@ -6932,23 +6984,29 @@ function runMission(){
         if (seqItemElement && seqItemElement.dataset.hasConditional === 'true') {
           const casesData = seqItemElement.dataset.cases;
           if (casesData) {
-            const cases = JSON.parse(casesData);
+            const cases = normalizeConditionalCases(JSON.parse(casesData));
             
             // Convert cases format for run.py
             const switchCases = {};
+            let defaultSequence = [];
             Object.entries(cases).forEach(([caseNum, caseObj]) => {
-              if (caseObj.name && caseObj.wps && caseObj.wps.length > 0) {
+              if (!caseObj.wps || !caseObj.wps.length) return;
+              if (isDefaultConditionalCase(caseNum)) {
+                defaultSequence = buildCaseSequence(caseObj.wps);
+                return;
+              }
+              if (caseObj.name) {
                 // Build sequence for this case (handles nested conditions)
                 switchCases[caseObj.name] = buildCaseSequence(caseObj.wps);
               }
             });
             
             // Only add switch_color if there are actual cases with content
-            if (Object.keys(switchCases).length > 0) {
+            if (Object.keys(switchCases).length > 0 || defaultSequence.length > 0) {
               seqRefs.push({
                 node: 'switch_color',
                 cases: switchCases,
-                default: [] // Empty default for now
+                default: defaultSequence
               });
             }
           }
@@ -6961,23 +7019,29 @@ function runMission(){
         if (seqItemElement && seqItemElement.dataset.hasConditional === 'true') {
           const casesData = seqItemElement.dataset.cases;
           if (casesData) {
-            const cases = JSON.parse(casesData);
+            const cases = normalizeConditionalCases(JSON.parse(casesData));
             
             // Convert cases format for run.py
             const switchCases = {};
+            let defaultSequence = [];
             Object.entries(cases).forEach(([caseNum, caseObj]) => {
-              if (caseObj.name && caseObj.wps && caseObj.wps.length > 0) {
+              if (!caseObj.wps || !caseObj.wps.length) return;
+              if (isDefaultConditionalCase(caseNum)) {
+                defaultSequence = buildCaseSequence(caseObj.wps);
+                return;
+              }
+              if (caseObj.name) {
                 // Build sequence for this case (handles nested conditions)
                 switchCases[caseObj.name] = buildCaseSequence(caseObj.wps);
               }
             });
             
             // Only add switch_qr if there are actual cases with content
-            if (Object.keys(switchCases).length > 0) {
+            if (Object.keys(switchCases).length > 0 || defaultSequence.length > 0) {
               seqRefs.push({
                 node: 'switch_qr',
                 cases: switchCases,
-                default: [] // Empty default for now
+                default: defaultSequence
               });
             }
           }
