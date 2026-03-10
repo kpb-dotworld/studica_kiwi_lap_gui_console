@@ -338,33 +338,57 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .addwp-cancel:hover{border-color:var(--red);color:var(--red);}
 
 /* SEQUENCE PANEL */
-.seq-list{display:flex;flex-direction:column;gap:4px;padding:4px;background:var(--panel2);border:1px solid var(--border);border-radius:3px;min-height:60px;}
-.seq-item{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--panel);border:1px solid var(--border);border-radius:3px;cursor:grab;transition:all 0.2s;user-select:none;}
+.seq-list{display:flex;flex-direction:column;gap:8px;padding:6px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;min-height:60px;min-width:0;}
+.sequence-outer-panel{width:clamp(280px,24vw,340px);min-width:240px;max-width:360px;display:flex;flex-direction:column;min-height:0;background:var(--panel);border-left:2px solid var(--accent);border-right:1px solid var(--border);}
+.seq-item{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:10px 12px;background:linear-gradient(180deg,rgba(17,27,40,.98),rgba(10,18,28,.96));border:1px solid rgba(41,67,92,.95);border-radius:10px;cursor:grab;transition:all 0.2s;user-select:none;min-width:0;overflow:hidden;}
 .seq-item:hover{background:var(--panel2);border-color:var(--accent);}
 .seq-item:active{cursor:grabbing;}
 .seq-item.dragging{opacity:0.6;background:var(--panel2);}
-.seq-label{font-size:12px;color:var(--accent);font-weight:600;letter-spacing:0.5px;}
+.seq-item-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;width:100%;min-width:0;}
+.seq-item-main{display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap;min-width:0;}
+.seq-label{font-size:12px;color:var(--accent);font-weight:600;letter-spacing:0.5px;line-height:1.4;overflow-wrap:anywhere;min-width:0;}
 .seq-remove{background:none;border:none;color:var(--muted);cursor:pointer;padding:2px 6px;border-radius:2px;font-size:12px;transition:color 0.2s;font-family:inherit;}
 .seq-remove:hover{color:var(--red);}
 .seq-empty{color:var(--muted);text-align:center;padding:20px 8px;font-size:11px;line-height:1.6;pointer-events:none;}
 
 /* CONDITIONAL DETECT_COLOR */
-.seq-conditional-wrapper{display:flex;flex-direction:column;gap:4px;margin-top:4px;}
+.seq-conditional-wrapper{display:flex;flex-direction:column;gap:8px;width:100%;min-width:0;}
 .seq-cond-header{display:flex;align-items:center;gap:6px;padding:6px 8px;background:rgba(77,255,145,.1);border:1px solid rgba(77,255,145,.3);border-radius:3px;}
 .seq-cond-toggle{appearance:none;width:40px;height:20px;background:var(--muted);border:none;border-radius:10px;cursor:pointer;transition:all 0.3s;position:relative;}
 .seq-cond-toggle:checked{background:#4dff91;}
 .seq-cond-toggle::before{content:'';position:absolute;width:16px;height:16px;background:#fff;border-radius:50%;top:2px;left:2px;transition:left 0.3s;}
 .seq-cond-toggle:checked::before{left:22px;}
-.seq-cond-cases{display:flex;align-items:center;gap:4px;padding:8px;background:var(--panel2);border:1px solid var(--border);border-radius:3px;}
-.seq-cond-nav{display:flex;align-items:center;gap:4px;}
-.seq-cond-nav button{background:transparent;border:1px solid var(--muted);color:var(--muted);padding:2px 6px;border-radius:2px;cursor:pointer;font-size:10px;}
-.seq-cond-nav button:hover{border-color:var(--accent);color:var(--accent);}
-.seq-cond-index{color:#4dff91;font-weight:700;font-size:11px;min-width:30px;text-align:center;}
-.seq-cond-input{background:var(--bg);border:1px solid var(--border);color:var(--accent);padding:4px 6px;border-radius:3px;font-family:inherit;font-size:11px;width:100px;}
-.seq-cond-add{background:rgba(77,255,145,.2);border:1px solid #4dff91;color:#4dff91;padding:2px 8px;border-radius:3px;cursor:pointer;font-size:11px;font-weight:600;}
+.seq-cond-cases{display:flex;align-items:center;gap:6px;padding:8px 10px;background:rgba(12,24,40,.8);border:1px solid rgba(36,67,92,.9);border-radius:8px;flex-wrap:wrap;min-width:0;}
+.seq-cond-nav{display:inline-flex;align-items:center;justify-content:center;min-width:32px;min-height:30px;background:transparent;border:1px solid var(--muted);color:var(--muted);padding:4px 8px;border-radius:6px;cursor:pointer;font-size:11px;font-family:inherit;transition:border-color .15s ease,color .15s ease,background .15s ease;}
+.seq-cond-nav:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.08);}
+.seq-cond-index{color:#4dff91;font-weight:700;font-size:11px;min-width:48px;text-align:center;letter-spacing:.04em;}
+.seq-cond-input{flex:1 1 120px;min-width:0;background:var(--bg);border:1px solid var(--border);color:var(--accent);padding:7px 8px;border-radius:6px;font-family:inherit;font-size:11px;}
+.seq-cond-add{display:inline-flex;align-items:center;justify-content:center;background:rgba(77,255,145,.14);border:1px solid #4dff91;color:#4dff91;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;letter-spacing:.04em;}
 .seq-cond-add:hover{background:rgba(77,255,145,.3);}
-.seq-cond-dropzone{padding:8px;background:transparent;border:2px dashed var(--accent);border-radius:3px;min-height:60px;text-align:center;color:var(--accent);font-size:10px;transition:all 0.2s;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;}
+.seq-cond-dropzone{padding:10px;background:rgba(7,15,24,.38);border:2px dashed var(--accent);border-radius:10px;min-height:72px;text-align:center;color:var(--accent);font-size:10px;transition:all 0.2s;display:flex;align-items:stretch;justify-content:flex-start;flex-direction:column;gap:8px;min-width:0;}
 .seq-cond-dropzone.dragover{background:rgba(77,255,145,.1);border-color:#4dff91;}
+.seq-cond-empty{display:flex;align-items:center;justify-content:center;min-height:48px;color:rgba(189,239,255,.72);font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:6px;}
+.seq-case-chip{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;background:rgba(77,255,145,.1);border:1px solid rgba(0,212,255,.38);border-radius:8px;font-size:11px;color:var(--accent);min-width:0;}
+.seq-case-chip--action{flex-direction:column;align-items:stretch;padding:10px;background:linear-gradient(180deg,rgba(77,255,145,.14),rgba(0,212,255,.08));border-color:rgba(77,255,145,.42);color:#ddfff0;}
+.seq-case-chip-header{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;}
+.seq-case-chip-title,.seq-case-chip-label{min-width:0;overflow-wrap:anywhere;line-height:1.4;}
+.seq-case-chip-title{font-weight:700;}
+.seq-chip-actions{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.seq-chip-remove{background:none;border:none;color:var(--accent);cursor:pointer;font-size:14px;padding:0;margin:0;width:18px;height:18px;display:flex;align-items:center;justify-content:center;transition:color .15s ease;}
+.seq-chip-remove:hover{color:var(--red);}
+.seq-nested-toggle{width:16px;height:16px;margin:0;accent-color:#4dff91;cursor:pointer;flex-shrink:0;}
+.seq-nested-body{display:flex;flex-direction:column;gap:8px;margin-top:8px;padding:10px;background:rgba(0,0,0,.18);border:1px solid rgba(77,255,145,.18);border-radius:8px;min-width:0;}
+.seq-nested-caption{font-size:10px;color:var(--muted2);letter-spacing:.08em;text-transform:uppercase;}
+.seq-case-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;}
+.seq-case-add{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;background:transparent;border:1px solid var(--accent);color:var(--accent);font-size:10px;font-family:inherit;cursor:pointer;border-radius:6px;letter-spacing:.04em;}
+.seq-case-add:hover{background:rgba(0,212,255,.12);}
+@media (max-width:1100px){
+  .sequence-outer-panel{width:clamp(250px,30vw,320px);min-width:220px;max-width:320px;}
+  .seq-item-header{align-items:stretch;}
+  .seq-item-main{align-items:flex-start;}
+  .seq-cond-cases,.seq-case-toolbar{align-items:stretch;}
+  .seq-cond-nav,.seq-cond-add,.seq-case-add{min-height:32px;}
+}
 
 .popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1000;display:flex;align-items:center;justify-content:center;}
 .popup{background:var(--panel);border:1px solid var(--accent);border-radius:6px;padding:16px;width:480px;max-width:94vw;display:flex;flex-direction:column;gap:10px;}
@@ -662,17 +686,8 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
         }
       }
       function startWaypointSimulation() {
-        // Build spatial waypoint list from sequence panel, fall back to waypoints
-        let vizWps = [];
-        if (sequence.length > 0) {
-          sequence.forEach(seqItem => {
-            if (seqItem.type === 'waypoint' && seqItem.data && seqItem.data.x_m !== undefined) {
-              vizWps.push(seqItem.data);
-            }
-          });
-        } else {
-          vizWps = waypoints.filter(w => w.type !== 'ACTION' && w.type !== 'ANCHOR');
-        }
+        // Build spatial waypoint list from the active visible sequence path only
+        const vizWps = getSequenceSpatialWaypoints();
         if (!vizWps.length || simActive || simPaused) return;
         simActive = true;
         simPaused = false;
@@ -791,7 +806,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
     </div>
 
   <!-- SEQUENCE PANEL: Separate from sidebar, full height -->
-  <div class="sequence-outer-panel" style="width:260px;min-width:200px;max-width:320px;display:flex;flex-direction:column;min-height:0;background:var(--panel);border-left:2px solid var(--accent);border-right:1px solid var(--border);">
+  <div class="sequence-outer-panel">
     <div class="sec" style="border:none;display:flex;flex-direction:column;min-height:0;flex:1;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
         <div class="sec-title" style="margin:0;color:var(--accent);">SEQUENCE</div>
@@ -1740,26 +1755,23 @@ function renderMap(){
     mctx.fillStyle='#00d4ff'; mctx.textAlign='left'; mctx.textBaseline='alphabetic'; mctx.fillText(lbl,p.x+16,p.y-6); mctx.restore();
   });
 
-  // ── SEQUENCE: build spatial waypoints from sequence panel only ──
-  const _seqSpatialWPs = [];
-  sequence.forEach(seqItem => {
-    if (seqItem.type === 'waypoint' && seqItem.data && seqItem.data.x_m !== undefined) {
-      _seqSpatialWPs.push(seqItem.data);
-    }
-  });
+  // ── SEQUENCE: build active route nodes only when the sequence panel is populated ──
+  const _seqRouteNodes = getActiveSequenceRouteNodes();
 
   // Draw dotted line from robot to current sequence waypoint
-  if (_seqSpatialWPs.length > 0 && missionState !== 'done' && missionState !== 'reached' && missionState !== 'cancelled' && missionState !== 'error') {
+  if (_seqRouteNodes.length > 0 && missionState !== 'done' && missionState !== 'reached' && missionState !== 'cancelled' && missionState !== 'error') {
     let idx = 0;
-    if (typeof missionCurrentIdx === 'number' && missionCurrentIdx < _seqSpatialWPs.length) {
+    if (typeof missionCurrentIdx === 'number' && missionCurrentIdx < _seqRouteNodes.length) {
       idx = missionCurrentIdx;
     }
     const rp = robotToCanvas();
-    const wp1 = wpToCanvas(_seqSpatialWPs[idx]);
+    const activeRouteNode = _seqRouteNodes[idx];
+    const wp1 = activeRouteNode ? wpToCanvas(activeRouteNode.waypoint) : null;
+    const activeRouteColor = activeRouteNode && activeRouteNode.variant === 'branch' ? '#9c27b0' : '#ff6b35';
     if (rp && wp1) {
       mctx.save();
       mctx.setLineDash([7, 7]);
-      mctx.strokeStyle = '#ff6b35';
+      mctx.strokeStyle = activeRouteColor;
       mctx.lineWidth = 2;
       mctx.beginPath();
       mctx.moveTo(rp.x, rp.y);
@@ -1775,22 +1787,25 @@ function renderMap(){
       mctx.lineTo(wp1.x - len * Math.cos(angle + Math.PI/7), wp1.y - len * Math.sin(angle + Math.PI/7));
       mctx.lineTo(wp1.x, wp1.y);
       mctx.closePath();
-      mctx.fillStyle = '#ff6b35';
+      mctx.fillStyle = activeRouteColor;
       mctx.fill();
       mctx.restore();
     }
   }
 
   // Dotted arrows between sequence waypoints only
-  if (_seqSpatialWPs.length > 1) {
+  if (_seqRouteNodes.length > 1) {
     mctx.save();
     mctx.setLineDash([7, 7]);
     mctx.lineWidth = 2;
-    for (let i = 0; i < _seqSpatialWPs.length - 1; i++) {
-      const p1 = wpToCanvas(_seqSpatialWPs[i]);
-      const p2 = wpToCanvas(_seqSpatialWPs[i+1]);
+    for (let i = 0; i < _seqRouteNodes.length - 1; i++) {
+      const routeNode1 = _seqRouteNodes[i];
+      const routeNode2 = _seqRouteNodes[i + 1];
+      const p1 = wpToCanvas(routeNode1.waypoint);
+      const p2 = wpToCanvas(routeNode2.waypoint);
       if (p1 && p2) {
-        mctx.strokeStyle = '#ff6b35';
+        const segmentColor = routeNode2.variant === 'branch' ? '#9c27b0' : '#ff6b35';
+        mctx.strokeStyle = segmentColor;
         mctx.beginPath();
         mctx.moveTo(p1.x, p1.y);
         mctx.lineTo(p2.x, p2.y);
@@ -1805,7 +1820,7 @@ function renderMap(){
         mctx.lineTo(p2.x - len * Math.cos(angle + Math.PI/7), p2.y - len * Math.sin(angle + Math.PI/7));
         mctx.lineTo(p2.x, p2.y);
         mctx.closePath();
-        mctx.fillStyle = '#ff6b35';
+        mctx.fillStyle = segmentColor;
         mctx.fill();
         mctx.setLineDash([7, 7]);
       }
@@ -1815,13 +1830,15 @@ function renderMap(){
   }
 
   // Numbered circles for sequence waypoints only
-  _seqSpatialWPs.forEach((wp,i)=>{
+  _seqRouteNodes.forEach((routeNode, i)=>{
+    const wp = routeNode.waypoint;
     const p=wpToCanvas(wp); if(!p) return;
     const seqNum = wp.id || (i + 1);
+    const routeFill = routeNode.variant === 'branch' ? 'rgba(156,39,176,0.92)' : 'rgba(255,107,53,0.9)';
     mctx.save();
     mctx.beginPath();
     mctx.arc(p.x, p.y, 12, 0, Math.PI * 2);
-    mctx.fillStyle = 'rgba(255,107,53,0.9)';
+    mctx.fillStyle = routeFill;
     mctx.fill();
     mctx.strokeStyle = '#fff';
     mctx.lineWidth = 1.5;
@@ -5823,23 +5840,14 @@ function addToSequence(itemId, itemType, itemData) {
   seqItem.dataset.seqKey = seqKey;
   seqItem.dataset.type = itemType;
   seqItem.style.cursor = seqReorderMode ? 'grab' : 'default';
-  seqItem.style.flexDirection = 'column';
-  seqItem.style.alignItems = 'flex-start';
-  seqItem.style.gap = '4px';
   
   // Header with label and remove button
   const headerDiv = document.createElement('div');
-  headerDiv.style.display = 'flex';
-  headerDiv.style.alignItems = 'center';
-  headerDiv.style.justifyContent = 'space-between';
-  headerDiv.style.width = '100%';
-  headerDiv.style.gap = '8px';
+  headerDiv.className = 'seq-item-header';
   
   // Left group: label + toggle
   const leftGroup = document.createElement('div');
-  leftGroup.style.display = 'flex';
-  leftGroup.style.alignItems = 'center';
-  leftGroup.style.gap = '6px';
+  leftGroup.className = 'seq-item-main';
   
   const label = document.createElement('span');
   label.className = 'seq-label';
@@ -5917,25 +5925,14 @@ function addToSequence(itemId, itemType, itemData) {
     // Drop zone for current case
     const dropZone = document.createElement('div');
     dropZone.className = 'seq-cond-dropzone';
-    dropZone.textContent = 'Drop waypoints here';
+    dropZone.innerHTML = '<div class="seq-cond-empty">Drop waypoints or actions here</div>';
     dropZone.dataset.caseNum = 1;
     dropZone.ondragover = (e) => {
       e.preventDefault();
       dropZone.classList.add('dragover');
     };
     dropZone.ondragleave = () => dropZone.classList.remove('dragover');
-    dropZone.ondrop = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      dropZone.classList.remove('dragover');
-      const wpIdxStr = e.dataTransfer.getData('text/plain');
-      if (wpIdxStr) {
-        const wpIdx = parseInt(wpIdxStr);
-        if (!isNaN(wpIdx) && waypoints[wpIdx]) {
-          addSeqToConditionalCase(seqItem, wpIdx, dropZone);
-        }
-      }
-    };
+    dropZone.ondrop = (e) => handleConditionalCaseDrop(e, seqKey, '', parseInt(dropZone.dataset.caseNum, 10) || 1);
     condWrapper.appendChild(dropZone);
     
     seqItem.appendChild(condWrapper);
@@ -5973,6 +5970,7 @@ function addToSequence(itemId, itemType, itemData) {
           sequence[seqIdx].conditional = undefined;
         }
       }
+      renderMap();
     };
   }
   
@@ -6020,6 +6018,7 @@ function navigateCase(seqItem, direction) {
   const caseNum = caseNums[currentIdx];
   
   updateConditionalUI(seqItem, currentIdx, caseNum, cases);
+  renderMap();
 }
 
 function addConditionalCase(seqItem) {
@@ -6036,6 +6035,7 @@ function addConditionalCase(seqItem) {
   condWrapper.dataset.caseIndex = getOrderedCaseNumbers(cases).length - 1;
   
   updateConditionalUI(seqItem, condWrapper.dataset.caseIndex, newCaseNum, cases);
+  renderMap();
 }
 
 function getOrderedCaseNumbers(cases) {
@@ -6110,22 +6110,204 @@ function getConditionalWaypointLabel(wp) {
   return displayName || 'Unknown';
 }
 
-function getNestedConditionalTarget(seqItemId, caseNum, wpIndex) {
-  const seqItem = document.querySelector(`[data-seq-key="${seqItemId}"]`);
-  if (!seqItem || !seqItem.dataset.cases) return null;
+function encodeConditionalPath(path) {
+  return encodeURIComponent(JSON.stringify(path || []));
+}
+
+function decodeConditionalPath(pathValue) {
+  if (!pathValue) return [];
+  try {
+    const parsed = JSON.parse(decodeURIComponent(pathValue));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    return [];
+  }
+}
+
+function getConditionalCasesContext(seqItemId, parentPathValue) {
+  const seqItem = typeof seqItemId === 'string'
+    ? document.querySelector(`[data-seq-key="${seqItemId}"]`)
+    : seqItemId;
+  if (!seqItem) return null;
+  if (!seqItem.dataset.cases) {
+    seqItem.dataset.cases = JSON.stringify({1: {name: '', wps: []}});
+  }
 
   const cases = JSON.parse(seqItem.dataset.cases);
-  if (!cases[caseNum] || !cases[caseNum].wps || !cases[caseNum].wps[wpIndex]) return null;
+  const parentPath = decodeConditionalPath(parentPathValue);
+  let currentCases = cases;
+  let ownerAction = null;
 
-  const wp = cases[caseNum].wps[wpIndex];
-  if (!wp.nestedCases || !Object.keys(wp.nestedCases).length) {
-    wp.nestedCases = {1: {name: "", wps: []}};
-  }
-  if (wp.nestedCaseIndex === undefined) {
-    wp.nestedCaseIndex = 0;
+  for (const step of parentPath) {
+    const caseBucket = currentCases[step.caseNum];
+    if (!caseBucket || !Array.isArray(caseBucket.wps) || !caseBucket.wps[step.wpIndex]) {
+      return null;
+    }
+
+    ownerAction = caseBucket.wps[step.wpIndex];
+    if (!ownerAction.nestedCases || !Object.keys(ownerAction.nestedCases).length) {
+      ownerAction.nestedCases = {1: {name: '', wps: []}};
+    }
+    if (ownerAction.nestedCaseIndex === undefined) {
+      ownerAction.nestedCaseIndex = 0;
+    }
+    currentCases = ownerAction.nestedCases;
   }
 
-  return { seqItem, cases, wp };
+  return { seqItem, cases, currentCases, parentPath, ownerAction };
+}
+
+function getConditionalActionTarget(seqItemId, entryPathValue) {
+  const entryPath = decodeConditionalPath(entryPathValue);
+  if (!entryPath.length) return null;
+
+  const parentContext = getConditionalCasesContext(seqItemId, encodeConditionalPath(entryPath.slice(0, -1)));
+  if (!parentContext) return null;
+
+  const step = entryPath[entryPath.length - 1];
+  const caseBucket = parentContext.currentCases[step.caseNum];
+  if (!caseBucket || !Array.isArray(caseBucket.wps) || !caseBucket.wps[step.wpIndex]) {
+    return null;
+  }
+
+  const entry = caseBucket.wps[step.wpIndex];
+  if (!entry.isAction) return null;
+  if (!entry.nestedCases || !Object.keys(entry.nestedCases).length) {
+    entry.nestedCases = {1: {name: '', wps: []}};
+  }
+  if (entry.nestedCaseIndex === undefined) {
+    entry.nestedCaseIndex = 0;
+  }
+
+  return { ...parentContext, entryPath, entry, parentCaseNum: step.caseNum, entryIndex: step.wpIndex };
+}
+
+function refreshConditionalSeqItem(seqItem, cases) {
+  seqItem.dataset.cases = JSON.stringify(cases);
+  const condWrapper = seqItem.querySelector('.seq-conditional-wrapper');
+  if (!condWrapper) {
+    renderMap();
+    return;
+  }
+
+  const caseIdx = parseInt(condWrapper.dataset.caseIndex, 10) || 0;
+  const caseInfo = getCaseNumberAtIndex(cases, caseIdx);
+  updateConditionalUI(seqItem, caseInfo.caseIdx, caseInfo.caseNum, cases);
+  renderMap();
+}
+
+function getWaypointFromConditionalEntry(entry) {
+  if (!entry || entry.isAction || entry.wpId === undefined) return null;
+  return waypoints.find(w => w.id === entry.wpId && w.type !== 'ACTION' && w.type !== 'ANCHOR') || null;
+}
+
+function collectActiveConditionalRouteNodes(entries, variant = 'branch') {
+  const collected = [];
+  (entries || []).forEach(entry => {
+    if (!entry) return;
+
+    if (entry.isAction) {
+      if (entry.nestedToggled && entry.nestedCases) {
+        const nestedInfo = getCaseNumberAtIndex(entry.nestedCases, entry.nestedCaseIndex || 0);
+        const activeNestedCase = entry.nestedCases[nestedInfo.caseNum];
+        if (activeNestedCase && Array.isArray(activeNestedCase.wps)) {
+          collected.push(...collectActiveConditionalRouteNodes(activeNestedCase.wps, 'branch'));
+        }
+      }
+      return;
+    }
+
+    const waypoint = getWaypointFromConditionalEntry(entry);
+    if (waypoint && waypoint.x_m !== undefined) {
+      collected.push({ waypoint, variant });
+    }
+  });
+  return collected;
+}
+
+function getActiveSequenceRouteNodes() {
+  if (!sequence.length) {
+    return [];
+  }
+
+  const collected = [];
+  sequence.forEach(seqItem => {
+    if (seqItem.type === 'waypoint' && seqItem.data && seqItem.data.x_m !== undefined) {
+      collected.push({ waypoint: seqItem.data, variant: 'default' });
+      return;
+    }
+
+    if (seqItem.type !== 'action') return;
+
+    const seqItemElement = document.querySelector(`[data-seq-key="${seqItem.seqKey}"]`);
+    if (!seqItemElement || seqItemElement.dataset.hasConditional !== 'true' || !seqItemElement.dataset.cases) {
+      return;
+    }
+
+    const cases = JSON.parse(seqItemElement.dataset.cases);
+    const condWrapper = seqItemElement.querySelector('.seq-conditional-wrapper');
+    const caseInfo = getCaseNumberAtIndex(cases, parseInt(condWrapper?.dataset.caseIndex, 10) || 0);
+    const activeCase = cases[caseInfo.caseNum];
+    if (activeCase && Array.isArray(activeCase.wps)) {
+      collected.push(...collectActiveConditionalRouteNodes(activeCase.wps, 'branch'));
+    }
+  });
+
+  return collected;
+}
+
+function getSequenceSpatialWaypoints() {
+  return getActiveSequenceRouteNodes().map(routeNode => routeNode.waypoint);
+}
+
+function renderConditionalEntries(seqItem, parentPathValue, caseNum, entries) {
+  if (!entries || !entries.length) {
+    return '<div class="seq-cond-empty">Drop waypoints or actions here</div>';
+  }
+
+  const parentPath = decodeConditionalPath(parentPathValue);
+  return entries.map((entry, entryIndex) => {
+    const entryPathValue = encodeConditionalPath([...parentPath, { caseNum, wpIndex: entryIndex }]);
+    if (entry.isAction) {
+      const nestedCases = entry.nestedCases && Object.keys(entry.nestedCases).length
+        ? entry.nestedCases
+        : {1: {name: '', wps: []}};
+      const nestedInfo = getCaseNumberAtIndex(nestedCases, entry.nestedCaseIndex || 0);
+      const nestedCaseNum = nestedInfo.caseNum;
+      const nestedCase = nestedCases[nestedCaseNum] || { name: '', wps: [] };
+      const nestedBody = entry.nestedToggled
+        ? `<div class="seq-nested-body">
+             <div class="seq-nested-caption">Active nested case for ${escapeHtml(getConditionalWaypointLabel(entry))}</div>
+             <div class="seq-case-toolbar">
+               <button class="seq-cond-nav" type="button" onclick="navigateConditionalCase(event, '${seqItem.dataset.seqKey}', '${entryPathValue}', -1)">◀</button>
+               <span class="seq-cond-index">&lt; ${nestedCaseNum} &gt;</span>
+               <input type="text" class="seq-cond-input" placeholder="e.g., GREEN" value="${escapeHtml(nestedCase.name || '')}" oninput="updateConditionalCaseName('${seqItem.dataset.seqKey}', '${entryPathValue}', ${nestedCaseNum}, this.value)">
+               <button class="seq-case-add" type="button" onclick="addConditionalNestedCase(event, '${seqItem.dataset.seqKey}', '${entryPathValue}')">+ Add Case</button>
+               <button class="seq-cond-nav" type="button" onclick="navigateConditionalCase(event, '${seqItem.dataset.seqKey}', '${entryPathValue}', 1)">▶</button>
+             </div>
+             <div class="seq-cond-dropzone" data-case-num="${nestedCaseNum}" ondragover="event.preventDefault(); this.classList.add('dragover');" ondragleave="this.classList.remove('dragover');" ondrop="handleConditionalCaseDrop(event, '${seqItem.dataset.seqKey}', '${entryPathValue}', ${nestedCaseNum})">
+               ${renderConditionalEntries(seqItem, entryPathValue, nestedCaseNum, nestedCase.wps)}
+             </div>
+           </div>`
+        : '';
+
+      return `<div class="seq-case-chip seq-case-chip--action" data-wp-index="${entryIndex}" data-case-num="${caseNum}">
+        <div class="seq-case-chip-header">
+          <span class="seq-case-chip-title">${escapeHtml(getConditionalWaypointLabel(entry))}</span>
+          <div class="seq-chip-actions">
+            <input class="seq-nested-toggle" type="checkbox" title="Enable nested cases" onchange="toggleConditionalEntry(event, '${seqItem.dataset.seqKey}', '${entryPathValue}')" ${entry.nestedToggled ? 'checked' : ''}>
+            <button class="seq-chip-remove" type="button" onclick="removeConditionalEntry(event, '${seqItem.dataset.seqKey}', '${parentPathValue}', ${caseNum}, ${entryIndex})" title="Delete item">✕</button>
+          </div>
+        </div>
+        ${nestedBody}
+      </div>`;
+    }
+
+    return `<div class="seq-case-chip" data-wp-index="${entryIndex}" data-case-num="${caseNum}">
+      <span class="seq-case-chip-label">${escapeHtml(getConditionalWaypointLabel(entry))}</span>
+      <button class="seq-chip-remove" type="button" onclick="removeConditionalEntry(event, '${seqItem.dataset.seqKey}', '${parentPathValue}', ${caseNum}, ${entryIndex})" title="Delete waypoint">✕</button>
+    </div>`;
+  }).join('');
 }
 
 function updateConditionalUI(seqItem, caseIdx, caseNum, cases) {
@@ -6141,44 +6323,7 @@ function updateConditionalUI(seqItem, caseIdx, caseNum, cases) {
   indexSpan.textContent = `< ${activeCaseNum} >`;
   input.value = activeCase.name || '';
   dropZone.dataset.caseNum = activeCaseNum;
-  dropZone.innerHTML = (activeCase.wps && activeCase.wps.length > 0)
-    ? activeCase.wps.map((wp, wpIndex) => {
-        // Handle nested actions (detect_color/detect_qr)
-        if (wp.isAction) {
-          const actionLabel = wp.actionType === 'detect_color' ? '🔍 Detect Colour' : '📱 Detect QR';
-          const nestedCases = wp.nestedCases && Object.keys(wp.nestedCases).length ? wp.nestedCases : {1: {name: "", wps: []}};
-          const nestedCaseInfo = getCaseNumberAtIndex(nestedCases, wp.nestedCaseIndex || 0);
-          const nestedCaseNum = nestedCaseInfo.caseNum;
-          const nestedCase = nestedCases[nestedCaseNum] || { name: '', wps: [] };
-          const nestedItemsHtml = nestedCase.wps && nestedCase.wps.length > 0
-            ? nestedCase.wps.map((nestedWp, nestedWpIndex) => `<div style="padding:4px 8px;background:rgba(77,255,145,.1);border:1px solid var(--accent);border-radius:3px;font-size:11px;color:var(--accent);display:flex;align-items:center;justify-content:space-between;gap:6px;" data-nested-wp-index="${nestedWpIndex}"><span>${escapeHtml(getConditionalWaypointLabel(nestedWp))}</span><button style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:14px;padding:0;margin:0;width:16px;height:16px;display:flex;align-items:center;justify-content:center;" onclick="removeWaypointFromNestedCase(event, '${seqItem.dataset.seqKey}', ${activeCaseNum}, ${wpIndex}, ${nestedCaseNum}, ${nestedWpIndex})" title="Delete waypoint">✕</button></div>`).join('')
-            : 'Drop waypoints here';
-          const nestedDisplay = wp.nestedToggled ? 'flex' : 'none';
-          return `<div style="padding:8px;background:rgba(100,150,200,.15);border:1px solid #4dff91;border-radius:3px;font-size:11px;color:var(--accent);margin:4px 0;" data-wp-index="${wpIndex}" data-case-num="${activeCaseNum}">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
-              <span>⚡ ${escapeHtml(actionLabel)}</span>
-              <div style="display:flex;gap:4px;">
-                <input type="checkbox" style="cursor:pointer;" title="Toggle nested conditions" onchange="toggleNestedAction(event, '${seqItem.dataset.seqKey}', ${activeCaseNum}, ${wpIndex})" ${wp.nestedToggled ? 'checked' : ''}>
-                <button style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:14px;padding:0;margin:0;width:16px;height:16px;display:flex;align-items:center;justify-content:center;" onclick="removeWaypointFromConditionalCase(event)" title="Delete">✕</button>
-              </div>
-            </div>
-            <div class="nested-cond-ui" style="display:${nestedDisplay};margin-top:8px;padding:8px;background:rgba(0,0,0,.2);border-radius:3px;gap:4px;flex-direction:column;">
-              <div style="font-size:10px;color:var(--muted);">Nested cases for ${escapeHtml(actionLabel)}:</div>
-              <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:4px;">
-                <button class="seq-cond-nav" style="padding:2px 4px;" onclick="navigateNestedCase(event, '${seqItem.dataset.seqKey}', ${activeCaseNum}, ${wpIndex}, -1)">◀</button>
-                <span class="seq-cond-index">&lt; ${nestedCaseNum} &gt;</span>
-                <input type="text" class="seq-cond-input" placeholder="e.g., GREEN" style="flex:1;min-width:120px;" value="${escapeHtml(nestedCase.name || '')}" oninput="updateNestedCaseName('${seqItem.dataset.seqKey}', ${activeCaseNum}, ${wpIndex}, ${nestedCaseNum}, this.value)">
-                <button style="padding:2px 6px;background:transparent;border:1px solid var(--accent);color:var(--accent);font-size:10px;cursor:pointer;border-radius:2px;" onclick="addNestedCase(event, '${seqItem.dataset.seqKey}', ${activeCaseNum}, ${wpIndex})">+ Add Case</button>
-                <button class="seq-cond-nav" style="padding:2px 4px;" onclick="navigateNestedCase(event, '${seqItem.dataset.seqKey}', ${activeCaseNum}, ${wpIndex}, 1)">▶</button>
-              </div>
-              <div class="seq-cond-dropzone" data-case-num="${nestedCaseNum}" ondragover="event.preventDefault(); this.classList.add('dragover');" ondragleave="this.classList.remove('dragover');" ondrop="handleNestedCaseDrop(event, '${seqItem.dataset.seqKey}', ${activeCaseNum}, ${wpIndex}, ${nestedCaseNum})">${nestedItemsHtml}</div>
-            </div>
-          </div>`;
-        }
-        
-        return `<div style="padding:4px 8px;background:rgba(77,255,145,.1);border:1px solid var(--accent);border-radius:3px;font-size:11px;color:var(--accent);display:flex;align-items:center;justify-content:space-between;gap:6px;" data-wp-index="${wpIndex}" data-case-num="${activeCaseNum}"><span>${escapeHtml(getConditionalWaypointLabel(wp))}</span><button style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:14px;padding:0;margin:0;width:16px;height:16px;display:flex;align-items:center;justify-content:center;" onclick="removeWaypointFromConditionalCase(event)" title="Delete waypoint">✕</button></div>`;
-      }).join('')
-    : 'Drop waypoints here';
+  dropZone.innerHTML = renderConditionalEntries(seqItem, '', activeCaseNum, activeCase.wps || []);
   
   // Bind input change to update case name
   input.oninput = () => {
@@ -6187,165 +6332,84 @@ function updateConditionalUI(seqItem, caseIdx, caseNum, cases) {
   };
 }
 
-function addSeqToConditionalCase(seqItem, wpIdx, dropZone) {
-  if (!seqItem.dataset.cases) {
-    seqItem.dataset.cases = JSON.stringify({1: {name: "", wps: []}});
-  }
-  
-  const cases = JSON.parse(seqItem.dataset.cases);
-  const condWrapper = seqItem.querySelector('.seq-conditional-wrapper');
-  const caseInfo = getCaseNumberAtIndex(cases, parseInt(condWrapper.dataset.caseIndex, 10));
-  const caseIdx = caseInfo.caseIdx;
-  const caseNum = caseInfo.caseNum;
-  
-  if (!cases[caseNum].wps) cases[caseNum].wps = [];
-  
-  const droppedWp = waypoints[wpIdx];
-  cases[caseNum].wps.push(createConditionalWaypointEntry(droppedWp));
-  
-  seqItem.dataset.cases = JSON.stringify(cases);
-  
-  updateConditionalUI(seqItem, caseIdx, caseNum, cases);
-}
-
-function removeWaypointFromConditionalCase(event) {
+function removeConditionalEntry(event, seqItemId, parentPathValue, caseNum, entryIndex) {
   event.stopPropagation();
-  const wpDiv = event.currentTarget.closest('[data-wp-index]');
-  if (!wpDiv) return;
-  
-  const wpIndex = parseInt(wpDiv.dataset.wpIndex);
-  const caseNum = parseInt(wpDiv.dataset.caseNum);
-  
-  // Find the seqItem (parent of the dropzone)
-  const dropZone = wpDiv.parentElement;
-  const condWrapper = dropZone.closest('.seq-conditional-wrapper');
-  const seqItem = condWrapper.closest('.seq-item');
-  
-  if (!seqItem.dataset.cases) return;
-  
-  const cases = JSON.parse(seqItem.dataset.cases);
-  if (cases[caseNum] && cases[caseNum].wps) {
-    cases[caseNum].wps.splice(wpIndex, 1);
-    seqItem.dataset.cases = JSON.stringify(cases);
-    
-    const caseIdx = parseInt(condWrapper.dataset.caseIndex);
-    updateConditionalUI(seqItem, caseIdx, caseNum, cases);
-  }
+  const context = getConditionalCasesContext(seqItemId, parentPathValue);
+  if (!context) return;
+
+  if (!context.currentCases[caseNum] || !Array.isArray(context.currentCases[caseNum].wps)) return;
+  context.currentCases[caseNum].wps.splice(entryIndex, 1);
+  refreshConditionalSeqItem(context.seqItem, context.cases);
 }
 
-function toggleNestedAction(event, seqItemId, caseNum, wpIndex) {
-  event.stopPropagation();
-  const checkbox = event.target;
-  const seqItem = document.querySelector(`[data-seq-key="${seqItemId}"]`);
-  
-  if (!seqItem || !seqItem.dataset.cases) return;
-  
-  const cases = JSON.parse(seqItem.dataset.cases);
-  if (cases[caseNum] && cases[caseNum].wps && cases[caseNum].wps[wpIndex]) {
-    const wp = cases[caseNum].wps[wpIndex];
-    wp.nestedToggled = checkbox.checked;
-    seqItem.dataset.cases = JSON.stringify(cases);
-    
-    const condWrapper = seqItem.querySelector('.seq-conditional-wrapper');
-    const caseIdx = parseInt(condWrapper.dataset.caseIndex);
-    updateConditionalUI(seqItem, caseIdx, caseNum, cases);
-  }
-}
-
-function addNestedCase(event, seqItemId, caseNum, wpIndex) {
-  event.stopPropagation();
-  const target = getNestedConditionalTarget(seqItemId, caseNum, wpIndex);
-  if (!target) return;
-
-  const { seqItem, cases, wp } = target;
-  const nestedCaseNums = getOrderedCaseNumbers(wp.nestedCases);
-  const nextNum = (nestedCaseNums[nestedCaseNums.length - 1] || 0) + 1;
-
-  wp.nestedCases[nextNum] = {name: "", wps: []};
-  wp.nestedCaseIndex = nestedCaseNums.length;
-  seqItem.dataset.cases = JSON.stringify(cases);
-
-  const condWrapper = seqItem.querySelector('.seq-conditional-wrapper');
-  const caseIdx = parseInt(condWrapper.dataset.caseIndex, 10) || 0;
-  updateConditionalUI(seqItem, caseIdx, caseNum, cases);
-}
-
-function navigateNestedCase(event, seqItemId, caseNum, wpIndex, direction) {
-  event.stopPropagation();
-  const target = getNestedConditionalTarget(seqItemId, caseNum, wpIndex);
-  if (!target) return;
-
-  const { seqItem, cases, wp } = target;
-  const nestedCaseNums = getOrderedCaseNumbers(wp.nestedCases);
-  if (!nestedCaseNums.length) return;
-
-  const currentIdx = parseInt(wp.nestedCaseIndex, 10) || 0;
-  wp.nestedCaseIndex = (currentIdx + direction + nestedCaseNums.length) % nestedCaseNums.length;
-  seqItem.dataset.cases = JSON.stringify(cases);
-
-  const condWrapper = seqItem.querySelector('.seq-conditional-wrapper');
-  const caseIdx = parseInt(condWrapper.dataset.caseIndex, 10) || 0;
-  updateConditionalUI(seqItem, caseIdx, caseNum, cases);
-}
-
-function updateNestedCaseName(seqItemId, caseNum, wpIndex, nestedCaseNum, value) {
-  const target = getNestedConditionalTarget(seqItemId, caseNum, wpIndex);
-  if (!target) return;
-
-  const { seqItem, cases, wp } = target;
-  if (!wp.nestedCases[nestedCaseNum]) {
-    wp.nestedCases[nestedCaseNum] = {name: '', wps: []};
-  }
-
-  wp.nestedCases[nestedCaseNum].name = value;
-  seqItem.dataset.cases = JSON.stringify(cases);
-}
-
-function handleNestedCaseDrop(event, seqItemId, caseNum, wpIndex, nestedCaseNum) {
+function handleConditionalCaseDrop(event, seqItemId, parentPathValue, caseNum) {
   event.preventDefault();
   event.stopPropagation();
-  const dropZone = event.currentTarget;
-  dropZone.classList.remove('dragover');
+  event.currentTarget.classList.remove('dragover');
 
-  const wpIdxStr = event.dataTransfer.getData('text/plain');
-  if (!wpIdxStr) return;
+  const source = getDraggedSequenceSource(event.dataTransfer);
+  if (!source) return;
 
-  const target = getNestedConditionalTarget(seqItemId, caseNum, wpIndex);
-  if (!target) return;
+  const context = getConditionalCasesContext(seqItemId, parentPathValue);
+  if (!context) return;
 
-  const droppedWpIdx = parseInt(wpIdxStr, 10);
-  if (Number.isNaN(droppedWpIdx) || !waypoints[droppedWpIdx]) return;
-
-  const { seqItem, cases, wp } = target;
-  if (!wp.nestedCases[nestedCaseNum]) {
-    wp.nestedCases[nestedCaseNum] = {name: '', wps: []};
+  if (!context.currentCases[caseNum]) {
+    context.currentCases[caseNum] = { name: '', wps: [] };
   }
-  if (!wp.nestedCases[nestedCaseNum].wps) {
-    wp.nestedCases[nestedCaseNum].wps = [];
+  if (!Array.isArray(context.currentCases[caseNum].wps)) {
+    context.currentCases[caseNum].wps = [];
   }
 
-  wp.nestedCases[nestedCaseNum].wps.push(createConditionalWaypointEntry(waypoints[droppedWpIdx]));
-  seqItem.dataset.cases = JSON.stringify(cases);
-
-  const condWrapper = seqItem.querySelector('.seq-conditional-wrapper');
-  const caseIdx = parseInt(condWrapper.dataset.caseIndex, 10) || 0;
-  updateConditionalUI(seqItem, caseIdx, caseNum, cases);
+  context.currentCases[caseNum].wps.push(createConditionalWaypointEntry(source.itemData));
+  refreshConditionalSeqItem(context.seqItem, context.cases);
 }
 
-function removeWaypointFromNestedCase(event, seqItemId, caseNum, wpIndex, nestedCaseNum, nestedWpIndex) {
+function toggleConditionalEntry(event, seqItemId, entryPathValue) {
   event.stopPropagation();
-  const target = getNestedConditionalTarget(seqItemId, caseNum, wpIndex);
+  const target = getConditionalActionTarget(seqItemId, entryPathValue);
   if (!target) return;
 
-  const { seqItem, cases, wp } = target;
-  if (!wp.nestedCases[nestedCaseNum] || !wp.nestedCases[nestedCaseNum].wps) return;
+  target.entry.nestedToggled = event.target.checked;
+  refreshConditionalSeqItem(target.seqItem, target.cases);
+}
 
-  wp.nestedCases[nestedCaseNum].wps.splice(nestedWpIndex, 1);
-  seqItem.dataset.cases = JSON.stringify(cases);
+function addConditionalNestedCase(event, seqItemId, entryPathValue) {
+  event.stopPropagation();
+  const target = getConditionalActionTarget(seqItemId, entryPathValue);
+  if (!target) return;
 
-  const condWrapper = seqItem.querySelector('.seq-conditional-wrapper');
-  const caseIdx = parseInt(condWrapper.dataset.caseIndex, 10) || 0;
-  updateConditionalUI(seqItem, caseIdx, caseNum, cases);
+  const nestedCaseNums = getOrderedCaseNumbers(target.entry.nestedCases);
+  const nextNum = (nestedCaseNums[nestedCaseNums.length - 1] || 0) + 1;
+
+  target.entry.nestedCases[nextNum] = {name: '', wps: []};
+  target.entry.nestedCaseIndex = nestedCaseNums.length;
+  target.entry.nestedToggled = true;
+  refreshConditionalSeqItem(target.seqItem, target.cases);
+}
+
+function navigateConditionalCase(event, seqItemId, entryPathValue, direction) {
+  event.stopPropagation();
+  const target = getConditionalActionTarget(seqItemId, entryPathValue);
+  if (!target) return;
+
+  const nestedCaseNums = getOrderedCaseNumbers(target.entry.nestedCases);
+  if (!nestedCaseNums.length) return;
+
+  const currentIdx = parseInt(target.entry.nestedCaseIndex, 10) || 0;
+  target.entry.nestedCaseIndex = (currentIdx + direction + nestedCaseNums.length) % nestedCaseNums.length;
+  refreshConditionalSeqItem(target.seqItem, target.cases);
+}
+
+function updateConditionalCaseName(seqItemId, entryPathValue, nestedCaseNum, value) {
+  const target = getConditionalActionTarget(seqItemId, entryPathValue);
+  if (!target) return;
+
+  if (!target.entry.nestedCases[nestedCaseNum]) {
+    target.entry.nestedCases[nestedCaseNum] = {name: '', wps: []};
+  }
+
+  target.entry.nestedCases[nestedCaseNum].name = value;
+  target.seqItem.dataset.cases = JSON.stringify(target.cases);
 }
 
 function clearSeq() {
