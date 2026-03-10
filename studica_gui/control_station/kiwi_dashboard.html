@@ -436,12 +436,25 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 /* ═══════════════════════════════════════════════
    MAP EDITOR MODAL
 ═══════════════════════════════════════════════ */
-.editor-overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:900;display:none;flex-direction:column;align-items:center;padding:18px;}
+.editor-overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:900;display:none;flex-direction:column;align-items:center;padding:14px;}
 .editor-overlay.open{display:flex;}
-.editor-box{background:var(--panel);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column;width:100%;max-width:1200px;height:100%;overflow:hidden;}
-.editor-hdr{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--panel2);flex-shrink:0;flex-wrap:wrap;}
+.editor-box{background:var(--panel);border:1px solid var(--border);border-radius:10px;display:flex;flex-direction:column;width:100%;max-width:1380px;height:100%;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.45);}
+.editor-hdr{display:flex;flex-direction:column;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(21,31,46,.96),rgba(15,24,36,.92));flex-shrink:0;}
 .editor-hdr .title{color:var(--accent);font-size:13px;font-weight:700;letter-spacing:2px;flex:0 0 auto;}
 .editor-hdr .gap{flex:1;}
+.editor-menu{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.editor-menu-group{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid rgba(47,69,92,.85);border-radius:10px;background:rgba(8,18,29,.62);}
+.editor-menu-label{font-size:9px;color:var(--muted2);letter-spacing:.18em;text-transform:uppercase;}
+.editor-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.editor-toolbar-group{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 8px;border:1px solid rgba(47,69,92,.85);border-radius:10px;background:rgba(8,18,29,.62);}
+.editor-status-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.editor-folder-pill{padding:4px 8px;border-radius:999px;border:1px solid rgba(77,255,145,.35);background:rgba(77,255,145,.08);color:#bdf9d4;font-size:10px;letter-spacing:.04em;}
+.editor-quick-btn{padding:6px 10px;border:1px solid rgba(61,88,112,.9);border-radius:8px;background:rgba(10,18,30,.85);color:var(--text2);font-family:inherit;font-size:11px;cursor:pointer;transition:all .15s ease;white-space:nowrap;}
+.editor-quick-btn:hover{border-color:var(--accent);background:rgba(0,212,255,.1);color:#fff;}
+.editor-mini-btn{padding:5px 8px;border:1px solid rgba(61,88,112,.9);border-radius:7px;background:rgba(10,18,30,.78);color:var(--muted2);font-family:inherit;font-size:10px;cursor:pointer;transition:all .15s ease;white-space:nowrap;}
+.editor-mini-btn:hover{border-color:var(--accent);color:#fff;}
+.editor-tool-btn{display:inline-flex;align-items:center;gap:7px;}
+.editor-tool-btn .shortcut{font-size:9px;color:var(--muted2);letter-spacing:.08em;}
 .eh-group{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted2);}
 .eh-input{background:#21262d;border:1px solid var(--border);color:var(--accent);font-family:inherit;font-size:12px;width:72px;padding:4px 6px;border-radius:3px;outline:none;text-align:center;}
 .eh-input:focus{border-color:var(--accent);}
@@ -458,25 +471,47 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .eh-btn.save-e:hover{background:rgba(77,255,145,.25);}
 .eh-btn.close-e{background:rgba(255,68,85,.08);border-color:var(--red);color:var(--red);}
 .eh-btn.close-e:hover{background:rgba(255,68,85,.2);}
+.eh-btn.tool-active{background:rgba(0,212,255,.12);border-color:var(--accent);color:var(--accent);}
+.eh-btn.tool-active:hover{background:rgba(0,212,255,.22);}
+.eh-btn.tool-warn{background:rgba(255,213,79,.10);border-color:rgba(255,213,79,.55);color:var(--yellow);}
+.eh-btn.tool-warn:hover{background:rgba(255,213,79,.18);border-color:var(--yellow);}
 .eh-sep{width:1px;height:22px;background:var(--border);}
-.editor-body{display:flex;flex:1;overflow:hidden;}
-.editor-canvas-wrap{flex:1;overflow:auto;display:flex;align-items:flex-start;padding:10px;background:var(--bg);}
-#editorCanvas{cursor:crosshair;image-rendering:pixelated;display:block;}
-.editor-sidebar{width:240px;flex-shrink:0;border-left:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;}
+.editor-body{display:flex;flex:1;overflow:hidden;min-height:0;}
+.editor-canvas-wrap{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:14px;background:radial-gradient(circle at top left,rgba(0,212,255,.06),transparent 32%),linear-gradient(180deg,rgba(7,12,20,.96),rgba(10,14,23,.98));scroll-behavior:smooth;}
+.editor-canvas-wrap.is-panning{cursor:grabbing;}
+#editorCanvas{cursor:default;image-rendering:pixelated;display:block;box-shadow:0 16px 40px rgba(0,0,0,.35);}
+.editor-hud{position:absolute;left:16px;bottom:16px;z-index:5;pointer-events:none;background:rgba(10,14,23,.72);border:1px solid rgba(30,45,61,.9);border-radius:8px;padding:8px 10px;min-width:180px;}
+.editor-hud .row{display:flex;gap:10px;align-items:center;justify-content:space-between;font-family:var(--font-mono);font-size:11px;color:var(--muted2);}
+.editor-hud .v{color:var(--accent);font-weight:700;}
+.editor-sidebar{width:330px;flex-shrink:0;border-left:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;background:linear-gradient(180deg,rgba(13,20,31,.96),rgba(10,18,29,.92));}
 .editor-sidebar::-webkit-scrollbar{width:3px;}.editor-sidebar::-webkit-scrollbar-thumb{background:var(--border);}
-.esec{padding:10px 13px;border-bottom:1px solid var(--border);}
+.esec{padding:12px 13px;border-bottom:1px solid var(--border);}
 .esec-title{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}
-.map-item{display:flex;align-items:center;gap:7px;padding:7px 9px;margin-bottom:4px;background:var(--panel2);border:1px solid var(--border);border-radius:4px;cursor:pointer;transition:all .15s;}
-.map-item:hover{border-color:var(--accent);background:rgba(0,212,255,.06);}
-.map-item.active{border-color:var(--green);background:rgba(77,255,145,.07);}
-.map-item .mn{font-size:11px;color:var(--text);flex:1;word-break:break-all;}
-.map-item .ms{font-size:9px;color:var(--muted2);}
+.esec-title-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;}
+.editor-folder-path{font-size:10px;color:var(--muted2);line-height:1.5;margin-bottom:10px;word-break:break-word;}
+.editor-library-grid{display:grid;gap:10px;}
+.map-card{display:flex;flex-direction:column;gap:10px;padding:10px;border:1px solid rgba(36,52,70,.95);border-radius:12px;background:linear-gradient(180deg,rgba(17,27,40,.96),rgba(11,18,28,.96));cursor:pointer;transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease,background .15s ease;}
+.map-card:hover{transform:translateY(-1px);border-color:rgba(0,212,255,.52);box-shadow:0 10px 28px rgba(0,212,255,.08);}
+.map-card.active{border-color:rgba(77,255,145,.62);box-shadow:0 0 0 1px rgba(77,255,145,.15) inset,0 10px 28px rgba(77,255,145,.08);background:linear-gradient(180deg,rgba(17,34,40,.96),rgba(11,22,25,.96));}
+.map-thumb-wrap{position:relative;height:132px;border-radius:10px;border:1px solid rgba(61,88,112,.8);background:linear-gradient(180deg,rgba(18,29,44,.92),rgba(8,13,21,.96));overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.map-thumb{max-width:100%;max-height:100%;width:100%;height:100%;object-fit:cover;image-rendering:pixelated;}
+.map-thumb-empty{font-size:11px;color:var(--muted2);letter-spacing:.08em;text-transform:uppercase;}
+.map-card-body{display:flex;flex-direction:column;gap:4px;min-width:0;}
+.map-card-name{font-size:12px;color:var(--text1);font-weight:700;word-break:break-word;}
+.map-card-meta{font-size:10px;color:var(--muted2);line-height:1.6;}
+.map-card-actions{display:flex;gap:8px;}
+.map-card-action{flex:1;padding:8px 10px;border-radius:8px;border:1px solid rgba(61,88,112,.9);background:rgba(10,18,30,.85);color:var(--text2);font-family:inherit;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all .15s ease;}
+.map-card-action:hover{border-color:var(--accent);background:rgba(0,212,255,.12);color:#fff;}
+.map-card-action.primary{border-color:rgba(77,255,145,.48);color:#bdf9d4;}
+.map-card-action.primary:hover{border-color:var(--green);background:rgba(77,255,145,.12);}
 .map-empty{text-align:center;color:var(--muted);font-size:10px;padding:14px 0;line-height:2;}
 .save-name-row{display:flex;gap:6px;align-items:center;margin-bottom:8px;}
 .save-name-inp{flex:1;background:#21262d;border:1px solid var(--border);color:var(--accent);font-family:inherit;font-size:11px;padding:5px 7px;border-radius:3px;outline:none;}
 .save-name-inp:focus{border-color:var(--accent);}
 .use-map-btn{width:100%;padding:8px;background:rgba(77,255,145,.1);border:1px solid var(--green);color:var(--green);font-family:inherit;font-size:11px;cursor:pointer;border-radius:3px;letter-spacing:1px;text-transform:uppercase;transition:all .15s;margin-top:8px;}
 .use-map-btn:hover{background:rgba(77,255,145,.22);}
+.use-map-btn.secondary{background:rgba(0,212,255,.08);border-color:var(--accent);color:var(--accent);}
+.use-map-btn.secondary:hover{background:rgba(0,212,255,.18);}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--green);color:var(--green);padding:8px 22px;border-radius:20px;font-size:12px;z-index:9999;letter-spacing:.5px;pointer-events:none;opacity:0;transition:opacity .3s;}
 .toast.show{opacity:1;}
 
@@ -1085,65 +1120,103 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
   <div class="editor-box">
     <!-- header bar -->
     <div class="editor-hdr">
-      <span class="title">🗺 MAP EDITOR</span>
-
-      <div class="eh-group">
-        <span>W(m):</span>
-        <input class="eh-input" id="eW" type="number" value="4" min="0.5" max="50" step="0.5">
-        <span>H(m):</span>
-        <input class="eh-input" id="eH" type="number" value="4" min="0.5" max="50" step="0.5">
-        <span>Cell(cm):</span>
-        <input class="eh-input" id="eCell" type="number" value="10" min="1" max="50" step="1">
-        <button class="eh-btn build" onclick="buildCanvas()">▶ Build</button>
+      <div class="editor-menu">
+        <span class="title">🗺 MAP EDITOR</span>
+        <div class="editor-menu-group">
+          <span class="editor-menu-label">File</span>
+          <button class="editor-quick-btn" onclick="editorNewMap()">✚ New</button>
+          <button class="editor-quick-btn" onclick="editorOpenMapDialog()">📂 Open Files</button>
+          <button class="editor-quick-btn" onclick="editorSaveMap()">💾 Save</button>
+          <button class="editor-quick-btn" onclick="editorSaveMapAs()">💾 Save As</button>
+        </div>
+        <div class="editor-menu-group">
+          <span class="editor-menu-label">View</span>
+          <button class="editor-quick-btn" onclick="editorZoomBy(-2)">－ Zoom</button>
+          <button class="editor-quick-btn" onclick="editorZoomToFit()">⤢ Fit</button>
+          <button class="editor-quick-btn" onclick="editorZoomBy(2)">＋ Zoom</button>
+        </div>
+        <div class="editor-menu-group">
+          <span class="editor-menu-label">Storage</span>
+          <span class="editor-folder-pill" id="editorMapFolderLabel">save/maps</span>
+        </div>
+        <div class="gap"></div>
+        <button class="eh-btn close-e" onclick="closeEditor()">✕ Close</button>
       </div>
 
-      <div class="eh-sep"></div>
+      <div class="editor-toolbar">
+        <div class="editor-toolbar-group eh-group">
+          <span>W(m):</span>
+          <input class="eh-input" id="eW" type="number" value="4" min="0.5" max="50" step="0.5">
+          <span>H(m):</span>
+          <input class="eh-input" id="eH" type="number" value="4" min="0.5" max="50" step="0.5">
+          <span>Cell(cm):</span>
+          <input class="eh-input" id="eCell" type="number" value="10" min="1" max="50" step="1">
+          <button class="eh-btn build" onclick="buildCanvas()">▶ Build</button>
+        </div>
 
-      <div class="thick-row">
-        <span>Thickness:</span>
-        <input type="range" id="wallThick" min="1" max="10" step="1" value="1" oninput="onThickChange()">
-        <span class="thick-val" id="wallThickVal">1 cell</span>
+        <div class="editor-toolbar-group thick-row">
+          <span>Thickness:</span>
+          <input type="range" id="wallThick" min="1" max="10" step="1" value="1" oninput="onThickChange()">
+          <span class="thick-val" id="wallThickVal">1 cell</span>
+        </div>
+
+        <div class="editor-toolbar-group" id="editorTools">
+          <button class="eh-btn border tool-active editor-tool-btn" id="eToolSelect" onclick="setEditorTool('select')"><span>🖱</span><span>Pointer</span><span class="shortcut">1</span></button>
+          <button class="eh-btn border editor-tool-btn" id="eToolPan" onclick="setEditorTool('pan')"><span>✋</span><span>Pan</span><span class="shortcut">2</span></button>
+          <button class="eh-btn border editor-tool-btn" id="eToolPaint" onclick="setEditorTool('paint')"><span>🖌</span><span>Paint</span><span class="shortcut">3</span></button>
+          <button class="eh-btn border editor-tool-btn" id="eToolErase" onclick="setEditorTool('erase')"><span>⌫</span><span>Eraser</span><span class="shortcut">4</span></button>
+          <button class="eh-btn border editor-tool-btn" id="eToolRect" onclick="setEditorTool('rect')"><span>▭</span><span>Box</span><span class="shortcut">5</span></button>
+          <button class="eh-btn border editor-tool-btn" id="eToolLine" onclick="setEditorTool('line')"><span>／</span><span>Line</span><span class="shortcut">6</span></button>
+          <button class="eh-btn tool-warn editor-tool-btn" id="eToolMeasure" onclick="setEditorTool('measure')"><span>📏</span><span>Measure</span><span class="shortcut">7</span></button>
+          <button class="eh-btn wall-off" id="wallBtn" onclick="toggleWallMode()">🧱 Wall Mode OFF</button>
+        </div>
+
+        <div class="editor-toolbar-group eh-group">
+          <span>Name:</span>
+          <input class="save-name-inp" id="eSaveName" type="text" value="arena_map" placeholder="map name" style="width:140px;">
+          <button class="eh-btn border" onclick="editorFillBorder()">□ Border</button>
+          <button class="eh-btn clear-e" onclick="editorClearAll()">✕ Clear</button>
+          <button class="eh-btn save-e" onclick="editorSaveMap()">💾 Save Map</button>
+          <button class="eh-btn border" onclick="editorSaveMapAs()">💾 Save As</button>
+        </div>
       </div>
 
-      <div class="eh-sep"></div>
-
-      <button class="eh-btn wall-off" id="wallBtn" onclick="toggleWallMode()">🧱 Wall Mode OFF</button>
-      <div class="anchor-hint" id="anchorHint" style="display:none">📍 Click=anchor · Arrows=move · ↑↓←→=wall</div>
-      <button class="eh-btn border" onclick="editorFillBorder()">□ Add Border</button>
-      <button class="eh-btn clear-e" onclick="editorClearAll()">✕ Clear All</button>
-
-      <div class="eh-sep"></div>
-
-      <div class="eh-group">
-        <span>Name:</span>
-        <input class="save-name-inp" id="eSaveName" type="text" value="arena_map" placeholder="map name" style="width:120px;">
-        <button class="eh-btn save-e" onclick="editorSaveMap()">💾 Save Map</button>
+      <div class="editor-status-row">
+        <div class="anchor-hint" id="toolHint" style="display:inline">Mouse: wheel=zoom, middle/space drag=pan, drag corner handles=resize, Shift=lock axis, Del=delete, Ctrl+Z/Y=undo/redo</div>
+        <div class="anchor-hint" id="anchorHint" style="display:none">📍 Click=anchor · Arrow keys=move anchor · WASD=wall direction</div>
       </div>
-
-      <div class="gap"></div>
-      <button class="eh-btn close-e" onclick="closeEditor()">✕ Close</button>
     </div>
 
     <!-- body: canvas + sidebar -->
     <div class="editor-body">
-      <div class="editor-canvas-wrap" id="editorCanvasWrap">
+      <div class="editor-canvas-wrap" id="editorCanvasWrap" style="position:relative;">
         <canvas id="editorCanvas"></canvas>
+        <div class="editor-hud" id="editorHud" style="display:none;">
+          <div class="row"><span>Cell</span><span class="v" id="hudCell">—</span></div>
+          <div class="row"><span>m</span><span class="v" id="hudMeters">—</span></div>
+          <div class="row"><span>Zoom</span><span class="v" id="hudZoom">—</span></div>
+        </div>
       </div>
 
       <!-- sidebar: saved maps -->
       <div class="editor-sidebar">
         <div class="esec">
-          <div class="esec-title">Saved Maps</div>
-          <div id="mapLibrary">
+          <div class="esec-title-row">
+            <div class="esec-title">Saved Maps</div>
+            <button class="editor-mini-btn" onclick="editorOpenMapDialog()">Open Dialog</button>
+          </div>
+          <div class="editor-folder-path" id="editorMapFolderPath">Saving arenas to: save/maps</div>
+          <div id="mapLibrary" class="editor-library-grid">
             <div class="map-empty">No saved maps yet.<br>Build &amp; save to see them here.</div>
           </div>
         </div>
         <div class="esec" style="flex:1">
-          <div class="esec-title">Load Selected Map</div>
+          <div class="esec-title">Current Editor Map</div>
           <div id="loadedMapInfo" style="font-size:10px;color:var(--muted2);line-height:1.8;">
-            Select a map from the list above, then click Use Map to load it into the dashboard.
+            Push the current drawn canvas into the dashboard. This applies unsaved edits too.
           </div>
-          <button class="use-map-btn" onclick="useSelectedMap()" id="useMapBtn" disabled>▶ Use Map in Dashboard</button>
+          <button class="use-map-btn" onclick="useEditorMapInDashboard()" id="useMapBtn">▶ Use Current Map in Dashboard</button>
+          <button class="use-map-btn secondary" onclick="focusEditorCanvas()">⤢ Focus Canvas</button>
         </div>
       </div>
     </div>
@@ -2152,6 +2225,11 @@ function connect(){
       }
       if(d.type==='map_list') {
         console.log('[MAP] Received map_list:', d.maps);
+        lastKnownMaps = Array.isArray(d.maps) ? d.maps : [];
+        if(d.folder) {
+          mapLibraryFolder = d.folder;
+          updateMapFolderLabel();
+        }
         refreshMapLibrary(d.maps);
         showHomeMapLibrary(d.maps);
       }
@@ -2159,11 +2237,14 @@ function connect(){
         console.log('[MAP] Received map_data:', {name: d.name, cols: d.cols, rows: d.rows, resolution: d.resolution, pixelsLength: d.pixels ? d.pixels.length : 'undefined'});
         loadMapData(d);
       }
+      if(d.type==='map_dialog_cancelled') {
+        showToast(d.mode==='save' ? 'Save cancelled' : 'Open cancelled');
+      }
       if(d.type==='map_load_error') {
         console.error('[MAP] Load error:', d.error);
         showToast('❌ Map load error: ' + d.error);
       }
-      if(d.type==='map_saved'){ showToast('💾 Map saved: '+d.name); send({type:'list_maps'}); }
+      if(d.type==='map_saved'){ showToast('💾 Map saved: ' + (d.path || d.name)); send({type:'list_maps'}); }
       if(d.type==='map_save_error') showToast('❌ Save error: '+d.msg);
       if(d.type==='anchors_list') {
         console.log('[ANCHOR] Received anchors_list:', d.anchors);
@@ -2218,7 +2299,16 @@ function connect(){
   };
 }
 function retry(){ retries++; document.getElementById('dbgRetry').textContent=retries; setTimeout(connect,Math.min(500*Math.pow(2,Math.min(retries-1,4)),8000)); }
-function send(obj){ if(ws&&ws.readyState===WebSocket.OPEN) try{ console.log('[WS] Sending:', obj); ws.send(JSON.stringify(obj));}catch(_){} }
+function send(obj){
+  if(!(ws&&ws.readyState===WebSocket.OPEN)) return false;
+  try{
+    console.log('[WS] Sending:', obj);
+    ws.send(JSON.stringify(obj));
+    return true;
+  }catch(_){
+    return false;
+  }
+}
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&(!ws||ws.readyState>1)) connect(); });
 connect();
 
@@ -4322,31 +4412,270 @@ function showToast(msg, dur=2800){
 // ────────────────────────────────────────────────────────────────────────────
 // MAP EDITOR  v4  — crosshair distances + anchor + arrow keys + dir walls
 // ────────────────────────────────────────────────────────────────────────────
-let eGrid=null;           // Uint8Array: 1=occupied 0=free
+let eBaseGrid=null;       // Uint8Array: 1=occupied 0=free (manual paint + wall mode)
+let eGrid=null;           // Uint8Array: composite = base + rasterized shapes
 let eCols=0, eRows=0, eRes=0.1;   // m/cell
 let eSC=8;                // px/cell (editor)
 let ePainting=null;       // 1=draw wall 0=erase  (drag mode)
 let eWallMode=false;
 let eWallThick=1;         // cells thick (both borders and placed walls)
 let selectedMapName=null;
+let mapLibraryFolder='save/maps';
+let lastKnownMaps=[];
+
+// advanced draw tools
+let eTool='select';        // 'select'|'pan'|'paint'|'erase'|'rect'|'line'|'measure'
+let eDragStart=null;       // {r,c}
+let eDragEnd=null;         // {r,c}
+let eIsDraggingTool=false;
+let eLastToolPreview=null; // cached preview for drawEditor
+
+// vector shapes (selectable / resizable)
+let eShapes=[];            // {id,type, ...}
+let eNextShapeId=1;
+let eSelectedShapeId=null;
+let eSelDrag=null;         // {mode:'move'|'resize', handle, startCell, origShape}
+
+// measure tool
+let eMeasureStart=null;    // {r,c}
+let eMeasureEnd=null;      // {r,c}
+
+// pan/zoom
+let eSpaceDown=false;
+let eIsPanning=false;
+let ePanStart=null;        // {x,y,sl,st}
+
+// undo/redo (grid snapshots)
+const eUndoStack=[];
+const eRedoStack=[];
+let eDidModifySinceDown=false;
 
 // crosshair / anchor state
 let eCursor={r:-1,c:-1};  // current mouse cell
 let eAnchor=null;          // {r,c} — locked anchor point after click
 let eDirPopupDir=null;     // 'up'|'down'|'left'|'right' for pending wall
+let eHoverShapeId=null;
+let eHoverHandle=null;
 
 const eCanvas = document.getElementById('editorCanvas');
 const eCtx    = eCanvas.getContext('2d');
 
+function focusEditorLibrary(){
+  document.getElementById('mapLibrary')?.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function focusEditorCanvas(){
+  document.getElementById('editorCanvasWrap')?.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function centerEditorCanvasView(){
+  const wrap = document.getElementById('editorCanvasWrap');
+  if(!wrap || !eCanvas) return;
+  requestAnimationFrame(()=>{
+    wrap.scrollLeft = Math.max(0, (eCanvas.width - wrap.clientWidth) / 2);
+    wrap.scrollTop = Math.max(0, (eCanvas.height - wrap.clientHeight) / 2);
+  });
+}
+
+function editorNewMap(){
+  selectedMapName=null;
+  document.getElementById('eSaveName').value='arena_map';
+  buildCanvas();
+  focusEditorCanvas();
+}
+
+function editorOpenMapDialog(){
+  if(!send({type:'open_map_dialog'})){
+    showToast('❌ Save/Open needs the Python dashboard backend. Run kiwi_dashboard.py, not python -m http.server.');
+  }
+}
+
+function collectEditorMapPayload(){
+  if(!eGrid){
+    showToast('❌ Build a map first!');
+    return null;
+  }
+  rebuildCompositeGrid();
+  const name=(document.getElementById('eSaveName').value||'arena_map').trim().replace(/[^a-zA-Z0-9_\-]/g,'_');
+  document.getElementById('eSaveName').value=name;
+  selectedMapName=name;
+  const pixels=[];
+  for(let i=0;i<eGrid.length;i++) pixels.push(eGrid[i]?0:254);
+  return { name, cols:eCols, rows:eRows, resolution:eRes, pixels };
+}
+
+function editorCursorForHit(hit){
+  if(eWallMode) return 'none';
+  if(eIsPanning) return 'grabbing';
+  if(eTool==='pan') return 'grab';
+  if(eTool==='paint') return 'cell';
+  if(eTool==='erase') return 'not-allowed';
+  if(eTool==='rect' || eTool==='line' || eTool==='measure') return 'crosshair';
+  if(!hit) return 'default';
+  if(hit.hit==='body') return 'move';
+  if(hit.handle==='nw' || hit.handle==='se') return 'nwse-resize';
+  if(hit.handle==='ne' || hit.handle==='sw') return 'nesw-resize';
+  return 'crosshair';
+}
+
+function syncEditorCursor(cell){
+  const wrap=document.getElementById('editorCanvasWrap');
+  if(wrap) wrap.classList.toggle('is-panning', eIsPanning);
+  if(eWallMode){
+    eCanvas.style.cursor='none';
+    return;
+  }
+  if(eIsPanning){
+    eCanvas.style.cursor='grabbing';
+    return;
+  }
+  const hit=(eTool==='select' && cell) ? shapeAtCell(cell) : null;
+  eCanvas.style.cursor=editorCursorForHit(hit);
+}
+
+function deepCloneShapes(shapes){
+  return (shapes||[]).map(s=>JSON.parse(JSON.stringify(s)));
+}
+
+function rebuildCompositeGrid(){
+  if(!eBaseGrid){ eGrid=null; return; }
+  eGrid = eBaseGrid.slice(0);
+  if(!eShapes || !eShapes.length) return;
+
+  const mark=(r,c)=>{
+    if(r>=0&&r<eRows&&c>=0&&c<eCols) eGrid[r*eCols+c]=1;
+  };
+
+  const applyThick=(r,c,thick)=>{
+    const t=Math.max(1,thick||1);
+    const half=Math.floor(t/2);
+    for(let rr=r-half; rr<r+(t-half); rr++){
+      for(let cc=c-half; cc<c+(t-half); cc++){
+        mark(rr,cc);
+      }
+    }
+  };
+
+  const bresenham=(a,b)=>{
+    const out=[];
+    let x0=a.c, y0=a.r, x1=b.c, y1=b.r;
+    const dx=Math.abs(x1-x0), dy=Math.abs(y1-y0);
+    const sx=(x0<x1)?1:-1;
+    const sy=(y0<y1)?1:-1;
+    let err=dx-dy;
+    while(true){
+      out.push({r:y0,c:x0});
+      if(x0===x1 && y0===y1) break;
+      const e2=2*err;
+      if(e2>-dy){ err-=dy; x0+=sx; }
+      if(e2< dx){ err+=dx; y0+=sy; }
+    }
+    return out;
+  };
+
+  for(const s of eShapes){
+    const thick=Math.max(1, s.thick||1);
+    if(s.type==='rect'){
+      const rr0=Math.min(s.r0,s.r1), rr1=Math.max(s.r0,s.r1);
+      const cc0=Math.min(s.c0,s.c1), cc1=Math.max(s.c0,s.c1);
+      if(s.fill){
+        for(let r=rr0;r<=rr1;r++) for(let c=cc0;c<=cc1;c++) applyThick(r,c,thick);
+      } else {
+        for(let c=cc0;c<=cc1;c++){ applyThick(rr0,c,thick); applyThick(rr1,c,thick); }
+        for(let r=rr0;r<=rr1;r++){ applyThick(r,cc0,thick); applyThick(r,cc1,thick); }
+      }
+    }
+    if(s.type==='line'){
+      const pts=bresenham({r:s.r0,c:s.c0},{r:s.r1,c:s.c1});
+      for(const p of pts) applyThick(p.r,p.c,thick);
+    }
+  }
+}
+
 // ── open / close ──────────────────────────────────────────────────────────────
 function openEditor(){
   document.getElementById('editorOverlay').classList.add('open');
+  updateMapFolderLabel();
   send({type:'list_maps'});
-  if(!eGrid) buildCanvas();
+  const hud=document.getElementById('editorHud');
+  if(hud) hud.style.display='block';
+  if(!eBaseGrid) buildCanvas();
+  syncEditorToolButtons();
+  syncEditorCursor(eCursor.r>=0 ? eCursor : null);
 }
 function closeEditor(){
   closeDirPopup();
   document.getElementById('editorOverlay').classList.remove('open');
+  const hud=document.getElementById('editorHud');
+  if(hud) hud.style.display='none';
+  eHoverShapeId=null;
+  eHoverHandle=null;
+}
+
+function editorIsOpen(){
+  return document.getElementById('editorOverlay').classList.contains('open');
+}
+
+function setEditorTool(tool){
+  eTool = tool;
+  // switching tools cancels any in-progress drag
+  eIsDraggingTool=false; eDragStart=null; eDragEnd=null; eLastToolPreview=null;
+  eMeasureStart=null; eMeasureEnd=null;
+  eSelDrag=null;
+  eHoverShapeId=null;
+  eHoverHandle=null;
+
+  // wall mode is a separate interaction model; turning tools on disables wall mode
+  if(eWallMode){
+    eWallMode=false;
+    const btn=document.getElementById('wallBtn');
+    btn.textContent = '🧱 Wall Mode OFF';
+    btn.className   = 'eh-btn wall-off';
+    document.getElementById('anchorHint').style.display = 'none';
+    eAnchor=null; closeDirPopup();
+  }
+
+  const map={select:'eToolSelect',pan:'eToolPan',paint:'eToolPaint',erase:'eToolErase',rect:'eToolRect',line:'eToolLine',measure:'eToolMeasure'};
+  Object.values(map).forEach(id=>document.getElementById(id)?.classList.remove('tool-active'));
+  document.getElementById(map[tool])?.classList.add('tool-active');
+  if(tool!=='select') eSelectedShapeId=null;
+  drawEditor();
+  syncEditorCursor(eCursor.r>=0 ? eCursor : null);
+}
+
+function syncEditorToolButtons(){
+  const map={select:'eToolSelect',pan:'eToolPan',paint:'eToolPaint',erase:'eToolErase',rect:'eToolRect',line:'eToolLine',measure:'eToolMeasure'};
+  Object.values(map).forEach(id=>document.getElementById(id)?.classList.remove('tool-active'));
+  document.getElementById(map[eTool||'select'])?.classList.add('tool-active');
+}
+
+function pushUndoSnapshot(){
+  if(!eBaseGrid) return;
+  eUndoStack.push({ base:eBaseGrid.slice(0), shapes:deepCloneShapes(eShapes) });
+  if(eUndoStack.length>60) eUndoStack.shift();
+  eRedoStack.length=0;
+}
+
+function editorUndo(){
+  if(!eBaseGrid || !eUndoStack.length) return;
+  eRedoStack.push({ base:eBaseGrid.slice(0), shapes:deepCloneShapes(eShapes) });
+  const snap=eUndoStack.pop();
+  eBaseGrid=snap.base;
+  eShapes=snap.shapes;
+  eSelectedShapeId=null;
+  rebuildCompositeGrid();
+  drawEditor();
+}
+
+function editorRedo(){
+  if(!eBaseGrid || !eRedoStack.length) return;
+  eUndoStack.push({ base:eBaseGrid.slice(0), shapes:deepCloneShapes(eShapes) });
+  const snap=eRedoStack.pop();
+  eBaseGrid=snap.base;
+  eShapes=snap.shapes;
+  eSelectedShapeId=null;
+  rebuildCompositeGrid();
+  drawEditor();
 }
 
 // ── wall thickness ─────────────────────────────────────────────────────────────
@@ -4363,8 +4692,17 @@ function buildCanvas(){
   eRes  = ccm / 100;
   eCols = Math.max(1, Math.round(wm / eRes));
   eRows = Math.max(1, Math.round(hm / eRes));
-  eGrid = new Uint8Array(eCols * eRows);
+  eBaseGrid = new Uint8Array(eCols * eRows);
+  eShapes=[];
+  eNextShapeId=1;
+  eSelectedShapeId=null;
+  eHoverShapeId=null;
+  eHoverHandle=null;
   eAnchor = null;
+  eUndoStack.length=0; eRedoStack.length=0;
+  eIsDraggingTool=false; eDragStart=null; eDragEnd=null; eLastToolPreview=null;
+  eMeasureStart=null; eMeasureEnd=null;
+  eSelDrag=null;
 
   const wrap = document.getElementById('editorCanvasWrap');
   const avW  = (wrap.clientWidth  || 800) - 20;
@@ -4373,12 +4711,16 @@ function buildCanvas(){
 
   eCanvas.width  = eCols * eSC;
   eCanvas.height = eRows * eSC;
+  rebuildCompositeGrid();
   drawEditor();
+  centerEditorCanvasView();
+  syncEditorCursor(eCursor.r>=0 ? eCursor : null);
   showToast(`Grid: ${eCols}×${eRows} cells  (${wm.toFixed(1)}×${hm.toFixed(1)} m)`);
 }
 
 // ── draw editor canvas ────────────────────────────────────────────────────────
 function drawEditor(){
+  if(eBaseGrid) rebuildCompositeGrid();
   eCtx.clearRect(0,0,eCanvas.width,eCanvas.height);
   if(!eGrid) return;
 
@@ -4412,6 +4754,23 @@ function drawEditor(){
     drawCrosshair(pt.r, pt.c);
   }
 
+  // ── tool preview (rect/line) ───────────────────────────────────────────────
+  if(!eWallMode && eIsDraggingTool && eDragStart && eDragEnd && (eTool==='rect' || eTool==='line')){
+    drawToolPreview();
+  }
+
+  // ── selection overlay ─────────────────────────────────────────────────────
+  if(!eWallMode && eTool==='select'){
+    const activeShapeId = eSelectedShapeId!==null ? eSelectedShapeId : eHoverShapeId;
+    const s=(eShapes||[]).find(x=>x.id===activeShapeId);
+    if(s) drawSelectionOverlay(s, eSelectedShapeId!==null ? '#00d4ff' : '#7ecfff');
+  }
+
+  // ── measure overlay ───────────────────────────────────────────────────────
+  if(!eWallMode && eTool==='measure' && eMeasureStart && eMeasureEnd){
+    drawMeasureOverlay();
+  }
+
   // ── anchor dot ──────────────────────────────────────────────────────────────
   if(eAnchor){
     const ax=eAnchor.c*eSC+eSC/2, ay=eAnchor.r*eSC+eSC/2;
@@ -4426,6 +4785,215 @@ function drawEditor(){
     eCtx.beginPath(); eCtx.moveTo(ax,ay-8); eCtx.lineTo(ax,ay+8); eCtx.stroke();
     eCtx.restore();
   }
+}
+
+function clampCell(cell){
+  if(!cell) return null;
+  return {r:Math.max(0,Math.min(eRows-1,cell.r)), c:Math.max(0,Math.min(eCols-1,cell.c))};
+}
+
+function cellCenterPx(cell){
+  return {x:cell.c*eSC+eSC/2, y:cell.r*eSC+eSC/2};
+}
+
+function drawDimLabel(px, py, text, color){
+  eCtx.save();
+  eCtx.font='bold 10px Courier New';
+  const padX=6, padY=3;
+  const w=eCtx.measureText(text).width + padX*2;
+  const h=16;
+  const x=Math.max(2, Math.min(eCanvas.width-w-2, px));
+  const y=Math.max(2, Math.min(eCanvas.height-h-2, py));
+  eCtx.fillStyle='rgba(10,14,23,.85)';
+  eCtx.fillRect(x, y, w, h);
+  eCtx.strokeStyle='rgba(0,212,255,.25)';
+  eCtx.strokeRect(x+.5, y+.5, w-1, h-1);
+  eCtx.fillStyle=color;
+  eCtx.textBaseline='middle';
+  eCtx.textAlign='left';
+  eCtx.fillText(text, x+padX, y+h/2);
+  eCtx.restore();
+}
+
+function drawToolPreview(){
+  const a=clampCell(eDragStart);
+  const b=clampCell(eDragEnd);
+  if(!a||!b) return;
+
+  // modifiers
+  const shiftHeld = eLastToolPreview?.shiftHeld || false;
+  const meta = {shiftHeld};
+
+  eCtx.save();
+  eCtx.lineWidth=2;
+  eCtx.strokeStyle='rgba(255,107,53,.95)';
+  eCtx.fillStyle='rgba(255,107,53,.10)';
+
+  if(eTool==='rect'){
+    let r0=a.r, c0=a.c, r1=b.r, c1=b.c;
+    if(shiftHeld){
+      // square lock
+      const dr = r1-r0, dc = c1-c0;
+      const s = Math.max(Math.abs(dr), Math.abs(dc));
+      r1 = r0 + Math.sign(dr||1)*s;
+      c1 = c0 + Math.sign(dc||1)*s;
+      r1 = Math.max(0,Math.min(eRows-1,r1));
+      c1 = Math.max(0,Math.min(eCols-1,c1));
+    }
+    const rr0=Math.min(r0,r1), rr1=Math.max(r0,r1);
+    const cc0=Math.min(c0,c1), cc1=Math.max(c0,c1);
+    const x=cc0*eSC, y=rr0*eSC, w=(cc1-cc0+1)*eSC, h=(rr1-rr0+1)*eSC;
+    eCtx.fillRect(x,y,w,h);
+    eCtx.strokeRect(x+.5,y+.5,w-1,h-1);
+
+    const wM = ((cc1-cc0+1)*eRes);
+    const hM = ((rr1-rr0+1)*eRes);
+    const label = meta.shiftHeld ? `W ${wM.toFixed(2)}m  H ${hM.toFixed(2)}m  (Shift: square + fill)` : `W ${wM.toFixed(2)}m  H ${hM.toFixed(2)}m`;
+    const center=cellCenterPx({r:rr0, c:cc1});
+    drawDimLabel(center.x+10, center.y-18, label, '#ff6b35');
+  }
+
+  if(eTool==='line'){
+    let end={r:b.r,c:b.c};
+    if(shiftHeld){
+      // axis lock (horizontal/vertical)
+      const dr=end.r-a.r, dc=end.c-a.c;
+      if(Math.abs(dc) >= Math.abs(dr)) end.r=a.r; else end.c=a.c;
+    }
+    const p0=cellCenterPx(a);
+    const p1=cellCenterPx(end);
+    eCtx.beginPath(); eCtx.moveTo(p0.x,p0.y); eCtx.lineTo(p1.x,p1.y); eCtx.stroke();
+    eCtx.beginPath(); eCtx.arc(p0.x,p0.y,4,0,Math.PI*2); eCtx.fill();
+    eCtx.beginPath(); eCtx.arc(p1.x,p1.y,4,0,Math.PI*2); eCtx.fill();
+
+    const dx=(end.c-a.c)*eRes;
+    const dy=(end.r-a.r)*eRes;
+    const len=Math.hypot(dx,dy);
+    const label = meta.shiftHeld ? `L ${len.toFixed(2)}m  (Shift: axis lock)` : `L ${len.toFixed(2)}m`;
+    drawDimLabel(p1.x+10, p1.y-10, label, '#ff6b35');
+  }
+
+  eCtx.restore();
+}
+
+function drawSelectionOverlay(s, accent='#00d4ff'){
+  eCtx.save();
+  eCtx.lineWidth=2;
+  eCtx.strokeStyle=accent;
+
+  const drawHandle=(cell)=>{
+    const x=cell.c*eSC+eSC/2, y=cell.r*eSC+eSC/2;
+    eCtx.fillStyle=accent;
+    eCtx.fillRect(x-5,y-5,10,10);
+    eCtx.strokeStyle='rgba(10,14,23,.9)';
+    eCtx.strokeRect(x-5+.5,y-5+.5,10,10);
+    eCtx.strokeStyle=accent;
+  };
+
+  if(s.type==='rect'){
+    const rr0=Math.min(s.r0,s.r1), rr1=Math.max(s.r0,s.r1);
+    const cc0=Math.min(s.c0,s.c1), cc1=Math.max(s.c0,s.c1);
+    const x=cc0*eSC, y=rr0*eSC, w=(cc1-cc0+1)*eSC, h=(rr1-rr0+1)*eSC;
+    eCtx.strokeRect(x+.5,y+.5,w-1,h-1);
+    drawHandle({r:rr0,c:cc0});
+    drawHandle({r:rr0,c:cc1});
+    drawHandle({r:rr1,c:cc0});
+    drawHandle({r:rr1,c:cc1});
+
+    const wM=((cc1-cc0+1)*eRes);
+    const hM=((rr1-rr0+1)*eRes);
+    drawDimLabel(x+10, y-20, `W ${wM.toFixed(2)}m  H ${hM.toFixed(2)}m`, accent);
+  }
+
+  if(s.type==='line'){
+    const p0=cellCenterPx({r:s.r0,c:s.c0});
+    const p1=cellCenterPx({r:s.r1,c:s.c1});
+    eCtx.beginPath(); eCtx.moveTo(p0.x,p0.y); eCtx.lineTo(p1.x,p1.y); eCtx.stroke();
+    drawHandle({r:s.r0,c:s.c0});
+    drawHandle({r:s.r1,c:s.c1});
+
+    const dx=(s.c1-s.c0)*eRes;
+    const dy=(s.r1-s.r0)*eRes;
+    const len=Math.hypot(dx,dy);
+    drawDimLabel(p1.x+10, p1.y-10, `L ${len.toFixed(2)}m`, accent);
+  }
+
+  eCtx.restore();
+}
+
+function drawMeasureOverlay(){
+  const a=clampCell(eMeasureStart);
+  const b=clampCell(eMeasureEnd);
+  if(!a||!b) return;
+  const p0=cellCenterPx(a);
+  const p1=cellCenterPx(b);
+  eCtx.save();
+  eCtx.lineWidth=2;
+  eCtx.strokeStyle='rgba(255,213,79,.95)';
+  eCtx.setLineDash([5,4]);
+  eCtx.beginPath(); eCtx.moveTo(p0.x,p0.y); eCtx.lineTo(p1.x,p1.y); eCtx.stroke();
+  eCtx.setLineDash([]);
+  const dx=(b.c-a.c)*eRes;
+  const dy=(b.r-a.r)*eRes;
+  const len=Math.hypot(dx,dy);
+  drawDimLabel(p1.x+10, p1.y-10, `Δ ${len.toFixed(2)}m`, '#ffd54f');
+  eCtx.restore();
+}
+
+function updateHud(cell){
+  const hudCell=document.getElementById('hudCell');
+  const hudMeters=document.getElementById('hudMeters');
+  const hudZoom=document.getElementById('hudZoom');
+  if(!hudCell||!hudMeters||!hudZoom) return;
+  if(!cell){
+    hudCell.textContent='—';
+    hudMeters.textContent='—';
+  } else {
+    hudCell.textContent=`(${cell.c}, ${cell.r})`;
+    const xm=((cell.c+0.5)*eRes).toFixed(2);
+    const ym=((eRows-1-cell.r+0.5)*eRes).toFixed(2);
+    hudMeters.textContent=`(${xm}m, ${ym}m)`;
+  }
+  const z=(eSC/8*100);
+  hudZoom.textContent=`${Math.round(z)}%`;
+}
+
+function editorZoomTo(newSC, anchorCell){
+  const wrap=document.getElementById('editorCanvasWrap');
+  if(!wrap || !eBaseGrid) return;
+  const oldSC=eSC;
+  const sc=Math.max(3, Math.min(40, Math.round(newSC)));
+  if(sc===oldSC) return;
+
+  const cell=anchorCell || (eCursor.r>=0?{r:eCursor.r,c:eCursor.c}:null) || {r:Math.floor(eRows/2),c:Math.floor(eCols/2)};
+  const ax=(cell.c+0.5)*oldSC;
+  const ay=(cell.r+0.5)*oldSC;
+  const vx=ax-wrap.scrollLeft;
+  const vy=ay-wrap.scrollTop;
+
+  eSC=sc;
+  eCanvas.width  = eCols * eSC;
+  eCanvas.height = eRows * eSC;
+  drawEditor();
+
+  const ax2=(cell.c+0.5)*eSC;
+  const ay2=(cell.r+0.5)*eSC;
+  wrap.scrollLeft = ax2 - vx;
+  wrap.scrollTop  = ay2 - vy;
+  updateHud(cell);
+}
+
+function editorZoomBy(step){
+  editorZoomTo(eSC + step, (eCursor.r>=0?{r:eCursor.r,c:eCursor.c}:null));
+}
+
+function editorZoomToFit(){
+  const wrap=document.getElementById('editorCanvasWrap');
+  if(!wrap || !eCols || !eRows) return;
+  const avW  = (wrap.clientWidth  || 800) - 20;
+  const avH  = (wrap.clientHeight || 600) - 20;
+  const fit = Math.max(3, Math.min(40, Math.floor(Math.min(avW/eCols, avH/eRows))));
+  editorZoomTo(fit, (eCursor.r>=0?{r:eCursor.r,c:eCursor.c}:null));
 }
 
 // ── crosshair distance helper ──────────────────────────────────────────────────
@@ -4493,9 +5061,18 @@ function toggleWallMode(){
   const btn=document.getElementById('wallBtn');
   btn.textContent = eWallMode ? '🧱 Wall Mode ON' : '🧱 Wall Mode OFF';
   btn.className   = 'eh-btn '+(eWallMode?'wall-on':'wall-off');
-  eCanvas.style.cursor = eWallMode ? 'none' : 'default';
   document.getElementById('anchorHint').style.display = eWallMode?'inline':'none';
+  if(eWallMode){
+    // wall mode uses anchor interactions; keep tool in paint but cancel any drag
+    eIsDraggingTool=false; eDragStart=null; eDragEnd=null; eLastToolPreview=null;
+    eTool='paint';
+    syncEditorToolButtons();
+    eSelectedShapeId=null;
+    eSelDrag=null;
+    eMeasureStart=null; eMeasureEnd=null;
+  }
   drawEditor();
+  syncEditorCursor(eCursor.r>=0 ? eCursor : null);
 }
 
 // ── cell at mouse event ────────────────────────────────────────────────────────
@@ -4507,28 +5084,202 @@ function eCell_at(e){
   return {r:row, c:c};
 }
 
+function shapeAtCell(cell){
+  if(!cell || !eShapes || !eShapes.length) return null;
+  const r=cell.r, c=cell.c;
+  const near=(rr,cc)=>Math.abs(r-rr)<=1 && Math.abs(c-cc)<=1;
+
+  for(let i=eShapes.length-1;i>=0;i--){
+    const s=eShapes[i];
+    if(s.type==='rect'){
+      const rr0=Math.min(s.r0,s.r1), rr1=Math.max(s.r0,s.r1);
+      const cc0=Math.min(s.c0,s.c1), cc1=Math.max(s.c0,s.c1);
+      if(near(rr0,cc0)) return {shape:s, hit:'handle', handle:'nw'};
+      if(near(rr0,cc1)) return {shape:s, hit:'handle', handle:'ne'};
+      if(near(rr1,cc0)) return {shape:s, hit:'handle', handle:'sw'};
+      if(near(rr1,cc1)) return {shape:s, hit:'handle', handle:'se'};
+      if(r>=rr0 && r<=rr1 && c>=cc0 && c<=cc1) return {shape:s, hit:'body'};
+    }
+    if(s.type==='line'){
+      if(near(s.r0,s.c0)) return {shape:s, hit:'handle', handle:'p0'};
+      if(near(s.r1,s.c1)) return {shape:s, hit:'handle', handle:'p1'};
+      const x0=s.c0+0.5, y0=s.r0+0.5, x1=s.c1+0.5, y1=s.r1+0.5;
+      const px=c+0.5, py=r+0.5;
+      const vx=x1-x0, vy=y1-y0;
+      const wx=px-x0, wy=py-y0;
+      const len2=vx*vx+vy*vy;
+      if(len2===0) continue;
+      let t=(wx*vx+wy*vy)/len2;
+      t=Math.max(0,Math.min(1,t));
+      const cx=x0+t*vx, cy=y0+t*vy;
+      const dist=Math.hypot(px-cx, py-cy);
+      if(dist<=0.65) return {shape:s, hit:'body'};
+    }
+  }
+  return null;
+}
+
 // ── mouse events ──────────────────────────────────────────────────────────────
 eCanvas.addEventListener('mousemove',e=>{
   const cell=eCell_at(e);
   if(cell){ eCursor={r:cell.r,c:cell.c}; } else { eCursor={r:-1,c:-1}; }
+  updateHud(cell);
+  syncEditorCursor(cell);
 
   if(eWallMode){
     // drag-paint only if no anchor set
-    if(!eAnchor && ePainting!==null && cell){
-      eGrid[cell.r*eCols+cell.c]=ePainting;
+    if(!eAnchor && ePainting!==null && cell && eBaseGrid){
+      eDidModifySinceDown=true;
+      eBaseGrid[cell.r*eCols+cell.c]=ePainting;
     }
     drawEditor();
     return;
   }
-  // non-wall mode drag
-  if(ePainting!==null && cell) eGrid[cell.r*eCols+cell.c]=ePainting;
+
+  if(eIsPanning) return;
+
+  if(eTool==='pan') return;
+
+  if(eTool==='select'){
+    if(!eSelDrag){
+      const hoverHit=shapeAtCell(cell);
+      const hoverShapeId=hoverHit ? hoverHit.shape.id : null;
+      const hoverHandle=hoverHit ? hoverHit.handle || null : null;
+      if(eHoverShapeId!==hoverShapeId || eHoverHandle!==hoverHandle){
+        eHoverShapeId=hoverShapeId;
+        eHoverHandle=hoverHandle;
+        drawEditor();
+      }
+    }
+    if(eSelDrag && cell){
+      const s=eShapes.find(x=>x.id===eSelDrag.origShape.id);
+      if(!s) return;
+      const dr=cell.r - eSelDrag.startCell.r;
+      const dc=cell.c - eSelDrag.startCell.c;
+      const shiftHeld=e.shiftKey;
+      if(eSelDrag.mode==='move'){
+        const o=eSelDrag.origShape;
+        if(o.type==='rect'){
+          s.r0=o.r0+dr; s.c0=o.c0+dc; s.r1=o.r1+dr; s.c1=o.c1+dc;
+          const rr0=Math.min(s.r0,s.r1), rr1=Math.max(s.r0,s.r1);
+          const cc0=Math.min(s.c0,s.c1), cc1=Math.max(s.c0,s.c1);
+          const offR = rr0<0 ? -rr0 : (rr1>=eRows ? (eRows-1-rr1) : 0);
+          const offC = cc0<0 ? -cc0 : (cc1>=eCols ? (eCols-1-cc1) : 0);
+          s.r0+=offR; s.r1+=offR; s.c0+=offC; s.c1+=offC;
+        }
+        if(o.type==='line'){
+          s.r0=o.r0+dr; s.c0=o.c0+dc; s.r1=o.r1+dr; s.c1=o.c1+dc;
+          const rr0=Math.min(s.r0,s.r1), rr1=Math.max(s.r0,s.r1);
+          const cc0=Math.min(s.c0,s.c1), cc1=Math.max(s.c0,s.c1);
+          const offR = rr0<0 ? -rr0 : (rr1>=eRows ? (eRows-1-rr1) : 0);
+          const offC = cc0<0 ? -cc0 : (cc1>=eCols ? (eCols-1-cc1) : 0);
+          s.r0+=offR; s.r1+=offR; s.c0+=offC; s.c1+=offC;
+        }
+      }
+      if(eSelDrag.mode==='resize'){
+        const o=eSelDrag.origShape;
+        if(o.type==='rect'){
+          const fixed=eSelDrag.fixedCorner || {r:o.r0, c:o.c0};
+          let dragR=cell.r, dragC=cell.c;
+          if(shiftHeld){
+            const dr2=dragR-fixed.r, dc2=dragC-fixed.c;
+            const s2=Math.max(Math.abs(dr2),Math.abs(dc2));
+            dragR=fixed.r+Math.sign(dr2||1)*s2;
+            dragC=fixed.c+Math.sign(dc2||1)*s2;
+          }
+          s.r0=Math.max(0,Math.min(eRows-1,fixed.r));
+          s.c0=Math.max(0,Math.min(eCols-1,fixed.c));
+          s.r1=Math.max(0,Math.min(eRows-1,dragR));
+          s.c1=Math.max(0,Math.min(eCols-1,dragC));
+        }
+        if(o.type==='line'){
+          const fixed=eSelDrag.fixedCorner || {r:o.r1,c:o.c1};
+          let a={r:o.r0,c:o.c0}, b={r:o.r1,c:o.c1};
+          if(eSelDrag.handle==='p0'){
+            a={r:cell.r,c:cell.c};
+            b={r:fixed.r,c:fixed.c};
+          }
+          if(eSelDrag.handle==='p1'){
+            a={r:fixed.r,c:fixed.c};
+            b={r:cell.r,c:cell.c};
+          }
+          if(shiftHeld){
+            const dr2=b.r-a.r, dc2=b.c-a.c;
+            if(Math.abs(dc2) >= Math.abs(dr2)) b.r=a.r; else b.c=a.c;
+          }
+          s.r0=Math.max(0,Math.min(eRows-1,a.r));
+          s.c0=Math.max(0,Math.min(eCols-1,a.c));
+          s.r1=Math.max(0,Math.min(eRows-1,b.r));
+          s.c1=Math.max(0,Math.min(eCols-1,b.c));
+        }
+      }
+      eDidModifySinceDown=true;
+      drawEditor();
+    }
+    return;
+  }
+
+  if(eTool==='measure'){
+    if(eIsDraggingTool && cell){
+      eMeasureEnd=cell;
+      drawEditor();
+    }
+    return;
+  }
+
+  if(eTool==='paint'){
+    // paint drag
+    if(ePainting!==null && cell && eBaseGrid){
+      eDidModifySinceDown=true;
+      eBaseGrid[cell.r*eCols+cell.c]=ePainting;
+      drawEditor();
+    }
+    return;
+  }
+
+  if(eTool==='erase'){
+    if(ePainting!==null && cell && eBaseGrid){
+      eDidModifySinceDown=true;
+      eBaseGrid[cell.r*eCols+cell.c]=0;
+      drawEditor();
+    }
+    return;
+  }
+
+  // rect/line preview drag
+  if(eIsDraggingTool && cell){
+    eDragEnd=cell;
+    eLastToolPreview={shiftHeld:e.shiftKey};
+    drawEditor();
+  }
 });
 
-eCanvas.addEventListener('mouseleave',()=>{ eCursor={r:-1,c:-1}; if(eWallMode) drawEditor(); });
+eCanvas.addEventListener('mouseleave',()=>{
+  eCursor={r:-1,c:-1};
+  eHoverShapeId=null;
+  eHoverHandle=null;
+  syncEditorCursor(null);
+  if(eWallMode || eTool==='select') drawEditor();
+});
 
 eCanvas.addEventListener('mousedown',e=>{
-  if(!eGrid) return;
+  if(!eBaseGrid) return;
   const cell=eCell_at(e); if(!cell) return;
+
+  // pan gesture (space+drag, middle mouse, or pan tool)
+  if(eSpaceDown || e.button===1 || eTool==='pan'){
+    const wrap=document.getElementById('editorCanvasWrap');
+    if(wrap){
+      eIsPanning=true;
+      ePanStart={x:e.clientX,y:e.clientY,sl:wrap.scrollLeft,st:wrap.scrollTop};
+      syncEditorCursor(cell);
+      e.preventDefault();
+      return;
+    }
+  }
+
+  // start of any operation
+  eDidModifySinceDown=false;
 
   if(eWallMode){
     if(eAnchor){
@@ -4542,21 +5293,266 @@ eCanvas.addEventListener('mousedown',e=>{
     drawEditor();
     return;
   }
-  // normal paint mode
-  const idx=cell.r*eCols+cell.c;
-  ePainting=eGrid[idx]?0:1;
-  eGrid[idx]=ePainting;
-  drawEditor();
+
+  if(eTool==='select'){
+    const hit=shapeAtCell(cell);
+    if(!hit){
+      eSelectedShapeId=null;
+      eSelDrag=null;
+      eHoverShapeId=null;
+      eHoverHandle=null;
+      drawEditor();
+      return;
+    }
+    eSelectedShapeId=hit.shape.id;
+    eHoverShapeId=hit.shape.id;
+    eHoverHandle=hit.handle||null;
+    pushUndoSnapshot();
+    let fixedCorner = null;
+    if(hit.hit==='handle' && hit.shape.type==='rect'){
+      const rr0=Math.min(hit.shape.r0, hit.shape.r1);
+      const rr1=Math.max(hit.shape.r0, hit.shape.r1);
+      const cc0=Math.min(hit.shape.c0, hit.shape.c1);
+      const cc1=Math.max(hit.shape.c0, hit.shape.c1);
+      if(hit.handle==='nw') fixedCorner={r:rr1, c:cc1};
+      if(hit.handle==='ne') fixedCorner={r:rr1, c:cc0};
+      if(hit.handle==='sw') fixedCorner={r:rr0, c:cc1};
+      if(hit.handle==='se') fixedCorner={r:rr0, c:cc0};
+    }
+    if(hit.hit==='handle' && hit.shape.type==='line'){
+      fixedCorner = hit.handle==='p0'
+        ? {r:hit.shape.r1, c:hit.shape.c1}
+        : {r:hit.shape.r0, c:hit.shape.c0};
+    }
+    eSelDrag={
+      mode:(hit.hit==='handle')?'resize':'move',
+      handle:hit.handle||null,
+      startCell:cell,
+      origShape:JSON.parse(JSON.stringify(hit.shape)),
+      fixedCorner
+    };
+    drawEditor();
+    return;
+  }
+
+  if(eTool==='measure'){
+    eIsDraggingTool=true;
+    eMeasureStart=cell;
+    eMeasureEnd=cell;
+    drawEditor();
+    return;
+  }
+
+  if(eTool==='paint'){
+    // paint mode
+    pushUndoSnapshot();
+    const idx=cell.r*eCols+cell.c;
+    ePainting=eBaseGrid[idx]?0:1;
+    eBaseGrid[idx]=ePainting;
+    eDidModifySinceDown=true;
+    drawEditor();
+    return;
+  }
+
+  if(eTool==='erase'){
+    pushUndoSnapshot();
+    ePainting=0;
+    eBaseGrid[cell.r*eCols+cell.c]=0;
+    eDidModifySinceDown=true;
+    drawEditor();
+    return;
+  }
+
+  if(eTool==='rect' || eTool==='line'){
+    pushUndoSnapshot();
+    eIsDraggingTool=true;
+    eDragStart=cell;
+    eDragEnd=cell;
+    eLastToolPreview={shiftHeld:e.shiftKey};
+    drawEditor();
+    return;
+  }
 });
 
-window.addEventListener('mouseup',()=>{ ePainting=null; });
+function applyThickCell(r,c){
+  const half=Math.floor(eWallThick/2);
+  for(let rr=r-half; rr<r+(eWallThick-half); rr++){
+    for(let cc=c-half; cc<c+(eWallThick-half); cc++){
+      if(rr>=0&&rr<eRows&&cc>=0&&cc<eCols) eGrid[rr*eCols+cc]=1;
+    }
+  }
+}
+
+function bresenhamCells(a,b){
+  const cells=[];
+  let x0=a.c, y0=a.r, x1=b.c, y1=b.r;
+  const dx=Math.abs(x1-x0), dy=Math.abs(y1-y0);
+  const sx=(x0<x1)?1:-1;
+  const sy=(y0<y1)?1:-1;
+  let err=dx-dy;
+  while(true){
+    cells.push({r:y0,c:x0});
+    if(x0===x1 && y0===y1) break;
+    const e2=2*err;
+    if(e2>-dy){ err-=dy; x0+=sx; }
+    if(e2< dx){ err+=dx; y0+=sy; }
+  }
+  return cells;
+}
+
+function commitToolDrag(shiftHeld){
+  if(!eIsDraggingTool || !eDragStart || !eDragEnd) return;
+  const a=clampCell(eDragStart);
+  let b=clampCell(eDragEnd);
+  if(!a||!b) return;
+
+  if(eTool==='rect'){
+    let r0=a.r, c0=a.c, r1=b.r, c1=b.c;
+    if(shiftHeld){
+      const dr = r1-r0, dc = c1-c0;
+      const s = Math.max(Math.abs(dr), Math.abs(dc));
+      r1 = r0 + Math.sign(dr||1)*s;
+      c1 = c0 + Math.sign(dc||1)*s;
+      r1 = Math.max(0,Math.min(eRows-1,r1));
+      c1 = Math.max(0,Math.min(eCols-1,c1));
+    }
+    const shape={
+      id:eNextShapeId++,
+      type:'rect',
+      r0,c0,r1,c1,
+      fill:!!shiftHeld,
+      thick:Math.max(1, eWallThick||1)
+    };
+    eShapes.push(shape);
+    eSelectedShapeId=shape.id;
+    eDidModifySinceDown=true;
+  }
+
+  if(eTool==='line'){
+    let end={r:b.r,c:b.c};
+    if(shiftHeld){
+      const dr=end.r-a.r, dc=end.c-a.c;
+      if(Math.abs(dc) >= Math.abs(dr)) end.r=a.r; else end.c=a.c;
+    }
+    const shape={
+      id:eNextShapeId++,
+      type:'line',
+      r0:a.r, c0:a.c,
+      r1:end.r, c1:end.c,
+      thick:Math.max(1, eWallThick||1)
+    };
+    eShapes.push(shape);
+    eSelectedShapeId=shape.id;
+    eDidModifySinceDown=true;
+  }
+}
+
+window.addEventListener('mouseup',(e)=>{
+  if(eIsPanning){
+    eIsPanning=false;
+    ePanStart=null;
+    syncEditorCursor(eCursor.r>=0 ? eCursor : null);
+    return;
+  }
+  if(ePainting!==null){
+    ePainting=null;
+    drawEditor();
+    syncEditorCursor(eCursor.r>=0 ? eCursor : null);
+    return;
+  }
+  if(eSelDrag){
+    eSelDrag=null;
+    drawEditor();
+    syncEditorCursor(eCursor.r>=0 ? eCursor : null);
+    return;
+  }
+  if(eIsDraggingTool){
+    if(eTool==='measure'){
+      eIsDraggingTool=false;
+      drawEditor();
+      syncEditorCursor(eCursor.r>=0 ? eCursor : null);
+      return;
+    }
+    commitToolDrag(e.shiftKey);
+    eIsDraggingTool=false;
+    eDragStart=null; eDragEnd=null; eLastToolPreview=null;
+    drawEditor();
+    syncEditorCursor(eCursor.r>=0 ? eCursor : null);
+  }
+});
+
+// pan continues even if leaving the canvas
+window.addEventListener('mousemove',e=>{
+  if(!eIsPanning || !ePanStart) return;
+  const wrap=document.getElementById('editorCanvasWrap');
+  if(!wrap) return;
+  const dx=e.clientX-ePanStart.x;
+  const dy=e.clientY-ePanStart.y;
+  wrap.scrollLeft = ePanStart.sl - dx;
+  wrap.scrollTop  = ePanStart.st - dy;
+});
+
+// wheel zoom
+eCanvas.addEventListener('wheel',e=>{
+  if(!editorIsOpen()) return;
+  e.preventDefault();
+  const dir = Math.sign(e.deltaY);
+  editorZoomBy(dir>0 ? -1 : 1);
+},{passive:false});
 
 // ── arrow keys: move anchor + open direction popup ─────────────────────────────
 document.addEventListener('keydown',e=>{
-  if(!eWallMode || !document.getElementById('editorOverlay').classList.contains('open')) return;
+  if(!editorIsOpen()) return;
   if(document.activeElement && document.activeElement.tagName==='INPUT') return;
 
-  if(eAnchor){
+  if(e.key===' ') eSpaceDown=true;
+
+  // Undo/Redo
+  if((e.ctrlKey || e.metaKey) && (e.key==='z' || e.key==='Z')){ e.preventDefault(); editorUndo(); return; }
+  if((e.ctrlKey || e.metaKey) && (e.key==='y' || e.key==='Y')){ e.preventDefault(); editorRedo(); return; }
+
+  // Delete selected shape
+  if((e.key==='Delete' || e.key==='Backspace') && eTool==='select' && eSelectedShapeId!==null){
+    e.preventDefault();
+    pushUndoSnapshot();
+    eShapes = (eShapes||[]).filter(s=>s.id!==eSelectedShapeId);
+    eSelectedShapeId=null;
+    eHoverShapeId=null;
+    eHoverHandle=null;
+    drawEditor();
+    syncEditorCursor(eCursor.r>=0 ? eCursor : null);
+    return;
+  }
+
+  // Escape cancels tool drag / anchor
+  if(e.key==='Escape'){
+    if(eWallMode){ eAnchor=null; closeDirPopup(); drawEditor(); syncEditorCursor(eCursor.r>=0 ? eCursor : null); return; }
+    if(eSelDrag){ eSelDrag=null; drawEditor(); syncEditorCursor(eCursor.r>=0 ? eCursor : null); return; }
+    if(eTool==='measure'){ eMeasureStart=null; eMeasureEnd=null; eIsDraggingTool=false; drawEditor(); syncEditorCursor(eCursor.r>=0 ? eCursor : null); return; }
+    if(eIsDraggingTool){ eIsDraggingTool=false; eDragStart=null; eDragEnd=null; eLastToolPreview=null; drawEditor(); syncEditorCursor(eCursor.r>=0 ? eCursor : null); return; }
+    return;
+  }
+
+  // Tool shortcuts (only when not in wall mode)
+  if(!eWallMode){
+    if(e.key==='1'){ setEditorTool('select'); return; }
+    if(e.key==='2'){ setEditorTool('pan'); return; }
+    if(e.key==='3'){ setEditorTool('paint'); return; }
+    if(e.key==='4'){ setEditorTool('erase'); return; }
+    if(e.key==='5'){ setEditorTool('rect'); return; }
+    if(e.key==='6'){ setEditorTool('line'); return; }
+    if(e.key==='7'){ setEditorTool('measure'); return; }
+    if(e.key==='s' || e.key==='S'){ setEditorTool('select'); return; }
+    if(e.key==='r' || e.key==='R'){ setEditorTool('rect'); return; }
+    if(e.key==='l' || e.key==='L'){ setEditorTool('line'); return; }
+    if(e.key==='h' || e.key==='H'){ setEditorTool('pan'); return; }
+    if(e.key==='e' || e.key==='E'){ setEditorTool('erase'); return; }
+    if(e.key==='v' || e.key==='V'){ setEditorTool('paint'); return; }
+    if(e.key==='m' || e.key==='M'){ setEditorTool('measure'); return; }
+  }
+
+  // Wall mode controls
+  if(eWallMode && eAnchor){
     let moved=false;
     if(e.key==='ArrowUp')    { eAnchor.r=Math.max(0,eAnchor.r-1); moved=true; }
     if(e.key==='ArrowDown')  { eAnchor.r=Math.min(eRows-1,eAnchor.r+1); moved=true; }
@@ -4564,15 +5560,16 @@ document.addEventListener('keydown',e=>{
     if(e.key==='ArrowRight') { eAnchor.c=Math.min(eCols-1,eAnchor.c+1); moved=true; }
     if(moved){ e.preventDefault(); closeDirPopup(); drawEditor(); return; }
 
-    // direction keys open popup
     const dirMap={'w':'up','s':'down','a':'left','d':'right',
                   'W':'up','S':'down','A':'left','D':'right'};
-    const arrowDir = e.key==='ArrowUp'?null:null; // arrows already handled above
     const dir = dirMap[e.key];
     if(dir){ e.preventDefault(); openDirPopup(dir); return; }
   }
-  // Escape clears anchor
-  if(e.key==='Escape'){ eAnchor=null; closeDirPopup(); drawEditor(); }
+});
+
+document.addEventListener('keyup',e=>{
+  if(!editorIsOpen()) return;
+  if(e.key===' ') eSpaceDown=false;
 });
 
 // ── direction wall popup ───────────────────────────────────────────────────────
@@ -4613,6 +5610,8 @@ function closeDirPopup(){
 
 function applyDirWall(){
   if(!eAnchor||!eDirPopupDir) return;
+  if(!eBaseGrid) return;
+  pushUndoSnapshot();
   const lenM=parseFloat(document.getElementById('dpValue').value)||0;
   if(lenM<=0){ closeDirPopup(); return; }
   const lenCells=Math.max(1,Math.round(lenM/eRes));
@@ -4631,7 +5630,7 @@ function applyDirWall(){
     const wc=eAnchor.c+dc*(step+1);
     for(let t=-half;t<eWallThick-half;t++){
       const fr=wr+perpR*t, fc=wc+perpC*t;
-      if(fr>=0&&fr<eRows&&fc>=0&&fc<eCols) eGrid[fr*eCols+fc]=1;
+      if(fr>=0&&fr<eRows&&fc>=0&&fc<eCols) eBaseGrid[fr*eCols+fc]=1;
     }
   }
   closeDirPopup();
@@ -4647,29 +5646,54 @@ document.getElementById('dpValue').addEventListener('keydown',e=>{
 
 // ── fill border (respects thickness) ──────────────────────────────────────────
 function editorFillBorder(){
-  if(!eGrid) return;
+  if(!eBaseGrid) return;
+  pushUndoSnapshot();
   for(let t=0;t<eWallThick;t++){
     if(t>=eRows||t>=eCols) break;
-    for(let c=0;c<eCols;c++){ eGrid[t*eCols+c]=1; eGrid[(eRows-1-t)*eCols+c]=1; }
-    for(let r=0;r<eRows;r++){ eGrid[r*eCols+t]=1; eGrid[r*eCols+(eCols-1-t)]=1; }
+    for(let c=0;c<eCols;c++){ eBaseGrid[t*eCols+c]=1; eBaseGrid[(eRows-1-t)*eCols+c]=1; }
+    for(let r=0;r<eRows;r++){ eBaseGrid[r*eCols+t]=1; eBaseGrid[r*eCols+(eCols-1-t)]=1; }
   }
   drawEditor();
 }
 function editorClearAll(){
-  if(!eGrid) return;
-  eGrid.fill(0); eAnchor=null; closeDirPopup(); drawEditor();
+  if(!eBaseGrid) return;
+  pushUndoSnapshot();
+  eBaseGrid.fill(0);
+  eShapes=[];
+  eSelectedShapeId=null;
+  eHoverShapeId=null;
+  eHoverHandle=null;
+  eMeasureStart=null; eMeasureEnd=null;
+  eSelDrag=null;
+  eAnchor=null;
+  closeDirPopup();
+  drawEditor();
+  syncEditorCursor(eCursor.r>=0 ? eCursor : null);
 }
 
 function editorSaveMap(){
-  if(!eGrid){ showToast('❌ Build a map first!'); return; }
-  const name=(document.getElementById('eSaveName').value||'arena_map').trim().replace(/[^a-zA-Z0-9_\-]/g,'_');
-  document.getElementById('eSaveName').value=name;
-  const pixels=[];
-  for(let i=0;i<eGrid.length;i++) pixels.push(eGrid[i]?0:254);
-  send({ type:'save_map', name, cols:eCols, rows:eRows, resolution:eRes, pixels });
+  const payload = collectEditorMapPayload();
+  if(!payload) return;
+  if(!send({ type:'save_map', ...payload })){
+    showToast('❌ Auto save needs the Python dashboard backend. Run kiwi_dashboard.py, not python -m http.server.');
+  }
+}
+
+function editorSaveMapAs(){
+  const payload = collectEditorMapPayload();
+  if(!payload) return;
+  if(!send({ type:'save_map_dialog', ...payload })){
+    showToast('❌ Save dialog needs the Python dashboard backend. Run kiwi_dashboard.py, not python -m http.server.');
+  }
 }
 
 // ── MAP LIBRARY ───────────────────────────────────────────────────────────────
+function updateMapFolderLabel(){
+  const compact = mapLibraryFolder.replace(/\\/g, '/');
+  document.getElementById('editorMapFolderLabel').textContent = compact;
+  document.getElementById('editorMapFolderPath').textContent = `Saving arenas to: ${compact}`;
+}
+
 function refreshMapLibrary(maps){
   const el=document.getElementById('mapLibrary');
   if(!maps||!maps.length){
@@ -4677,29 +5701,40 @@ function refreshMapLibrary(maps){
     return;
   }
   el.innerHTML=maps.map(m=>{
+    const encodedName = encodeURIComponent(m.name || '');
     const wm  = m.cols && m.resolution ? (m.cols*m.resolution).toFixed(1) : '?';
     const hm  = m.rows && m.resolution ? (m.rows*m.resolution).toFixed(1) : '?';
     const res = m.resolution ? (m.resolution*100).toFixed(1) : '?';
-    return `<div class="map-item${selectedMapName===m.name?' active':''}" onclick="selectMap('${m.name}')">
-      <div>
-        <div class="mn">${m.name}</div>
-        <div class="ms">${wm}×${hm} m · ${res} cm/cell · ${m.cols||'?'}×${m.rows||'?'} cells</div>
+    const thumb = m.thumbnail
+      ? `<img class="map-thumb" src="${m.thumbnail}" alt="${escapeHtml(m.name)} thumbnail">`
+      : '<div class="map-thumb-empty">No Preview</div>';
+    return `<div class="map-card${selectedMapName===m.name?' active':''}" onclick="selectMap(decodeURIComponent('${encodedName}'))">
+      <div class="map-thumb-wrap">${thumb}</div>
+      <div class="map-card-body">
+        <div class="map-card-name">${escapeHtml(m.name)}</div>
+        <div class="map-card-meta">${wm}×${hm} m · ${res} cm/cell · ${m.cols||'?'}×${m.rows||'?'} cells</div>
+      </div>
+      <div class="map-card-actions">
+        <button class="map-card-action" onclick="event.stopPropagation(); selectMap(decodeURIComponent('${encodedName}')); focusEditorCanvas();">Open</button>
+        <button class="map-card-action primary" onclick="event.stopPropagation(); selectMap(decodeURIComponent('${encodedName}')); useSelectedMap();">Use</button>
       </div>
     </div>`;
   }).join('');
 }
 
+function showHomeMapLibrary(maps){
+  const host=document.getElementById('homeMapLibrary');
+  if(!host) return;
+  const count=(maps||[]).length;
+  host.innerHTML = `<button class="hdr-btn" onclick="openEditor()">📂 Saved Maps: ${count}</button>`;
+}
+
 function selectMap(name){
   selectedMapName=name;
-  // re-render so active class updates
-  const items=document.querySelectorAll('.map-item');
-  items.forEach(el=>{
-    const nm=el.querySelector('.mn');
-    if(nm) el.classList.toggle('active', nm.textContent===name);
-  });
+  refreshMapLibrary(lastKnownMaps);
+  document.getElementById('eSaveName').value = name;
   document.getElementById('loadedMapInfo').innerHTML=
-    `<b style="color:var(--accent)">${name}</b> selected.<br>Click <b>Use Map</b> to load into the dashboard.`;
-  document.getElementById('useMapBtn').disabled=false;
+    `<b style="color:var(--accent)">${escapeHtml(name)}</b> selected in the library.<br>Use the card action to load that saved map, or use the button below for the current editor canvas.`;
 }
 
 function useSelectedMap(){
@@ -4707,6 +5742,14 @@ function useSelectedMap(){
   send({type:'load_map', name:selectedMapName});
   closeEditor();
   showToast('Loading map: '+selectedMapName);
+}
+
+function useEditorMapInDashboard(){
+  const payload = collectEditorMapPayload();
+  if(!payload) return;
+  loadMapData(payload);
+  closeEditor();
+  showToast('Loading current editor map into dashboard');
 }
 
 function loadMapData(d){
@@ -4739,6 +5782,9 @@ function loadMapData(d){
   
   console.log('[LOAD] mapPixels set:', {length: mapPixels.length, first5: Array.from(mapPixels.slice(0, 5))});
   
+  selectedMapName = d.name || selectedMapName;
+  if(selectedMapName) document.getElementById('eSaveName').value = selectedMapName;
+  refreshMapLibrary(lastKnownMaps);
   originPx  = null;   // reset origin — user must set it
   const origBtn = document.getElementById('origBtn');
   if(origBtn) origBtn.textContent='🎯 Click map to set origin';
@@ -4747,6 +5793,7 @@ function loadMapData(d){
   
   console.log('[LOAD] Calling initCanvas()');
   initCanvas();
+  centerEditorCanvasView();
   console.log('[LOAD] Successfully loaded:', {name: d.name, width: mapW, height: mapH, resolution: mapRes});
   showToast(`✅ Map "${d.name}" loaded  (${mapW}×${mapH})`);
   

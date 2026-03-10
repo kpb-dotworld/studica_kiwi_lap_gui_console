@@ -39,9 +39,12 @@ import struct as _struct
 from typing import Set
 
 HTTP_PORT   = 8080
-MAPS_DIR    = os.path.expanduser("~/kiwi_maps")
+BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
+SAVES_DIR   = os.path.join(BASE_DIR, "save")
+MAPS_DIR    = os.path.join(SAVES_DIR, "maps")
 WAYPOINTS_DIR = os.path.expanduser("~/kiwi_waypoints")
 ANCHORS_DIR = os.path.expanduser("~/kiwi_anchors")
+os.makedirs(SAVES_DIR, exist_ok=True)
 os.makedirs(MAPS_DIR, exist_ok=True)
 os.makedirs(WAYPOINTS_DIR, exist_ok=True)
 os.makedirs(ANCHORS_DIR, exist_ok=True)
@@ -113,6 +116,159 @@ def _broadcast(data: dict):
     if dead:
         with ws_clients_lock: ws_clients.difference_update(dead)
 
+
+def _ask_map_open_path():
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes("-topmost", True)
+        file_path = filedialog.askopenfilename(
+            title="Open arena map",
+            initialdir=MAPS_DIR,
+            filetypes=[
+                ("Map files", "*.pgm *.yaml"),
+                ("PGM maps", "*.pgm"),
+                ("YAML metadata", "*.yaml"),
+                ("All files", "*.*"),
+            ],
+        )
+        root.destroy()
+        return file_path or None
+    except Exception as exc:
+        print(f"[MAP] Open dialog error: {exc}")
+        return None
+
+
+def _ask_map_save_path(default_name: str):
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes("-topmost", True)
+        file_path = filedialog.asksaveasfilename(
+            title="Save arena map",
+            initialdir=MAPS_DIR,
+            initialfile=f"{default_name}.pgm",
+            defaultextension=".pgm",
+            filetypes=[
+                ("PGM maps", "*.pgm"),
+                ("All files", "*.*"),
+            ],
+        )
+        root.destroy()
+        return file_path or None
+    except Exception as exc:
+        print(f"[MAP] Save dialog error: {exc}")
+        return None
+
+
+def _map_base_from_path(path: str):
+    if not path:
+        raise ValueError("Empty map path")
+    base, ext = os.path.splitext(path)
+    ext = ext.lower()
+    if ext not in (".pgm", ".yaml"):
+        raise ValueError(f"Unsupported map file type: {ext}")
+    return base
+
+
+def _save_map_files(base_path: str, width: int, height: int, resolution: float, pixels):
+    pgm = base_path + ".pgm"
+    yml = base_path + ".yaml"
+
+    with open(pgm, "wb") as f:
+        f.write(f"P5\n{width} {height}\n255\n".encode())
+        f.write(bytes(pixels))
+
+    import yaml
+    meta = {
+        "image": os.path.basename(pgm),
+        "resolution": resolution,
+        "origin": [0.0, 0.0, 0.0],
+        "negate": 0,
+        "occupied_thresh": 0.65,
+        "free_thresh": 0.196,
+        "mode": "trinary",
+    }
+    with open(yml, "w", encoding="utf-8") as f:
+        yaml.dump(meta, f, default_flow_style=False, sort_keys=False)
+
+    return pgm, yml
+
+
+def _send_map_data_from_path(client: _WSClient, file_path: str):
+    base = _map_base_from_path(file_path)
+    pgm = base + ".pgm"
+    yml = base + ".yaml"
+    display_name = os.path.basename(base)
+
+    if not os.path.exists(pgm):
+        raise FileNotFoundError(pgm)
+
+    w, h, raw = _read_pgm(pgm)
+    pixels = list(raw)
+    resolution = 0.05
+    try:
+        import yaml
+        if os.path.exists(yml):
+            with open(yml, encoding="utf-8") as f:
+                y = yaml.safe_load(f)
+                resolution = float(y.get("resolution", 0.05))
+    except Exception as exc:
+        print(f"[MAP] YAML read warning for {yml}: {exc}")
+
+    client.send(json.dumps({
+        "type": "map_data",
+        "name": display_name,
+        "cols": w,
+        "rows": h,
+        "resolution": resolution,
+        "pixels": pixels,
+        "source_path": pgm,
+    }))
+
+
+def _open_map_dialog(client: _WSClient):
+    selected = _ask_map_open_path()
+    if not selected:
+        client.send(json.dumps({"type": "map_dialog_cancelled", "mode": "open"}))
+        return
+    try:
+        _send_map_data_from_path(client, selected)
+    except Exception as exc:
+        print(f"[MAP] Open dialog load error: {exc}")
+        client.send(json.dumps({"type": "map_load_error", "error": str(exc), "name": os.path.basename(selected)}))
+
+
+def _save_map_via_dialog(msg):
+    name = msg.get("name", "arena_map")
+    width = int(msg["cols"])
+    height = int(msg["rows"])
+    resolution = float(msg["resolution"])
+    pixels = msg["pixels"]
+
+    selected = _ask_map_save_path(name)
+    if not selected:
+        _broadcast({"type": "map_dialog_cancelled", "mode": "save"})
+        return
+
+    try:
+        selected_base = _map_base_from_path(selected)
+        base = os.path.join(MAPS_DIR, os.path.basename(selected_base))
+        pgm, _ = _save_map_files(base, width, height, resolution, pixels)
+        saved_name = os.path.basename(base)
+        print(f"[MAP] Saved via dialog → {pgm}")
+        _broadcast({"type": "map_saved", "name": saved_name, "path": pgm})
+        _broadcast_map_list()
+    except Exception as exc:
+        print(f"[MAP] Save dialog error: {exc}")
+        _broadcast({"type": "map_save_error", "msg": str(exc)})
+
 def _handle_ws(client: _WSClient):
     with ws_clients_lock: ws_clients.add(client)
     try:
@@ -161,10 +317,14 @@ def _handle_ws(client: _WSClient):
                             shared_state["pending_reset_odom"] = True
                     elif t == "save_map":
                         _save_map_from_ws(msg)
+                    elif t == "save_map_dialog":
+                        _save_map_via_dialog(msg)
                     elif t == "list_maps":
                         _send_map_list(client)
                     elif t == "load_map":
                         _send_map_data(client, msg.get("name",""))
+                    elif t == "open_map_dialog":
+                        _open_map_dialog(client)
                     elif t == "save_waypoints":
                         _save_waypoints_from_ws(msg)
                     elif t == "list_waypoints":
@@ -189,6 +349,58 @@ def _handle_ws(client: _WSClient):
 # ═══════════════════════════════════════════════════════════════════════════════
 # MAP I/O  helpers
 # ═══════════════════════════════════════════════════════════════════════════════
+def _read_pgm(pgm_path):
+    with open(pgm_path, "rb") as f:
+        magic = f.readline().strip()
+        if magic != b"P5":
+            raise ValueError(f"Unsupported PGM format: {magic!r}")
+        dims = f.readline().decode().split()
+        width, height = int(dims[0]), int(dims[1])
+        f.readline()  # maxval
+        raw = f.read(width * height)
+    return width, height, raw
+
+
+def _make_map_thumbnail(raw: bytes, width: int, height: int):
+    if not raw or width <= 0 or height <= 0:
+        return None
+
+    max_dim = 56
+    step = max(1, math.ceil(max(width, height) / max_dim))
+    thumb_w = max(1, math.ceil(width / step))
+    thumb_h = max(1, math.ceil(height / step))
+    rects = []
+
+    for ty in range(thumb_h):
+        y0 = ty * step
+        y1 = min(height, y0 + step)
+        for tx in range(thumb_w):
+            x0 = tx * step
+            x1 = min(width, x0 + step)
+            occupied = 0
+            total = 0
+            for yy in range(y0, y1):
+                row_offset = yy * width
+                for xx in range(x0, x1):
+                    total += 1
+                    if raw[row_offset + xx] < 127:
+                        occupied += 1
+            fill = "#172233" if occupied >= max(1, total // 3) else "#d9e4ec"
+            rects.append(f'<rect x="{tx}" y="{ty}" width="1" height="1" fill="{fill}"/>')
+
+    svg = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {thumb_w} {thumb_h}" '
+        f'preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges">'
+        f'<rect width="{thumb_w}" height="{thumb_h}" fill="#0f1824"/>'
+        + "".join(rects)
+        + f'<rect x="0.5" y="0.5" width="{max(0, thumb_w - 1)}" height="{max(0, thumb_h - 1)}" '
+          'fill="none" stroke="#4dff91" stroke-opacity="0.45" stroke-width="1"/>'
+        + '</svg>'
+    )
+    encoded = base64.b64encode(svg.encode("utf-8")).decode("ascii")
+    return f"data:image/svg+xml;base64,{encoded}"
+
+
 def _save_map_from_ws(msg):
     """Receive map data from browser and save PGM + YAML to disk."""
     try:
@@ -199,28 +411,10 @@ def _save_map_from_ws(msg):
         pixels     = msg["pixels"]              # list of 0/254 row-major top→bottom
 
         base = os.path.join(MAPS_DIR, name)
-        pgm  = base + ".pgm"
-        yml  = base + ".yaml"
-
-        with open(pgm, "wb") as f:
-            f.write(f"P5\n{width} {height}\n255\n".encode())
-            f.write(bytes(pixels))
-
-        import yaml
-        meta = {
-            "image":           os.path.basename(pgm),
-            "resolution":      resolution,
-            "origin":          [0.0, 0.0, 0.0],
-            "negate":          0,
-            "occupied_thresh": 0.65,
-            "free_thresh":     0.196,
-            "mode":            "trinary",
-        }
-        with open(yml, "w") as f:
-            yaml.dump(meta, f, default_flow_style=False, sort_keys=False)
+        pgm, _ = _save_map_files(base, width, height, resolution, pixels)
 
         print(f"[MAP] Saved → {pgm}")
-        _broadcast({"type": "map_saved", "name": name})
+        _broadcast({"type": "map_saved", "name": name, "path": pgm})
         # refresh list for all clients
         _broadcast_map_list()
     except Exception as e:
@@ -237,11 +431,10 @@ def _list_maps():
                 "has_yaml": os.path.exists(yml)}
         # read dimensions from PGM header
         try:
-            with open(pgm,"rb") as f:
-                f.readline()  # P5
-                dims = f.readline().decode().split()
-                info["cols"] = int(dims[0])
-                info["rows"] = int(dims[1])
+            width, height, raw = _read_pgm(pgm)
+            info["cols"] = width
+            info["rows"] = height
+            info["thumbnail"] = _make_map_thumbnail(raw, width, height)
         except: pass
         try:
             import yaml
@@ -253,17 +446,16 @@ def _list_maps():
     return maps
 
 def _broadcast_map_list():
-    _broadcast({"type": "map_list", "maps": _list_maps()})
+    _broadcast({"type": "map_list", "maps": _list_maps(), "folder": MAPS_DIR})
 
 def _send_map_list(client: _WSClient):
-    client.send(json.dumps({"type": "map_list", "maps": _list_maps()}))
+    client.send(json.dumps({"type": "map_list", "maps": _list_maps(), "folder": MAPS_DIR}))
 
 def _send_map_data(client: _WSClient, name: str):
     """Read PGM + YAML and send pixel array to browser."""
     print(f"[MAP] load_map request: name='{name}'")
     base = os.path.join(MAPS_DIR, name)
     pgm  = base + ".pgm"
-    yml  = base + ".yaml"
     print(f"[MAP] Looking for: {pgm}")
     print(f"[MAP] File exists: {os.path.exists(pgm)}")
     try:
@@ -275,36 +467,8 @@ def _send_map_data(client: _WSClient, name: str):
                 "error": f"File not found: {pgm}"
             }))
             return
-            
-        with open(pgm, "rb") as f:
-            magic = f.readline().strip()
-            dims  = f.readline().decode().split()
-            w, h  = int(dims[0]), int(dims[1])
-            f.readline()  # maxval
-            raw = f.read()
-        pixels = list(raw[:w*h])
-        
-        print(f"[MAP] Loaded PGM: {w}×{h}, {len(pixels)} pixels")
 
-        resolution = 0.05
-        try:
-            import yaml
-            with open(yml) as f:
-                y = yaml.safe_load(f)
-                resolution = float(y.get("resolution", 0.05))
-                print(f"[MAP] Resolution from YAML: {resolution}")
-        except Exception as e:
-            print(f"[MAP] Could not load YAML: {e}, using default {resolution}")
-
-        print(f"[MAP] Sending map_data to client: {name}")
-        client.send(json.dumps({
-            "type": "map_data",
-            "name": name,
-            "cols": w,
-            "rows": h,
-            "resolution": resolution,
-            "pixels": pixels
-        }))
+        _send_map_data_from_path(client, pgm)
         print(f"[MAP] Successfully sent map_data: {name}")
     except Exception as e:
         print(f"[MAP] Load error: {e}")
