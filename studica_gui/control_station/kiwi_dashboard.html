@@ -150,8 +150,8 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .obtn.sel{background:rgba(255,107,53,.18);border-color:var(--accent2);color:var(--accent2);font-weight:700;}
 .wp-list{max-height:none;flex:1;overflow-y:auto;margin-top:0;min-height:0;}
 .wp-list::-webkit-scrollbar{width:3px;}.wp-list::-webkit-scrollbar-thumb{background:var(--border);}
-.wp-item{display:flex;align-items:center;gap:10px;padding:8px 12px;margin-bottom:6px;background:var(--panel2);border:1px solid var(--border);border-radius:4px;font-size:1em;}
-.wp-num{width:22px;height:22px;border-radius:50%;background:var(--accent2);color:#fff;font-size:1em;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.wp-item{display:flex;align-items:center;gap:8px;padding:7px 10px;margin-bottom:5px;background:var(--panel2);border:1px solid var(--border);border-radius:4px;font-size:.95em;}
+.wp-num{width:22px;height:22px;border-radius:50%;background:var(--accent2);color:#fff;font-size:.9em;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 
 .wp-sidebar{width:260px;min-width:220px;max-width:320px;background:var(--panel2);display:flex;flex-direction:column;gap:0;box-shadow:1px 0 0 var(--border);min-height:0;}
 .wp-sidebar-scroll{flex:1;display:flex;flex-direction:column;gap:10px;padding:10px;min-height:0;overflow:hidden;border-bottom:1px solid var(--border);}
@@ -216,13 +216,16 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .action-item-btn:hover{background:rgba(156,39,176,.25);color:#fff;}
 .action-close-btn{margin-top:12px;padding:7px;background:transparent;border:1px solid var(--border);color:var(--muted2);font-family:inherit;font-size:11px;cursor:pointer;border-radius:3px;width:100%;}
 .action-close-btn:hover{border-color:var(--red);color:var(--red);}
-.wp-body{flex:1;}.wp-xy{color:var(--accent);font-size:1em;}.wp-yaw{font-size:1em;color:var(--green);}
-.wp-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1em;padding:2px 3px;transition:color .15s;}
+.wp-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.wp-title-row{display:flex;align-items:center;gap:6px;min-width:0;}
+.wp-xy{color:var(--accent);font-size:.98em;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wp-yaw{font-size:.9em;color:var(--green);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wp-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.05em;padding:0 2px;transition:color .15s;}
 .wp-del:hover{color:var(--red);}
 .wp-del.locked{cursor:not-allowed;color:var(--muted2);}
 .wp-del.locked:hover{color:var(--muted2);}
-.wp-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;}
-.wp-origin-btn{padding:5px 8px;border-radius:999px;border:1px solid rgba(0,212,255,.35);background:rgba(0,212,255,.08);color:#bdefff;font-family:inherit;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:border-color .15s ease,background .15s ease,color .15s ease;}
+.wp-actions{display:flex;align-items:center;gap:4px;flex-shrink:0;}
+.wp-origin-btn{padding:2px 6px;border-radius:999px;border:1px solid rgba(0,212,255,.35);background:rgba(0,212,255,.08);color:#bdefff;font-family:inherit;font-size:8px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:border-color .15s ease,background .15s ease,color .15s ease;}
 .wp-origin-btn:hover{border-color:var(--accent);background:rgba(0,212,255,.16);color:#fff;}
 .wp-origin-btn.active,.wp-origin-btn:disabled{border-color:rgba(255,107,53,.55);background:rgba(255,107,53,.14);color:#ffd9cb;cursor:default;}
 .wp-origin-card{border-color:rgba(255,107,53,.35);background:linear-gradient(180deg,rgba(255,107,53,.12),rgba(255,107,53,.05));}
@@ -2525,7 +2528,7 @@ function updateWPList(){
       const label = actionLabels[wp.node] || wp.node;
       cards.push(`<div class="wp-item wp-action" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragend="onWpDragEnd(event)">
         <div class="wp-num" style="background:#9c27b0; color:#fff;">⚡</div>
-        <div class="wp-body"><div class="wp-xy" style="color:#ce93d8;">${label}</div></div>
+        <div class="wp-body"><div class="wp-xy" style="color:#ce93d8; font-weight:700;">${label}</div><div class="wp-yaw" style="color:#b78ac4;">Action node</div></div>
         <button class="wp-del" onclick="delWP(${i})">✕</button>
       </div>`);
       return;
@@ -2534,7 +2537,7 @@ function updateWPList(){
     if(wp.type === 'ANCHOR'){
       cards.push(`<div class="wp-item wp-anchor" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragend="onWpDragEnd(event)">
         <div class="wp-num" style="background:#2196F3; color:#fff;">📍</div>
-        <div class="wp-body"><div class="wp-xy" style="color:#64b4ff;">${wp.anchor_name}</div><div class="wp-yaw" style="color:#ffb464;">${wp.direction.toUpperCase()} | fwd: ${wp.average.toFixed(4)}m | lat: ${wp.distance.toFixed(4)}m</div></div>
+        <div class="wp-body"><div class="wp-xy" style="color:#64b4ff; font-weight:700;">${wp.anchor_name}</div><div class="wp-yaw" style="color:#ffb464;">${wp.direction.toUpperCase()} · F ${wp.average.toFixed(2)} m · L ${wp.distance.toFixed(2)} m</div></div>
         <button class="wp-del" onclick="delWP(${i})">✕</button>
       </div>`);
       return;
@@ -2546,14 +2549,17 @@ function updateWPList(){
     if (wp.createdFrom === 'P') circleColor = '#FFB74D'; // Light orange for P keypress mark
     if (wp.isOrigin) circleColor = '#ff6b35';
     const favMarker = wp.isFavourite ? '⭐ ' : '';
-    const title = wp.isOrigin ? `${favMarker}${wp.name || 'Origin'} · Origin` : `${favMarker}${wp.name || 'WP ' + wpNum}`;
+    const title = wp.isOrigin ? `${favMarker}${wp.name || 'Origin'}` : `${favMarker}${wp.name || 'WP ' + wpNum}`;
+    const xVal = Number(wp.x_m || 0).toFixed(2);
+    const yVal = Number(wp.y_m || 0).toFixed(2);
+    const yawVal = Number(wp.yaw_deg || 0).toFixed(0);
     const detail = wp.isOrigin
-      ? `Origin waypoint | frame origin x:0 y:0 m | facing ${originYaw}°`
-      : `x:${wp.x_m} y:${wp.y_m} m | yaw:${wp.yaw_deg}°`;
+      ? `Origin · x:${xVal} y:${yVal} · ${yawVal}\u00b0`
+      : `x:${xVal} y:${yVal} · ${yawVal}\u00b0`;
     const originMarker = wp.isOrigin ? '<button class="wp-origin-btn active" type="button" disabled>Origin</button>' : '';
     cards.push(`<div class="wp-item wp-${wp.type && wp.type.toLowerCase ? wp.type.toLowerCase() : 'wp'}" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragend="onWpDragEnd(event)">
       <div class="wp-num" style="background:${circleColor}; color:#fff;">${wpNum}</div>
-      <div class="wp-body"><div class="wp-xy" style="color:#00d4ff; font-weight:700;">${title}</div><div class="wp-yaw">${detail}</div></div>
+      <div class="wp-body"><div class="wp-title-row"><div class="wp-xy" style="color:#00d4ff; font-weight:700;">${title}</div></div><div class="wp-yaw">${detail}</div></div>
       <div class="wp-actions">${originMarker}<button class="wp-del" onclick="delWP(${i})">✕</button></div>
     </div>`);
   });
