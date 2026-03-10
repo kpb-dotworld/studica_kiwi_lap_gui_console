@@ -151,6 +151,8 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .wp-list{max-height:none;flex:1;overflow-y:auto;margin-top:0;min-height:0;}
 .wp-list::-webkit-scrollbar{width:3px;}.wp-list::-webkit-scrollbar-thumb{background:var(--border);}
 .wp-item{display:flex;align-items:center;gap:8px;padding:7px 10px;margin-bottom:5px;background:var(--panel2);border:1px solid var(--border);border-radius:4px;font-size:.95em;}
+.wp-item.is-selected{border-color:rgba(0,212,255,.7);background:linear-gradient(180deg,rgba(0,212,255,.18),rgba(0,212,255,.08));box-shadow:0 0 0 1px rgba(0,212,255,.14) inset,0 0 18px rgba(0,212,255,.12);}
+.wp-item.is-editing{border-color:rgba(77,255,145,.7);box-shadow:0 0 0 1px rgba(77,255,145,.16) inset,0 0 22px rgba(77,255,145,.14);}
 .wp-num{width:22px;height:22px;border-radius:50%;background:var(--accent2);color:#fff;font-size:.9em;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 
 .wp-sidebar{width:260px;min-width:220px;max-width:320px;background:var(--panel2);display:flex;flex-direction:column;gap:0;box-shadow:1px 0 0 var(--border);min-height:0;}
@@ -239,6 +241,10 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .wp-del.locked{cursor:not-allowed;color:var(--muted2);}
 .wp-del.locked:hover{color:var(--muted2);}
 .wp-actions{display:flex;align-items:center;gap:4px;flex-shrink:0;}
+.wp-meta-btn{padding:2px 6px;border-radius:999px;border:1px solid rgba(61,88,112,.9);background:rgba(10,18,30,.82);color:var(--text2);font-family:inherit;font-size:10px;font-weight:700;letter-spacing:.04em;cursor:pointer;transition:border-color .15s ease,background .15s ease,color .15s ease,transform .15s ease;}
+.wp-meta-btn:hover{border-color:var(--accent);background:rgba(0,212,255,.12);color:#fff;transform:translateY(-1px);}
+.wp-meta-btn.favorite-on{border-color:rgba(255,213,79,.5);background:rgba(255,193,7,.16);color:#ffe79b;}
+.wp-meta-btn.favorite-on:hover{border-color:var(--yellow);background:rgba(255,193,7,.22);}
 .wp-origin-btn{padding:2px 6px;border-radius:999px;border:1px solid rgba(0,212,255,.35);background:rgba(0,212,255,.08);color:#bdefff;font-family:inherit;font-size:8px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:border-color .15s ease,background .15s ease,color .15s ease;}
 .wp-origin-btn:hover{border-color:var(--accent);background:rgba(0,212,255,.16);color:#fff;}
 .wp-origin-btn.active,.wp-origin-btn:disabled{border-color:rgba(255,107,53,.55);background:rgba(255,107,53,.14);color:#ffd9cb;cursor:default;}
@@ -1635,18 +1641,29 @@ function renderMap(){
     if (wp.type === 'ACTION' || wp.type === 'ANCHOR') return;
     wpDisplayNum++;  // Increment counter for spatial waypoints
     const p=wpToCanvas(wp); if(!p) return;
+    const isSelected = i === selectedWpIdx;
+    const isHighlighted = i === highlightedWpIdx;
     const originYaw_rad = originYaw * Math.PI / 180;
     const screenYaw = originYaw_rad - wp.yaw_rad;
+    if (isSelected || isHighlighted) {
+      mctx.save();
+      mctx.beginPath();
+      mctx.arc(p.x, p.y, isSelected ? 18 : 15, 0, Math.PI * 2);
+      mctx.strokeStyle = isSelected ? 'rgba(0,212,255,.95)' : 'rgba(77,255,145,.95)';
+      mctx.lineWidth = isSelected ? 3 : 2.5;
+      mctx.stroke();
+      mctx.restore();
+    }
     mctx.save();
-    mctx.globalAlpha = 0.2;
-    drawTriangle(mctx, p.x, p.y, screenYaw, SC*.7, '#ff6b35');
+    mctx.globalAlpha = isSelected ? 0.34 : 0.2;
+    drawTriangle(mctx, p.x, p.y, screenYaw, SC*.7, isSelected ? '#00d4ff' : '#ff6b35');
     mctx.globalAlpha = 1.0;
     mctx.restore();
     // Draw WP DATA number (matching the list display numbering)
     mctx.save();
     mctx.beginPath();
     mctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
-    mctx.fillStyle = 'rgba(255,107,53,0.5)';
+    mctx.fillStyle = isSelected ? 'rgba(0,212,255,0.85)' : 'rgba(255,107,53,0.5)';
     mctx.fill();
     mctx.font = 'bold 10px Arial';
     mctx.fillStyle = '#fff';
@@ -2343,13 +2360,13 @@ function executePressFunc() {
   };
   
   // Reset favourite status for new waypoint
+  wpMetadataEditIndex = -1;
   tmpWpIsFavourite = false;
   
   // Open waypoint name popup
   document.getElementById('wpnamePopup').classList.add('open');
   document.getElementById('wpnameInput').value = `WP ${waypoints.length + 1}`;
-  document.getElementById('wpFavouriteBtn').textContent = '☆';
-  document.getElementById('wpFavouriteBtn').style.transform = 'scale(1)';
+  setWpFavouriteButtonState(false);
   // Use setTimeout to ensure modal is rendered before focusing
   setTimeout(() => {
     document.getElementById('wpnameInput').focus();
@@ -2383,6 +2400,70 @@ function markWP() {
 let tmpWaypointData = null;
 let tmpWpIsFavourite = false;
 let favouriteWaypoints = [];
+let wpMetadataEditIndex = -1;
+
+function setWpFavouriteButtonState(isFavourite) {
+  const btn = document.getElementById('wpFavouriteBtn');
+  if (!btn) return;
+
+  if (isFavourite) {
+    btn.textContent = '⭐';
+    btn.style.background = 'rgba(255,193,7,.25)';
+    btn.style.boxShadow = '0 0 12px rgba(255,193,7,.6)';
+    btn.style.transform = 'scale(1.15)';
+  } else {
+    btn.textContent = '☆';
+    btn.style.background = 'rgba(255,193,7,.1)';
+    btn.style.boxShadow = '0 0 8px rgba(255,193,7,.3)';
+    btn.style.transform = 'scale(1)';
+  }
+}
+
+function matchesFavouriteWaypoint(candidate, reference) {
+  if (!candidate || !reference) return false;
+  return candidate.name === reference.name
+    && Math.abs((candidate.x_m ?? 0) - (reference.x_m ?? 0)) < 0.001
+    && Math.abs((candidate.y_m ?? 0) - (reference.y_m ?? 0)) < 0.001
+    && Number(candidate.yaw_deg ?? 0) === Number(reference.yaw_deg ?? 0);
+}
+
+function syncFavouriteWaypointEntry(wp, previousSnapshot = null) {
+  const reference = previousSnapshot || wp;
+  favouriteWaypoints = favouriteWaypoints.filter(fav => !matchesFavouriteWaypoint(fav, reference));
+  if (wp && wp.isFavourite) {
+    favouriteWaypoints.push({ ...wp });
+  }
+}
+
+function openWaypointMetadataEditor(idx) {
+  const wp = waypoints[idx];
+  if (!isSpatialWaypoint(wp)) return;
+
+  wpMetadataEditIndex = idx;
+  tmpWaypointData = null;
+  tmpWpIsFavourite = !!wp.isFavourite;
+
+  document.getElementById('wpnamePopup').classList.add('open');
+  document.getElementById('wpnameInput').value = wp.name || `WP ${idx + 1}`;
+  setWpFavouriteButtonState(tmpWpIsFavourite);
+
+  setTimeout(() => {
+    document.getElementById('wpnameInput').focus();
+    document.getElementById('wpnameInput').select();
+  }, 10);
+}
+
+function toggleWaypointFavourite(idx) {
+  const wp = waypoints[idx];
+  if (!isSpatialWaypoint(wp)) return;
+
+  const previousSnapshot = { ...wp };
+  wp.isFavourite = !wp.isFavourite;
+  syncFavouriteWaypointEntry(wp, previousSnapshot);
+  updateWPList();
+  renderMap();
+  showToast(wp.isFavourite ? `⭐ ${wp.name || `WP ${idx + 1}`} added to favourites` : `☆ ${wp.name || `WP ${idx + 1}`} removed from favourites`);
+}
 
 // Load favourite waypoints from localStorage on page load
 function loadFavouriteWaypoints() {
@@ -2416,35 +2497,44 @@ function closeWpnamePopup() {
   document.getElementById('wpnamePopup').classList.remove('open');
   tmpWaypointData = null;
   tmpWpIsFavourite = false;
-  document.getElementById('wpFavouriteBtn').textContent = '☆';
+  wpMetadataEditIndex = -1;
+  setWpFavouriteButtonState(false);
 }
 
 // Toggle favourite status in naming dialog
 function toggleWpFavourite() {
   tmpWpIsFavourite = !tmpWpIsFavourite;
-  const btn = document.getElementById('wpFavouriteBtn');
-  if (tmpWpIsFavourite) {
-    btn.textContent = '⭐';
-    btn.style.background = 'rgba(255,193,7,.25)';
-    btn.style.boxShadow = '0 0 12px rgba(255,193,7,.6)';
-    btn.style.transform = 'scale(1.15)';
-  } else {
-    btn.textContent = '☆';
-    btn.style.background = 'rgba(255,193,7,.1)';
-    btn.style.boxShadow = '0 0 8px rgba(255,193,7,.3)';
-    btn.style.transform = 'scale(1)';
-  }
+  setWpFavouriteButtonState(tmpWpIsFavourite);
 }
 
 // Save waypoint with the name from input
 function saveWaypointWithName() {
-  if (!tmpWaypointData) return;
-  
   const wpname = document.getElementById('wpnameInput').value.trim();
   if (!wpname) {
     showToast('⚠️ Waypoint name cannot be empty');
     return;
   }
+
+  if (wpMetadataEditIndex >= 0) {
+    const wp = waypoints[wpMetadataEditIndex];
+    if (!isSpatialWaypoint(wp)) {
+      closeWpnamePopup();
+      return;
+    }
+
+    const previousSnapshot = { ...wp };
+    wp.name = wpname;
+    wp.isFavourite = tmpWpIsFavourite;
+    syncFavouriteWaypointEntry(wp, previousSnapshot);
+
+    closeWpnamePopup();
+    updateWPList();
+    renderMap();
+    showToast(`✏️ Updated ${wpname}${tmpWpIsFavourite ? ' ⭐' : ''}`);
+    return;
+  }
+
+  if (!tmpWaypointData) return;
   
   // Create waypoint with user-provided name and previously stored data
   const newWaypoint = {
@@ -2462,7 +2552,7 @@ function saveWaypointWithName() {
   
   // Add to favouriteWaypoints if marked as favourite
   if (tmpWpIsFavourite) {
-    favouriteWaypoints.push(newWaypoint);
+    syncFavouriteWaypointEntry(newWaypoint);
   }
   
   // Visual feedback
@@ -2510,10 +2600,87 @@ function handleQKeyPress() {
 }
 
 document.addEventListener('keydown',e=>{ if((e.key==='p'||e.key==='P')&&!e.target.matches('input,textarea')) markWP(); });
+
+function syncSelectedWaypointCard(scrollIntoView = false) {
+  document.querySelectorAll('#wpList .wp-item[data-idx]').forEach(card => {
+    const idx = Number(card.dataset.idx);
+    card.classList.toggle('is-selected', idx === selectedWpIdx);
+    card.classList.toggle('is-editing', idx === wpEditIndex);
+  });
+
+  if (scrollIntoView && selectedWpIdx !== null) {
+    const card = document.querySelector(`#wpList .wp-item[data-idx="${selectedWpIdx}"]`);
+    if (card) {
+      card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }
+}
+
+function setSelectedWaypoint(idx, scrollIntoView = false) {
+  selectedWpIdx = Number.isInteger(idx) && idx >= 0 && idx < waypoints.length ? idx : null;
+  syncSelectedWaypointCard(scrollIntoView);
+}
+
+function pulseWaypointHighlight(idx, scrollIntoView = false) {
+  if(highlightTimeout !== null) {
+    clearTimeout(highlightTimeout);
+    highlightTimeout = null;
+  }
+
+  if (!Number.isInteger(idx) || idx < 0 || idx >= waypoints.length || !isSpatialWaypoint(waypoints[idx])) {
+    highlightedWpIdx = null;
+    highlightStartTime = null;
+    syncSelectedWaypointCard(scrollIntoView);
+    renderMap();
+    return;
+  }
+
+  highlightedWpIdx = idx;
+  highlightStartTime = Date.now();
+  syncSelectedWaypointCard(scrollIntoView);
+  highlightTimeout = setTimeout(() => {
+    highlightedWpIdx = null;
+    highlightStartTime = null;
+    highlightTimeout = null;
+    renderMap();
+  }, 1000);
+  renderMap();
+}
+
+function beginWaypointEdit(idx, options = {}) {
+  const wp = waypoints[idx];
+  if (!isSpatialWaypoint(wp)) return;
+
+  const scrollIntoView = options.scrollIntoView !== false;
+  wpEditMode = true;
+  wpEditIndex = idx;
+  wpMapClickActive = true;
+  wpSelectedX = wp.x_m;
+  wpSelectedY = wp.y_m;
+  wpOrientation = wp.yaw_rad;
+  wpDragging = false;
+  mapCanvas.style.cursor = 'crosshair';
+  setSelectedWaypoint(idx, scrollIntoView);
+  pulseWaypointHighlight(idx, scrollIntoView);
+  updateWaypointDisplay();
+  updateWaypointModeUI();
+  renderMap();
+
+  const wpName = wp.name || `WP ${idx + 1}`;
+  showToast(`📝 Editing ${wpName} — drag to move, arrows to rotate, rename or favourite from WP DATA, ENTER to save`);
+}
+
+function selectWaypointFromList(idx) {
+  if (!isSpatialWaypoint(waypoints[idx])) return;
+  expandSidebarSection('waypoints');
+  beginWaypointEdit(idx, { scrollIntoView: true });
+}
+
 function updateWPList(){
   const el=document.getElementById('wpList');
   if(!waypoints.length){
     el.innerHTML = '<div class="wp-empty">No waypoints.<br>Drive robot → press <b>[P]</b></div>';
+    selectedWpIdx = null;
     syncSequenceOriginCard();
     return;
   }
@@ -2524,7 +2691,10 @@ function updateWPList(){
     if(wp.type === 'ACTION'){
       const actionLabels = {detect_color: '🔍 Detect Colour', detect_qr: '📱 Detect QR'};
       const label = actionLabels[wp.node] || wp.node;
-      cards.push(`<div class="wp-item wp-action" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragend="onWpDragEnd(event)">
+      const actionClasses = ['wp-item', 'wp-action'];
+      if (selectedWpIdx === i) actionClasses.push('is-selected');
+      if (wpEditIndex === i) actionClasses.push('is-editing');
+      cards.push(`<div class="${actionClasses.join(' ')}" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragend="onWpDragEnd(event)">
         <div class="wp-num" style="background:#9c27b0; color:#fff;">⚡</div>
         <div class="wp-body"><div class="wp-xy" style="color:#ce93d8; font-weight:700;">${label}</div><div class="wp-yaw" style="color:#b78ac4;">Action node</div></div>
         <button class="wp-del" onclick="delWP(${i})">✕</button>
@@ -2533,7 +2703,10 @@ function updateWPList(){
     }
     // Anchor items render differently
     if(wp.type === 'ANCHOR'){
-      cards.push(`<div class="wp-item wp-anchor" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragend="onWpDragEnd(event)">
+      const anchorClasses = ['wp-item', 'wp-anchor'];
+      if (selectedWpIdx === i) anchorClasses.push('is-selected');
+      if (wpEditIndex === i) anchorClasses.push('is-editing');
+      cards.push(`<div class="${anchorClasses.join(' ')}" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragend="onWpDragEnd(event)">
         <div class="wp-num" style="background:#2196F3; color:#fff;">📍</div>
         <div class="wp-body"><div class="wp-xy" style="color:#64b4ff; font-weight:700;">${wp.anchor_name}</div><div class="wp-yaw" style="color:#ffb464;">${wp.direction.toUpperCase()} · F ${wp.average.toFixed(2)} m · L ${wp.distance.toFixed(2)} m</div></div>
         <button class="wp-del" onclick="delWP(${i})">✕</button>
@@ -2555,43 +2728,35 @@ function updateWPList(){
       ? `Origin · x:${xVal} y:${yVal} · ${yawVal}\u00b0`
       : `x:${xVal} y:${yVal} · ${yawVal}\u00b0`;
     const originMarker = wp.isOrigin ? '<button class="wp-origin-btn active" type="button" disabled>Origin</button>' : '';
-    cards.push(`<div class="wp-item wp-${wp.type && wp.type.toLowerCase ? wp.type.toLowerCase() : 'wp'}" draggable="true" data-idx="${i}" ondblclick="highlightWaypoint(${i})" ondragstart="onWpDragStart(event)" ondragend="onWpDragEnd(event)">
+    const spatialClasses = ['wp-item', `wp-${wp.type && wp.type.toLowerCase ? wp.type.toLowerCase() : 'wp'}`];
+    if (selectedWpIdx === i) spatialClasses.push('is-selected');
+    if (wpEditIndex === i) spatialClasses.push('is-editing');
+    const favouriteBtnClass = wp.isFavourite ? 'wp-meta-btn favorite-on' : 'wp-meta-btn';
+    const favouriteBtnLabel = wp.isFavourite ? '⭐' : '☆';
+    cards.push(`<div class="${spatialClasses.join(' ')}" draggable="true" data-idx="${i}" onclick="selectWaypointFromList(${i})" ondblclick="event.stopPropagation(); openWaypointMetadataEditor(${i})" ondragstart="onWpDragStart(event)" ondragend="onWpDragEnd(event)">
       <div class="wp-num" style="background:${circleColor}; color:#fff;">${wpNum}</div>
       <div class="wp-body"><div class="wp-title-row"><div class="wp-xy" style="color:#00d4ff; font-weight:700;">${title}</div></div><div class="wp-yaw">${detail}</div></div>
-      <div class="wp-actions">${originMarker}<button class="wp-del" onclick="delWP(${i})">✕</button></div>
+      <div class="wp-actions">${originMarker}<button class="wp-meta-btn" type="button" onclick="event.stopPropagation(); openWaypointMetadataEditor(${i})">✎</button><button class="${favouriteBtnClass}" type="button" onclick="event.stopPropagation(); toggleWaypointFavourite(${i})">${favouriteBtnLabel}</button><button class="wp-del" onclick="event.stopPropagation(); delWP(${i})">✕</button></div>
     </div>`);
   });
   el.innerHTML = cards.join('');
+  syncSelectedWaypointCard();
   syncSequenceOriginCard();
 }
 
 // Highlight waypoint on double-click
 function highlightWaypoint(idx) {
-  // Clear any existing timeout
-  if(highlightTimeout !== null) {
-    clearTimeout(highlightTimeout);
-    highlightTimeout = null;
-  }
-  
-  if(waypoints[idx].type === 'ACTION' || waypoints[idx].type === 'ANCHOR') {
-    highlightedWpIdx = null; // Don't highlight ACTION or ANCHOR nodes
+  if (!isSpatialWaypoint(waypoints[idx])) {
+    setSelectedWaypoint(idx, true);
+    highlightedWpIdx = null;
     highlightStartTime = null;
-  } else {
-    highlightedWpIdx = highlightedWpIdx === idx ? null : idx; // Toggle highlight
-    if(highlightedWpIdx !== null) {
-      highlightStartTime = Date.now();
-      // Auto-clear highlight after 3 seconds
-      highlightTimeout = setTimeout(() => {
-        highlightedWpIdx = null;
-        highlightStartTime = null;
-        highlightTimeout = null;
-        renderMap();
-      }, 1000);
-    } else {
-      highlightStartTime = null;
-    }
+    syncSelectedWaypointCard(true);
+    renderMap();
+    return;
   }
-  renderMap();
+
+  setSelectedWaypoint(idx, true);
+  pulseWaypointHighlight(idx, true);
 }
 
 // Drag-and-drop handlers for waypoint reordering and dragging to sequence
@@ -2662,12 +2827,38 @@ function delWP(i){
   const wp = waypoints[i];
   if (!wp) return;
   waypoints.splice(i,1);
+  if (selectedWpIdx === i) {
+    selectedWpIdx = null;
+  } else if (selectedWpIdx !== null && selectedWpIdx > i) {
+    selectedWpIdx -= 1;
+  }
+  if (highlightedWpIdx === i) {
+    highlightedWpIdx = null;
+  } else if (highlightedWpIdx !== null && highlightedWpIdx > i) {
+    highlightedWpIdx -= 1;
+  }
+  if (wpEditIndex === i) {
+    wpEditMode = false;
+    wpEditIndex = -1;
+    wpSelectedX = null;
+    wpSelectedY = null;
+    wpDragging = false;
+  } else if (wpEditIndex > i) {
+    wpEditIndex -= 1;
+  }
   normalizeWaypointIds();
   updateWPList();
   renderMap();
 }
 function clearWP(){
   waypoints = [];
+  selectedWpIdx = null;
+  highlightedWpIdx = null;
+  wpEditMode = false;
+  wpEditIndex = -1;
+  wpSelectedX = null;
+  wpSelectedY = null;
+  wpDragging = false;
   updateWPList();
   renderMap();
 }
@@ -3232,6 +3423,7 @@ function executeMoveCommand(){
 let wpModeSelection = null;  // 'waypoint' or 'move'
 let wpMapClickActive = false;
 let wpOrientation = 0;       // in radians for waypoint mode
+let selectedWpIdx = null;    // Persistent selected waypoint shared by map and WP DATA
 let highlightedWpIdx = null; // Index of waypoint to highlight on map
 let highlightStartTime = null; // Timestamp when highlight was started
 let highlightTimeout = null; // Timeout ID for auto-clear
@@ -3405,7 +3597,7 @@ mapCanvas.addEventListener('dblclick', e=>{
   console.log('[DBLCLICK] Event fired, wpMapClickActive:', wpMapClickActive, 'settingOrig:', settingOrig, 'simEditMode:', simEditMode);
   // Allow edit in simEditMode (paused visualization) or normal mode
   if(settingOrig) return;  // Don't allow edit while setting origin
-  if(wpMapClickActive && !simEditMode) return;  // Don't allow if already in waypoint mode (unless sim edit)
+  if(wpMapClickActive && !wpEditMode && !simEditMode) return;  // Keep add mode protected, but allow switching while editing
   
   const r = mapCanvas.getBoundingClientRect();
   // Use the same coordinate system as single click but without dividing by SC
@@ -3433,17 +3625,8 @@ mapCanvas.addEventListener('dblclick', e=>{
     const dist = Math.sqrt(Math.pow(scaledClickX - p.x, 2) + Math.pow(scaledClickY - p.y, 2));
     console.log('[DBLCLICK] Distance to WP', i, ':', dist.toFixed(1));
     if(dist < 40){
-      // Enter waypoint edit mode
-      wpEditMode = true;
-      wpEditIndex = i;
-      wpMapClickActive = true;
-      wpSelectedX = wp.x_m;
-      wpSelectedY = wp.y_m;
-      wpOrientation = wp.yaw_rad;
-      mapCanvas.style.cursor = 'crosshair';
-      updateWaypointModeUI();
-      renderMap();
-      showToast(`📝 Editing WP ${i+1} — drag to move, arrows to rotate, ENTER to save, ESC to cancel`);
+      expandSidebarSection('waypoints');
+      beginWaypointEdit(i, { scrollIntoView: true });
       return;
     }
   }
@@ -3542,6 +3725,7 @@ function closeAddWP(){
   wpDragging = false;
   mapCanvas.style.cursor = 'default';
   updateWaypointModeUI();
+  syncSelectedWaypointCard();
   renderMap();
 }
 
@@ -3565,16 +3749,20 @@ function confirmWPEdit(){
   let yaw_deg = Math.round(finalYaw * 180 / Math.PI);
   if (yaw_deg === 360) yaw_deg = 0;
   
+  const previousSnapshot = { ...waypoints[wpEditIndex] };
+
   // Update the waypoint
   waypoints[wpEditIndex].x_m = +wpSelectedX.toFixed(4);
   waypoints[wpEditIndex].y_m = +wpSelectedY.toFixed(4);
   waypoints[wpEditIndex].yaw_deg = yaw_deg;
   waypoints[wpEditIndex].yaw_rad = finalYaw;
+  syncFavouriteWaypointEntry(waypoints[wpEditIndex], previousSnapshot);
   
   const wpNum = wpEditIndex + 1;
   showToast(`✅ WP ${wpNum} updated (${wpSelectedX.toFixed(2)}, ${wpSelectedY.toFixed(2)}, ${yaw_deg}°)`);
   
   // Exit edit mode but stay in simEditMode if visualizing
+  const editedWpIdx = wpEditIndex;
   wpEditMode = false;
   wpEditIndex = -1;
   wpDragging = false;
@@ -3582,6 +3770,7 @@ function confirmWPEdit(){
   wpSelectedX = null;
   wpSelectedY = null;
   mapCanvas.style.cursor = simEditMode ? 'crosshair' : 'default';
+  setSelectedWaypoint(editedWpIdx, true);
   updateWaypointModeUI();
   
   updateWPList();
@@ -3599,6 +3788,7 @@ function cancelWPEdit(){
   wpSelectedY = null;
   mapCanvas.style.cursor = simEditMode ? 'crosshair' : 'default';
   updateWaypointModeUI();
+  syncSelectedWaypointCard();
   renderMap();
 }
 
@@ -3774,13 +3964,13 @@ function confirmAddWP(){
   };
   
   // Reset favourite status for new waypoint
+  wpMetadataEditIndex = -1;
   tmpWpIsFavourite = false;
   
   // Open waypoint name popup
   document.getElementById('wpnamePopup').classList.add('open');
   document.getElementById('wpnameInput').value = `WP ${waypoints.length + 1}`;
-  document.getElementById('wpFavouriteBtn').textContent = '☆';
-  document.getElementById('wpFavouriteBtn').style.transform = 'scale(1)';
+  setWpFavouriteButtonState(false);
   // Use setTimeout to ensure modal is rendered before focusing
   setTimeout(() => {
     document.getElementById('wpnameInput').focus();
