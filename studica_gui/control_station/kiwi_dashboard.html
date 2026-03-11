@@ -1549,13 +1549,11 @@ document.addEventListener('keydown', function(e) {
   if (settingOrig) {
     // Arrow keys: rotate orientation by ±45°
     if (e.key === 'ArrowRight') {
-      originYaw = (originYaw - 45) % 360;
-      renderMap();
+      setOriginYaw((getActiveOriginYaw() - 45 + 360) % 360, { commit: false });
       e.preventDefault();
     }
     else if (e.key === 'ArrowLeft') {
-      originYaw = (originYaw + 45) % 360; // -45 mod 360
-      renderMap();
+      setOriginYaw((getActiveOriginYaw() + 45) % 360, { commit: false });
       e.preventDefault();
     }
     // IJKL: move marker (handled by interval, but prevent default to avoid scrolling)
@@ -1602,6 +1600,7 @@ let mapPixels=null;                  // Uint8Array, 0=occupied 254=free
 let SC=12;                           // scale px/cell
 let originPx=null, settingOrig=false;
 let originYaw=0;                     // degrees — robot facing direction at origin (0=right,90=up,180=left,270=down)
+let originDraftYaw=null;
 let robot={x:0,y:0,yaw:0};
 let waypoints=[];
 const SEQ_EMPTY_HTML = '<div class="seq-empty" style="color:var(--muted);text-align:center;padding:20px 8px;font-size:11px;">Drag items from<br>WP DATA to arrange<br>execution sequence</div>';
@@ -1633,6 +1632,10 @@ function clearOriginFlag(){
 
 function formatWaypointSummary(wp){
   return `x:${wp.x_m} y:${wp.y_m} m | yaw:${wp.yaw_deg}°`;
+}
+
+function getActiveOriginYaw(){
+  return settingOrig && originDraftYaw !== null ? originDraftYaw : originYaw;
 }
 
 function upsertOriginWaypoint(){
@@ -2377,7 +2380,7 @@ function renderMap(){
     // canvas: right=0°, up=-90° (because canvas Y is inverted)
     // originYaw 0°→canvas 0° (right), 90°→canvas -90° (up), 180°→canvas 180° (left), 270°→canvas 90° (down)
     const arrowLen = SC * 2.2;
-    const canvasAngle = -originYaw * Math.PI / 180;  // negate because canvas Y is flipped
+    const canvasAngle = -getActiveOriginYaw() * Math.PI / 180;  // negate because canvas Y is flipped
     const ax = ox + Math.cos(canvasAngle) * arrowLen;
     const ay = oy + Math.sin(canvasAngle) * arrowLen;
 
@@ -2396,7 +2399,8 @@ function renderMap(){
     mctx.closePath(); mctx.fill();
 
     // label showing direction
-    const dirLabel = {0:'→ 0°', 90:'↑ 90°', 180:'← 180°', 270:'↓ 270°'}[originYaw] || originYaw+'°';
+    const activeOriginYaw = getActiveOriginYaw();
+    const dirLabel = {0:'→ 0°', 90:'↑ 90°', 180:'← 180°', 270:'↓ 270°'}[activeOriginYaw] || activeOriginYaw+'°';
     mctx.fillStyle='#FFD700'; mctx.font='bold 8px Courier New';
     mctx.fillText(dirLabel, ox+7, oy+16);
 
@@ -2739,7 +2743,7 @@ function drawSmallTriangle(ctx, cx, cy, yaw, sz, col) {
     const py = dispPixelY * SC + SC/2;
     const color = selectedMarkerPixelX !== null ? '#ff9900' : '#ff6b35';  // brighter if selected
     // Origin itself faces originYaw direction on screen (screen heading = originYaw)
-    const screenYaw = originYaw * Math.PI / 180;
+    const screenYaw = getActiveOriginYaw() * Math.PI / 180;
     drawTriangle(mctx, px, py, screenYaw, SC*.85, color, { fillAlpha: 1 });
     mctx.save(); mctx.font='10px Courier New'; mctx.fillStyle=color;
     mctx.textAlign='left'; mctx.textBaseline='alphabetic';
@@ -2935,6 +2939,7 @@ function drawSelectedOriginOverlay() {
 function toggleOrigin(){
   if(!settingOrig && dashboardMeasureMode) clearDashboardMeasure(false);
   settingOrig=!settingOrig;
+  originDraftYaw = settingOrig ? originYaw : null;
   const btn=document.getElementById('origBtn');
   btn.classList.toggle('on',settingOrig);
   btn.textContent=settingOrig?'⏳ Click on the map to set origin…'
@@ -2961,16 +2966,23 @@ mapCanvas.addEventListener('click',e=>{
 });
 
 // origin facing direction
-function setOriginYaw(deg){
-  originYaw = deg;
+function setOriginYaw(deg, options = {}){
+  const shouldCommit = options.commit !== false;
+  const normalizedDeg = ((deg % 360) + 360) % 360;
+  if (shouldCommit) {
+    originYaw = normalizedDeg;
+    originDraftYaw = null;
+  } else {
+    originDraftYaw = normalizedDeg;
+  }
   // update button highlights
   [0,90,180,270].forEach(d=>{
     const b=document.getElementById('ob'+d);
-    if(b) b.classList.toggle('sel', d===deg);
+    if(b) b.classList.toggle('sel', d=== normalizedDeg);
   });
   // Hide the orientation arrows after one is pressed
   document.getElementById('origOrient').style.display = 'none';
-  updateWPList();
+  if (shouldCommit) updateWPList();
   renderMap();
 }
 
@@ -2987,10 +2999,26 @@ function confirmOrigin(){
     showToast('❌ Please click on the map to select origin position');
     return;
   }
+
+  const nextOriginPx = {x: Math.round(selectedMarkerPixelX), y: Math.round(selectedMarkerPixelY)};
+  const nextOriginYaw = originDraftYaw !== null ? originDraftYaw : originYaw;
+  const preservedSpatialWaypoints = waypoints
+    .filter(wp => isSpatialWaypoint(wp) && !wp.isOrigin)
+    .map(wp => {
+      const mapPoint = odomToMapPixelForOrigin(wp.x_m, wp.y_m, originPx, originYaw);
+      return mapPoint ? {
+        waypoint: wp,
+        mapPoint,
+        mapYaw: odomYawToMapYawForOrigin(wp.yaw_deg, originYaw)
+      } : null;
+    })
+    .filter(Boolean);
   
   // Use pixel coordinates directly as origin
-  originPx = {x: Math.round(selectedMarkerPixelX), y: Math.round(selectedMarkerPixelY)};
+  originPx = nextOriginPx;
+  originYaw = nextOriginYaw;
   settingOrig = false;
+  originDraftYaw = null;
   selectedMarkerPixelX = null;
   selectedMarkerPixelY = null;
   hoverPixelX = null;
@@ -3000,6 +3028,17 @@ function confirmOrigin(){
   btn.classList.remove('on');
   btn.textContent='🎯 Reset Origin';
   document.getElementById('origOrient').style.display='block';
+
+  preservedSpatialWaypoints.forEach(({ waypoint, mapPoint, mapYaw }) => {
+    const odomPoint = mapPixelToOdomForOrigin(mapPoint.x, mapPoint.y, originPx, originYaw);
+    if (!odomPoint) return;
+    waypoint.x_m = +odomPoint.x.toFixed(4);
+    waypoint.y_m = +odomPoint.y.toFixed(4);
+    const odomYawDeg = mapYawToOdomYawForOrigin(mapYaw, originYaw);
+    waypoint.yaw_deg = odomYawDeg;
+    waypoint.yaw_rad = odomYawDeg * Math.PI / 180;
+  });
+
   upsertOriginWaypoint();
   updateWPList();
   renderMap();
@@ -3011,6 +3050,7 @@ function confirmOrigin(){
 
 function cancelOrigin(){
   settingOrig = false;
+  originDraftYaw = null;
   selectedMarkerPixelX = null;
   selectedMarkerPixelY = null;
   const btn=document.getElementById('origBtn');
@@ -3701,6 +3741,7 @@ function beginOriginReposition(options = {}) {
 
   clearWaypointInteractionState();
   settingOrig = true;
+  originDraftYaw = originYaw;
   selectedMarkerPixelX = originPx.x;
   selectedMarkerPixelY = originPx.y;
   hoverPixelX = originPx.x;
@@ -4866,22 +4907,19 @@ document.addEventListener('keydown', e=>{
   if(settingOrig && selectedMarkerPixelX !== null) {
     const step = 45; // degrees
     if(e.key === 'ArrowRight') {
-      originYaw = (originYaw - step + 360) % 360;
-      setOriginYaw(originYaw);
+      setOriginYaw((getActiveOriginYaw() - step + 360) % 360, { commit: false });
     } else if(e.key === 'ArrowLeft') {
-      originYaw = (originYaw + step) % 360;
-      setOriginYaw(originYaw);
+      setOriginYaw((getActiveOriginYaw() + step) % 360, { commit: false });
     } else if(e.key === 'ArrowUp') {
-      originYaw = 90;
-      setOriginYaw(originYaw);
+      setOriginYaw(90, { commit: false });
     } else if(e.key === 'ArrowDown') {
-      originYaw = 270;
-      setOriginYaw(originYaw);
+      setOriginYaw(270, { commit: false });
     } else if(e.key === 'Enter') {
       confirmOrigin();
     } else if(e.key === 'Escape') {
       // Cancel origin setting
       settingOrig = false;
+      originDraftYaw = null;
       selectedMarkerPixelX = null;
       selectedMarkerPixelY = null;
       hoverPixelX = null;
@@ -5298,9 +5336,9 @@ function saveWaypoints() {
 }
 
 // Convert odom coordinates to map pixel coordinates (bottom-left = 0,0, y increases upward)
-function odomToMapPixel(ox_m, oy_m) {
-  if(!originPx) return null;
-  const ang = originYaw * Math.PI / 180;
+function odomToMapPixelForOrigin(ox_m, oy_m, baseOriginPx = originPx, baseOriginYaw = originYaw) {
+  if(!baseOriginPx) return null;
+  const ang = baseOriginYaw * Math.PI / 180;
   const fwdX = Math.cos(ang);
   const fwdY = -Math.sin(ang);
   const lftX = Math.sin(ang);
@@ -5310,8 +5348,8 @@ function odomToMapPixel(ox_m, oy_m) {
   const dy = (ox_m * fwdY + oy_m * lftY) * cells;
   
   // Canvas cell coordinates (top-left = 0,0)
-  const canvasCellX = originPx.x + dx;
-  const canvasCellY = originPx.y + dy;
+  const canvasCellX = baseOriginPx.x + dx;
+  const canvasCellY = baseOriginPx.y + dy;
   
   // Convert to map pixel coordinates (bottom-left = 0,0, Y increases upward)
   const mapPixelX = canvasCellX;
@@ -5320,34 +5358,42 @@ function odomToMapPixel(ox_m, oy_m) {
   return { x: mapPixelX, y: mapPixelY };
 }
 
+function odomToMapPixel(ox_m, oy_m) {
+  return odomToMapPixelForOrigin(ox_m, oy_m, originPx, originYaw);
+}
+
 // Convert odom yaw to map yaw (0=up, 90=right, CW from up)
 // Takes into account the origin's orientation to get absolute map direction
-function odomYawToMapYaw(odom_yaw_deg) {
+function odomYawToMapYawForOrigin(odom_yaw_deg, baseOriginYaw = originYaw) {
   // odom yaw is relative to origin's forward direction
   // Get absolute screen direction: screen 0=right, 90=up, CCW positive
-  const absoluteScreenYaw = (originYaw + odom_yaw_deg + 360) % 360;
+  const absoluteScreenYaw = (baseOriginYaw + odom_yaw_deg + 360) % 360;
   // Map convention: 0=up, 90=right, CW from up
   // Conversion: screen 0(right)->map 90, screen 90(up)->map 0
   let mapYaw = (90 - absoluteScreenYaw + 360) % 360;
   return Math.round(mapYaw);
 }
 
+function odomYawToMapYaw(odom_yaw_deg) {
+  return odomYawToMapYawForOrigin(odom_yaw_deg, originYaw);
+}
+
 // Convert map pixel coordinates to odom coordinates
-function mapPixelToOdom(mapPixelX, mapPixelY) {
-  if(!originPx) return null;
+function mapPixelToOdomForOrigin(mapPixelX, mapPixelY, baseOriginPx = originPx, baseOriginYaw = originYaw) {
+  if(!baseOriginPx) return null;
   // Convert from map pixel (bottom-left = 0,0) to canvas cell (top-left = 0,0)
   const canvasCellX = mapPixelX;
   const canvasCellY = (mapH - 1) - mapPixelY;
   
-  const ang = originYaw * Math.PI / 180;
+  const ang = baseOriginYaw * Math.PI / 180;
   const fwdX = Math.cos(ang);
   const fwdY = -Math.sin(ang);
   const lftX = Math.sin(ang);
   const lftY = Math.cos(ang);
   const cells = 100 / mapRes;
   
-  const dxCell = canvasCellX - originPx.x;
-  const dyCell = canvasCellY - originPx.y;
+  const dxCell = canvasCellX - baseOriginPx.x;
+  const dyCell = canvasCellY - baseOriginPx.y;
   
   // Project onto forward and left axes
   const fwdDist = dxCell * fwdX + dyCell * fwdY;
@@ -5359,16 +5405,24 @@ function mapPixelToOdom(mapPixelX, mapPixelY) {
   return { x: ox_m, y: oy_m };
 }
 
+function mapPixelToOdom(mapPixelX, mapPixelY) {
+  return mapPixelToOdomForOrigin(mapPixelX, mapPixelY, originPx, originYaw);
+}
+
 // Convert map yaw to odom yaw
 // Takes into account the origin's orientation to get odom-relative direction
-function mapYawToOdomYaw(map_yaw_deg) {
+function mapYawToOdomYawForOrigin(map_yaw_deg, baseOriginYaw = originYaw) {
   // map: 0=up, 90=right (CW from up)
   // screen: 0=right, 90=up (CCW from right)
   // Reverse: map 0(up)->screen 90, map 90(right)->screen 0
   const absoluteScreenYaw = (90 - map_yaw_deg + 360) % 360;
   // Convert to odom yaw (relative to current origin's forward direction)
-  let odomYaw = (absoluteScreenYaw - originYaw + 360) % 360;
+  let odomYaw = (absoluteScreenYaw - baseOriginYaw + 360) % 360;
   return Math.round(odomYaw);
+}
+
+function mapYawToOdomYaw(map_yaw_deg) {
+  return mapYawToOdomYawForOrigin(map_yaw_deg, originYaw);
 }
 
 function openImportWPPopup() {
