@@ -437,6 +437,16 @@ body.is-resizing-sequence,body.is-resizing-sequence *{cursor:col-resize !importa
 .quick-router-action-popup .seq-case-chip{background:rgba(156,39,176,.12);border-color:rgba(156,39,176,.36);color:#f0c7ff;}
 .quick-router-action-popup .seq-chip-remove{color:#f0c7ff;}
 .quick-router-action-popup .seq-item--nested-action{background:rgba(18,12,33,.72);border-color:rgba(156,39,176,.3);}
+.quick-router-action-popup.is-nested{border-color:rgba(0,191,165,.48);background:linear-gradient(180deg,rgba(8,22,28,.98),rgba(7,18,24,.97));}
+.quick-router-action-popup.is-nested .quick-router-action-popup-header{border-bottom-color:rgba(0,191,165,.22);}
+.quick-router-action-popup.is-nested .quick-router-action-popup-title strong{color:#b7fff3;}
+.quick-router-action-popup.is-nested .seq-cond-cases{border-color:rgba(0,191,165,.34);background:rgba(10,29,33,.92);}
+.quick-router-action-popup.is-nested .seq-cond-index{color:#8ef4e4;}
+.quick-router-action-popup.is-nested .seq-cond-input{color:#b7fff3;border-color:rgba(0,191,165,.26);}
+.quick-router-action-popup.is-nested .seq-cond-dropzone{border-color:rgba(0,191,165,.48);background:rgba(6,26,28,.5);}
+.quick-router-action-popup.is-nested .seq-case-chip{background:rgba(0,191,165,.12);border-color:rgba(0,191,165,.34);color:#b7fff3;}
+.quick-router-action-popup.is-nested .seq-chip-remove{color:#8ef4e4;}
+.quick-router-action-popup.is-nested .seq-item--nested-action{background:rgba(7,35,34,.68);border-color:rgba(0,191,165,.3);}
 
 /* CONDITIONAL DETECT_COLOR */
 .seq-conditional-wrapper{display:flex;flex-direction:column;gap:8px;width:100%;min-width:0;}
@@ -2713,10 +2723,14 @@ function renderMap(){
     const previewAnchor = getQuickRouterPreviewAnchorWaypoint();
     const anchorPoint = previewAnchor ? wpToCanvas(previewAnchor) : null;
     if (anchorPoint) {
+      const previewToneKind = getQuickRouterTargetToneKind();
+      const previewColor = previewToneKind === 'default'
+        ? 'rgba(82,92,104,.98)'
+        : getSequenceOverlayColor(previewToneKind);
       mctx.save();
       mctx.globalAlpha = 0.9;
       mctx.setLineDash([10, 6]);
-      mctx.strokeStyle = 'rgba(82,92,104,.98)';
+      mctx.strokeStyle = previewColor;
       mctx.lineWidth = 2;
       mctx.beginPath();
       mctx.moveTo(anchorPoint.x, anchorPoint.y);
@@ -2725,7 +2739,7 @@ function renderMap(){
       mctx.setLineDash([]);
       mctx.beginPath();
       mctx.arc(quickRouterPointerCanvasX, quickRouterPointerCanvasY, 5, 0, Math.PI * 2);
-      mctx.fillStyle = 'rgba(82,92,104,.98)';
+      mctx.fillStyle = previewColor;
       mctx.fill();
       mctx.restore();
     }
@@ -7667,7 +7681,46 @@ function clearQuickRouterPendingClick() {
   }
 }
 
+function getQuickRouterTargetToneKind(target = null) {
+  const resolvedTarget = target || buildQuickRouterConditionalTargetFromPopup() || getQuickRouterConditionalTarget();
+  if (!resolvedTarget) return 'default';
+  return resolvedTarget.entryPathValue ? 'nested' : 'branch';
+}
+
+function getQuickRouterTargetOwnerWaypoint(target) {
+  if (!target) return null;
+
+  if (target.waypointId !== undefined && target.waypointId !== null) {
+    const popupWaypointIdx = findSpatialWaypointIndexById(Number(target.waypointId));
+    if (popupWaypointIdx !== -1) return waypoints[popupWaypointIdx];
+  }
+
+  if (!target.entryPathValue && target.seqKey) {
+    const actionIndex = sequence.findIndex(seqEntry => seqEntry?.seqKey === target.seqKey);
+    for (let idx = actionIndex - 1; idx >= 0; idx--) {
+      const seqEntry = sequence[idx];
+      if (seqEntry?.type === 'waypoint' && isSpatialWaypoint(seqEntry.data)) {
+        return seqEntry.data;
+      }
+    }
+  }
+
+  return null;
+}
+
 function getQuickRouterPreviewAnchorWaypoint() {
+  const target = buildQuickRouterConditionalTargetFromPopup() || getQuickRouterConditionalTarget();
+  if (target) {
+    const activeCase = target.cases?.[target.caseNum];
+    const routeNodes = activeCase && Array.isArray(activeCase.wps)
+      ? collectActiveConditionalRouteNodes(activeCase.wps, target.entryPathValue ? 'nested' : 'branch')
+      : [];
+    if (routeNodes.length) return routeNodes[routeNodes.length - 1].waypoint;
+
+    const ownerWaypoint = getQuickRouterTargetOwnerWaypoint(target);
+    if (ownerWaypoint) return ownerWaypoint;
+  }
+
   const routeNodes = getActiveSequenceRouteNodes();
   if (routeNodes.length) return routeNodes[routeNodes.length - 1].waypoint;
   return getOriginWaypoint();
@@ -7909,6 +7962,7 @@ function renderQuickRouterActionPopup() {
   quickRouterActionPopup.actionType = target.actionType || quickRouterActionPopup.actionType;
   const activeCase = target.cases[target.caseNum] || { name: '', wps: [] };
   const isDefaultCase = isDefaultConditionalCase(target.caseNum);
+  const toneKind = getQuickRouterTargetToneKind(target);
   const waypointIdx = findSpatialWaypointIndexById(Number(target.waypointId));
   const waypointLabel = waypointIdx !== -1 && waypoints[waypointIdx]
     ? (waypoints[waypointIdx].name || `WP ${waypoints[waypointIdx].id}`)
@@ -7931,6 +7985,7 @@ function renderQuickRouterActionPopup() {
     </div>`;
 
   popup.classList.add('open');
+  popup.classList.toggle('is-nested', toneKind === 'nested');
   popup.setAttribute('aria-hidden', 'false');
   positionQuickRouterActionPopup(false);
 }
