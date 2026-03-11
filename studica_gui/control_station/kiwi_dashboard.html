@@ -550,6 +550,24 @@ body.is-resizing-sequence,body.is-resizing-sequence *{cursor:col-resize !importa
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--green);color:var(--green);padding:8px 22px;border-radius:20px;font-size:12px;z-index:9999;letter-spacing:.5px;pointer-events:none;opacity:0;transition:opacity .3s;}
 .toast.show{opacity:1;}
 
+.confirm-modal-overlay{position:fixed;inset:0;background:rgba(3,8,14,.76);backdrop-filter:blur(4px);z-index:1300;display:none;align-items:center;justify-content:center;padding:20px;}
+.confirm-modal-overlay.open{display:flex;}
+.confirm-modal-box{width:min(420px,calc(100vw - 32px));background:linear-gradient(180deg,rgba(15,24,36,.98),rgba(10,18,29,.98));border:1px solid rgba(255,107,53,.45);border-radius:16px;box-shadow:0 26px 64px rgba(0,0,0,.46),0 0 0 1px rgba(255,107,53,.08) inset;overflow:hidden;}
+.confirm-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:18px 20px 12px;border-bottom:1px solid rgba(36,52,70,.9);}
+.confirm-modal-eyebrow{font-size:10px;color:#ffb995;letter-spacing:.24em;text-transform:uppercase;line-height:1.2;margin-bottom:6px;}
+.confirm-modal-title{font-size:18px;color:var(--text1);font-weight:800;line-height:1.2;}
+.confirm-modal-close{background:none;border:none;color:var(--muted2);font-size:22px;line-height:1;cursor:pointer;padding:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;transition:color .15s ease,transform .15s ease;}
+.confirm-modal-close:hover{color:var(--red);transform:scale(1.05);}
+.confirm-modal-body{padding:16px 20px 20px;display:flex;flex-direction:column;gap:14px;}
+.confirm-modal-copy{font-size:12px;color:var(--text2);line-height:1.7;white-space:pre-line;}
+.confirm-modal-note{padding:10px 12px;border:1px solid rgba(255,107,53,.24);border-radius:10px;background:rgba(255,107,53,.08);font-size:10px;color:#ffd2c2;letter-spacing:.08em;text-transform:uppercase;}
+.confirm-modal-actions{display:flex;justify-content:flex-end;gap:10px;}
+.confirm-modal-btn{min-width:110px;padding:10px 14px;border-radius:10px;border:1px solid rgba(61,88,112,.9);background:rgba(10,18,30,.85);color:var(--text2);font-family:inherit;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:border-color .15s ease,background .15s ease,color .15s ease,transform .15s ease;}
+.confirm-modal-btn:hover{transform:translateY(-1px);}
+.confirm-modal-btn.cancel:hover{border-color:var(--accent);background:rgba(0,212,255,.08);color:#fff;}
+.confirm-modal-btn.confirm{border-color:rgba(255,68,85,.48);background:linear-gradient(180deg,rgba(255,107,53,.18),rgba(255,68,85,.12));color:#ffd2c2;}
+.confirm-modal-btn.confirm:hover{border-color:var(--red);background:linear-gradient(180deg,rgba(255,107,53,.28),rgba(255,68,85,.18));color:#fff;}
+
 /* wall thickness row */
 .thick-row{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--muted2);margin-left:4px;}
 .thick-row input[type=range]{width:80px;accent-color:var(--accent2);}
@@ -1004,6 +1022,26 @@ body.is-resizing-sequence,body.is-resizing-sequence *{cursor:col-resize !importa
 <!-- toast notification -->
 <div class="toast" id="toast"></div>
 
+<div class="confirm-modal-overlay" id="confirmModalOverlay" aria-hidden="true">
+  <div class="confirm-modal-box" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle" aria-describedby="confirmModalMessage">
+    <div class="confirm-modal-head">
+      <div>
+        <div class="confirm-modal-eyebrow">Safety Check</div>
+        <div class="confirm-modal-title" id="confirmModalTitle">Confirm action</div>
+      </div>
+      <button class="confirm-modal-close" type="button" id="confirmModalCloseBtn" aria-label="Close confirmation">✕</button>
+    </div>
+    <div class="confirm-modal-body">
+      <div class="confirm-modal-copy" id="confirmModalMessage">Are you sure?</div>
+      <div class="confirm-modal-note">This action changes data immediately.</div>
+      <div class="confirm-modal-actions">
+        <button class="confirm-modal-btn cancel" type="button" id="confirmModalCancelBtn">Cancel</button>
+        <button class="confirm-modal-btn confirm" type="button" id="confirmModalConfirmBtn">Continue</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- direction wall popup -->
 <div class="dir-popup" id="dirPopup" style="display:none">
   <div class="dp-title" id="dpTitle">Place wall — direction</div>
@@ -1448,7 +1486,12 @@ document.addEventListener('keydown', function(e) {
   }
 });
 // Clear all cache and reload page
-function clearCache() {
+async function clearCache() {
+  const shouldClear = await confirmDestructiveAction(
+    'Clear all dashboard cache and reload now?\n\nThis will remove saved browser data, cached maps, and waypoint state stored in this browser.',
+    { title: 'Clear Cached Data', confirmLabel: 'Clear Now' }
+  );
+  if (!shouldClear) return;
   localStorage.clear();
   sessionStorage.clear();
   // Clear IndexedDB if needed
@@ -3143,9 +3186,11 @@ function editWpNum(idx) {
   input.focus();
   input.select();
 }
-function delWP(i){
+async function delWP(i){
   const wp = waypoints[i];
   if (!wp) return;
+  const wpLabel = wp.name || (wp.isOrigin ? 'Origin waypoint' : `WP ${wp.id || i + 1}`);
+  if (!(await confirmDestructiveAction(`Delete ${wpLabel}?`, { title: 'Delete Waypoint', confirmLabel: 'Delete' }))) return;
   waypoints.splice(i,1);
   if (selectedWpIdx === i) {
     selectedWpIdx = null;
@@ -3170,7 +3215,9 @@ function delWP(i){
   updateWPList();
   renderMap();
 }
-function clearWP(){
+async function clearWP(){
+  if (!waypoints.length) return;
+  if (!(await confirmDestructiveAction(`Clear all ${waypoints.length} waypoint entries?`, { title: 'Clear Waypoints', confirmLabel: 'Clear All' }))) return;
   waypoints = [];
   selectedWpIdx = null;
   highlightedWpIdx = null;
@@ -4643,6 +4690,81 @@ function showToast(msg, dur=2800){
   setTimeout(()=>t.classList.remove('show'), dur);
 }
 
+let confirmModalResolver = null;
+
+function closeConfirmModal(confirmed = false) {
+  const overlay = document.getElementById('confirmModalOverlay');
+  if (overlay) {
+    overlay.classList.remove('open');
+    overlay.setAttribute('aria-hidden', 'true');
+  }
+
+  const resolver = confirmModalResolver;
+  confirmModalResolver = null;
+  if (resolver) resolver(confirmed);
+}
+
+function confirmDestructiveAction(message, options = {}) {
+  const overlay = document.getElementById('confirmModalOverlay');
+  const title = document.getElementById('confirmModalTitle');
+  const body = document.getElementById('confirmModalMessage');
+  const confirmBtn = document.getElementById('confirmModalConfirmBtn');
+  const cancelBtn = document.getElementById('confirmModalCancelBtn');
+
+  if (!overlay || !title || !body || !confirmBtn || !cancelBtn) {
+    return Promise.resolve(window.confirm(`${message}\n\nSelect OK to continue or Cancel to keep the current data.`));
+  }
+
+  if (confirmModalResolver) {
+    closeConfirmModal(false);
+  }
+
+  title.textContent = options.title || 'Confirm action';
+  body.textContent = `${message}\n\nSelect ${options.confirmLabel || 'Continue'} to proceed or Cancel to keep the current data.`;
+  confirmBtn.textContent = options.confirmLabel || 'Continue';
+  cancelBtn.textContent = options.cancelLabel || 'Cancel';
+  overlay.classList.add('open');
+  overlay.setAttribute('aria-hidden', 'false');
+
+  return new Promise(resolve => {
+    confirmModalResolver = resolve;
+    requestAnimationFrame(() => confirmBtn.focus());
+  });
+}
+
+function editorHasWorkInProgress() {
+  const hasGrid = !!eBaseGrid;
+  const hasFilledCells = !!(eBaseGrid && Array.from(eBaseGrid).some(Boolean));
+  const hasShapes = Array.isArray(eShapes) && eShapes.length > 0;
+  const hasHistory = (Array.isArray(eUndoStack) && eUndoStack.length > 0) || (Array.isArray(eRedoStack) && eRedoStack.length > 0);
+  return hasGrid && (hasFilledCells || hasShapes || hasHistory);
+}
+
+function confirmEditorReset(actionLabel) {
+  return confirmDestructiveAction(`${actionLabel}? This will discard the current editor canvas.`, {
+    title: 'Discard Editor Changes',
+    confirmLabel: 'Discard'
+  });
+}
+
+document.getElementById('confirmModalOverlay')?.addEventListener('click', event => {
+  if (event.target === event.currentTarget) closeConfirmModal(false);
+});
+document.getElementById('confirmModalCloseBtn')?.addEventListener('click', () => closeConfirmModal(false));
+document.getElementById('confirmModalCancelBtn')?.addEventListener('click', () => closeConfirmModal(false));
+document.getElementById('confirmModalConfirmBtn')?.addEventListener('click', () => closeConfirmModal(true));
+document.getElementById('confirmModalOverlay')?.addEventListener('keydown', event => {
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    closeConfirmModal(false);
+    return;
+  }
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    closeConfirmModal(true);
+  }
+});
+
 // ────────────────────────────────────────────────────────────────────────────
 // MAP EDITOR  v4  — crosshair distances + anchor + arrow keys + dir walls
 // ────────────────────────────────────────────────────────────────────────────
@@ -4711,7 +4833,8 @@ function centerEditorCanvasView(){
   });
 }
 
-function editorNewMap(){
+async function editorNewMap(){
+  if (editorHasWorkInProgress() && !(await confirmEditorReset('Start a new map'))) return;
   selectedMapName=null;
   document.getElementById('eSaveName').value='arena_map';
   buildCanvas();
@@ -5735,7 +5858,7 @@ eCanvas.addEventListener('wheel',e=>{
 },{passive:false});
 
 // ── arrow keys: move anchor + open direction popup ─────────────────────────────
-document.addEventListener('keydown',e=>{
+document.addEventListener('keydown', async e=>{
   if(!editorIsOpen()) return;
   if(document.activeElement && document.activeElement.tagName==='INPUT') return;
 
@@ -5748,6 +5871,7 @@ document.addEventListener('keydown',e=>{
   // Delete selected shape
   if((e.key==='Delete' || e.key==='Backspace') && eTool==='select' && eSelectedShapeId!==null){
     e.preventDefault();
+    if(!(await confirmDestructiveAction('Delete the selected map editor shape?', { title: 'Delete Shape', confirmLabel: 'Delete' }))) return;
     pushUndoSnapshot();
     eShapes = (eShapes||[]).filter(s=>s.id!==eSelectedShapeId);
     eSelectedShapeId=null;
@@ -5889,8 +6013,9 @@ function editorFillBorder(){
   }
   drawEditor();
 }
-function editorClearAll(){
+async function editorClearAll(){
   if(!eBaseGrid) return;
+  if(!(await confirmEditorReset('Clear the map editor canvas'))) return;
   pushUndoSnapshot();
   eBaseGrid.fill(0);
   eShapes=[];
@@ -6347,8 +6472,10 @@ function addToSequence(itemId, itemType, itemData) {
   renderMap();
 }
 
-function removeFromSequence(btn) {
+async function removeFromSequence(btn) {
   const item = btn.closest('.seq-item');
+  if (!item) return;
+  if (!(await confirmDestructiveAction('Remove this item from the sequence?', { title: 'Remove Sequence Item', confirmLabel: 'Remove' }))) return;
   const idx = sequence.findIndex(s => s.seqKey === item.dataset.seqKey);
   if (idx !== -1) sequence.splice(idx, 1);
   item.remove();
@@ -6698,8 +6825,9 @@ function updateConditionalUI(seqItem, caseIdx, caseNum, cases) {
   };
 }
 
-function removeConditionalEntry(event, seqItemId, parentPathValue, caseNum, entryIndex) {
+async function removeConditionalEntry(event, seqItemId, parentPathValue, caseNum, entryIndex) {
   event.stopPropagation();
+  if (!(await confirmDestructiveAction('Delete this conditional sequence entry?', { title: 'Delete Conditional Entry', confirmLabel: 'Delete' }))) return;
   const context = getConditionalCasesContext(seqItemId, parentPathValue);
   if (!context) return;
 
@@ -6808,7 +6936,9 @@ function selectWaypointFromSequenceById(wpId, scrollIntoView = true) {
   pulseWaypointHighlight(idx, scrollIntoView);
 }
 
-function clearSeq() {
+async function clearSeq() {
+  if (!sequence.length) return;
+  if (!(await confirmDestructiveAction(`Clear all ${sequence.length} sequence items?`, { title: 'Clear Sequence', confirmLabel: 'Clear All' }))) return;
   sequence = [];
   const list = document.getElementById('seqList');
   list.querySelectorAll('.seq-item').forEach(item => item.remove());
