@@ -76,17 +76,17 @@ header{display:flex;align-items:center;justify-content:space-between;padding:12p
   position:relative;
   scroll-behavior:smooth;
 }
-.map-wrap.is-panning{cursor:grabbing;}
+.map-wrap.is-panning{scroll-behavior:auto;user-select:none;}
+.map-wrap.is-panning,.map-wrap.is-panning #mapCanvas,.map-wrap.is-panning #rulerX,.map-wrap.is-panning #rulerY,.map-wrap.is-panning .map-inner,.map-wrap.is-panning .rx-wrap,.map-wrap.is-panning .ry-wrap{cursor:grabbing !important;}
 .map-inner{
   display:inline-flex;
   flex-direction:column;
   width:max-content;
   height:max-content;
-  min-width:100%;
-  min-height:100%;
-  align-items:center;
-  justify-content:center;
+  align-items:flex-start;
+  justify-content:flex-start;
   padding:18px;
+  margin:auto;
 }
 .ruler-row{display:flex;}
 .corner{width:26px;height:26px;background:var(--panel);border-right:1px solid var(--border);border-bottom:1px solid var(--border);}
@@ -107,14 +107,16 @@ canvas{display:block;image-rendering:pixelated;max-width:100vw;max-height:90vh;}
 .legend{padding:4px 12px;background:var(--panel2);border-top:1px solid var(--border);display:flex;gap:16px;flex-shrink:0;}
 .leg{font-size:10px;color:var(--muted2);}.leg b{margin-right:4px;}
 .center-panel{position:relative;}
-.map-tools{position:absolute;top:12px;left:12px;z-index:15;width:min(248px,calc(100% - 24px));display:flex;flex-direction:column;gap:8px;padding:10px 10px 8px;border:1px solid rgba(0,212,255,.22);border-radius:14px;background:linear-gradient(180deg,rgba(8,18,29,.84),rgba(10,18,30,.74));box-shadow:0 14px 32px rgba(0,0,0,.2),0 0 0 1px rgba(255,255,255,.02) inset;backdrop-filter:blur(8px);}
-.map-tools.is-collapsed{width:auto;min-width:0;padding-bottom:10px;}
-.map-tools-header{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
-.map-tools-title{font-size:9px;color:var(--muted2);letter-spacing:.18em;text-transform:uppercase;margin-right:auto;padding-left:2px;}
+.map-tools{position:absolute;top:12px;right:12px;left:auto;z-index:15;width:min(162px,calc(100% - 24px));display:flex;flex-direction:column;gap:8px;padding:10px 10px 8px;border:1px solid rgba(0,212,255,.22);border-radius:14px;background:linear-gradient(180deg,rgba(8,18,29,.84),rgba(10,18,30,.74));box-shadow:0 14px 32px rgba(0,0,0,.2),0 0 0 1px rgba(255,255,255,.02) inset;backdrop-filter:blur(8px);align-items:stretch;}
+.map-tools.is-collapsed{width:72px;min-width:72px;padding-bottom:10px;}
+.map-tools-header{display:flex;flex-direction:column;align-items:stretch;gap:8px;}
+.map-tools-title{font-size:9px;color:var(--muted2);letter-spacing:.18em;text-transform:uppercase;margin-right:0;padding-left:2px;text-align:left;}
 .map-tools-body{display:flex;flex-direction:column;gap:8px;}
 .map-tools.is-collapsed .map-tools-body{display:none;}
+.map-tools-footer{display:flex;justify-content:flex-end;padding-top:2px;}
+.map-tools.is-collapsed .map-tools-footer{justify-content:center;padding-top:0;}
 .map-tool-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
-.map-tool-row.compact{justify-content:space-between;align-items:center;gap:10px;}
+.map-tool-row.compact{flex-direction:column;justify-content:flex-start;align-items:stretch;gap:8px;}
 .map-tool-heading{font-size:9px;color:var(--muted2);letter-spacing:.18em;text-transform:uppercase;}
 .map-tool-btn,.map-toggle-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:30px;padding:6px 9px;border-radius:9px;border:1px solid rgba(49,89,120,.92);background:rgba(10,24,40,.84);color:var(--text2);font-family:inherit;font-size:10px;font-weight:700;letter-spacing:.04em;cursor:pointer;transition:border-color .15s ease,background .15s ease,color .15s ease,transform .15s ease;white-space:nowrap;}
 .map-tool-btn:hover,.map-toggle-btn:hover{transform:translateY(-1px);border-color:var(--accent);background:rgba(0,212,255,.1);color:#fff;}
@@ -122,17 +124,16 @@ canvas{display:block;image-rendering:pixelated;max-width:100vw;max-height:90vh;}
 .map-tool-btn.is-warn,.map-toggle-btn.is-warn{border-color:rgba(255,213,79,.55);background:rgba(255,213,79,.12);color:#ffe79b;}
 .map-tool-btn.is-measure{border-color:rgba(255,213,79,.55);color:#ffe79b;}
 .map-tool-btn.is-measure.is-active{background:rgba(255,213,79,.14);border-color:var(--yellow);color:#fff3c8;}
-.map-tool-stat{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;color:var(--muted2);padding:2px 2px 0;}
+.map-tool-stat{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:4px;font-size:10px;color:var(--muted2);padding:2px 2px 0;}
 .map-tool-stat strong{color:var(--accent);font-size:11px;letter-spacing:.04em;}
 .map-pan-grid{display:grid;grid-template-columns:30px 30px 30px;gap:5px;align-items:center;justify-content:flex-start;}
 .map-pan-grid .map-tool-btn{padding:0;min-width:30px;min-height:30px;}
-.map-toggle-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+.map-toggle-grid{display:grid;grid-template-columns:1fr;gap:6px;}
 .map-tool-help{font-size:8px;color:var(--muted2);line-height:1.5;padding-top:2px;opacity:.9;}
-.map-measure-readout{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;color:var(--muted2);font-size:9px;line-height:1.35;}
+.map-measure-readout{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;color:var(--muted2);font-size:9px;line-height:1.35;text-align:left;}
 .map-measure-readout strong{color:#fff3c8;font-size:11px;font-weight:800;letter-spacing:.04em;}
 @media (max-width: 900px){
-  .map-tools{width:min(220px,calc(100% - 24px));padding:9px;}
-  .map-toggle-grid{grid-template-columns:1fr;}
+  .map-tools{width:min(152px,calc(100% - 24px));padding:9px;}
 }
 
 /* ── RIGHT PANEL ── */
@@ -911,7 +912,6 @@ body.is-resizing-sequence,body.is-resizing-sequence *{cursor:col-resize !importa
         <button class="map-tool-btn" id="zoomFitBtn" type="button" onclick="zoomDashboardMapToFit()" title="Fit map to view (0)">Fit</button>
         <button class="map-tool-btn" id="zoomInBtn" type="button" onclick="zoomDashboardMapBy(1)" title="Zoom in (+)">+</button>
         <button class="map-tool-btn" id="centerRobotBtn" type="button" onclick="centerDashboardOnRobot('smooth')" title="Center on robot (C)">◎</button>
-        <button class="map-tool-btn" id="mapToolsToggleBtn" type="button" onclick="toggleMapToolsCollapsed()" title="Show or hide detailed map controls">▾</button>
       </div>
       <div class="map-tool-stat">
         <span><strong id="mapZoomValue">100%</strong> <span id="mapViewModeValue">FIT</span></span>
@@ -947,6 +947,9 @@ body.is-resizing-sequence,body.is-resizing-sequence *{cursor:col-resize !importa
           <button class="map-toggle-btn is-active" id="toggleLabelBtn" type="button" onclick="toggleWaypointLabelVisibility()" title="Toggle labels (Shift+L)">Labels</button>
         </div>
         <div class="map-tool-help">Shortcuts: + / - zoom, 0 fit, C center robot, Alt+Arrows pan, Ctrl+Wheel zoom, middle mouse pan, Space+Drag pan, M measure.</div>
+      </div>
+      <div class="map-tools-footer">
+        <button class="map-tool-btn" id="mapToolsToggleBtn" type="button" onclick="toggleMapToolsCollapsed()" title="Show or hide detailed map controls">▾</button>
       </div>
     </div>
     <div class="map-wrap">
@@ -1718,6 +1721,7 @@ let dashboardMeasureMode = false;
 let dashboardMeasureStart = null;
 let dashboardMeasureEnd = null;
 let dashboardMeasureHover = null;
+let dashboardMeasureDragging = false;
 let dashboardPanModifierActive = false;
 let dashboardSuppressCanvasClickUntil = 0;
 const dashboardPanState = {
@@ -1726,8 +1730,29 @@ const dashboardPanState = {
   startX: 0,
   startY: 0,
   startLeft: 0,
-  startTop: 0
+  startTop: 0,
+  latestX: 0,
+  latestY: 0,
+  rafId: 0
 };
+
+function flushDashboardPanFrame() {
+  if (!dashboardPanState.active || !mapWrap) {
+    dashboardPanState.rafId = 0;
+    return;
+  }
+  const deltaX = dashboardPanState.latestX - dashboardPanState.startX;
+  const deltaY = dashboardPanState.latestY - dashboardPanState.startY;
+  if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) dashboardPanState.moved = true;
+  mapWrap.scrollLeft = dashboardPanState.startLeft - deltaX;
+  mapWrap.scrollTop = dashboardPanState.startTop - deltaY;
+  dashboardPanState.rafId = 0;
+}
+
+function scheduleDashboardPanFrame() {
+  if (dashboardPanState.rafId) return;
+  dashboardPanState.rafId = requestAnimationFrame(flushDashboardPanFrame);
+}
 
 console.log('[INIT] mapCanvas exists:', !!mapCanvas);
 console.log('[INIT] mctx exists:', !!mctx);
@@ -1791,6 +1816,170 @@ function getMeasureTargetPoint() {
   return dashboardMeasureEnd || dashboardMeasureHover;
 }
 
+function createDashboardMeasurePoint(canvasX, canvasY, metadata = {}) {
+  const clampedCanvasX = Math.max(0, Math.min(mapCanvas.width, canvasX));
+  const clampedCanvasY = Math.max(0, Math.min(mapCanvas.height, canvasY));
+  const mapX = clampedCanvasX / Math.max(1, SC);
+  const mapY = clampedCanvasY / Math.max(1, SC);
+  return {
+    mapX,
+    mapY,
+    cellX: mapX - 0.5,
+    cellY: mapY - 0.5,
+    snapType: metadata.snapType || null,
+    snapLabel: metadata.snapLabel || null,
+    snapDistance: metadata.snapDistance || 0,
+    snapTarget: metadata.snapTarget || null
+  };
+}
+
+function getDashboardCanvasPointer(event) {
+  if (!mapCanvas || !mapW || !mapH) return null;
+  const rect = mapCanvas.getBoundingClientRect();
+  const cssScaleX = mapCanvas.width / Math.max(1, rect.width);
+  const cssScaleY = mapCanvas.height / Math.max(1, rect.height);
+  const canvasX = (event.clientX - rect.left) * cssScaleX;
+  const canvasY = (event.clientY - rect.top) * cssScaleY;
+  if (canvasX < 0 || canvasX > mapCanvas.width || canvasY < 0 || canvasY > mapCanvas.height) return null;
+  return { canvasX, canvasY };
+}
+
+function projectPointToSegment(pointX, pointY, startX, startY, endX, endY) {
+  const dx = endX - startX;
+  const dy = endY - startY;
+  const lengthSq = (dx * dx) + (dy * dy);
+  if (!lengthSq) {
+    return {
+      x: startX,
+      y: startY,
+      distance: Math.hypot(pointX - startX, pointY - startY)
+    };
+  }
+  const t = Math.max(0, Math.min(1, (((pointX - startX) * dx) + ((pointY - startY) * dy)) / lengthSq));
+  const x = startX + (dx * t);
+  const y = startY + (dy * t);
+  return { x, y, distance: Math.hypot(pointX - x, pointY - y) };
+}
+
+function getClosestPointOnRectOutline(pointX, pointY, left, top, right, bottom) {
+  const clampedX = Math.max(left, Math.min(right, pointX));
+  const clampedY = Math.max(top, Math.min(bottom, pointY));
+  const inside = pointX >= left && pointX <= right && pointY >= top && pointY <= bottom;
+
+  if (!inside) {
+    return {
+      x: clampedX,
+      y: clampedY,
+      distance: Math.hypot(pointX - clampedX, pointY - clampedY)
+    };
+  }
+
+  const candidates = [
+    { x: left, y: clampedY },
+    { x: right, y: clampedY },
+    { x: clampedX, y: top },
+    { x: clampedX, y: bottom }
+  ];
+  let best = null;
+  candidates.forEach(candidate => {
+    const distance = Math.hypot(pointX - candidate.x, pointY - candidate.y);
+    if (!best || distance < best.distance) best = { ...candidate, distance };
+  });
+  return best;
+}
+
+function rotateLocalPoint(localX, localY, angle) {
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  return {
+    x: (localX * cos) - (localY * sin),
+    y: (localX * sin) + (localY * cos)
+  };
+}
+
+function getWaypointTriangleSegments(wp) {
+  const center = wpToCanvas(wp);
+  if (!center) return [];
+
+  const originYawRad = originYaw * Math.PI / 180;
+  const screenYaw = originYawRad - wp.yaw_rad;
+  const triangleHeight = (27 / mapRes) * SC;
+  const triangleHalfBase = triangleHeight * 0.866;
+  const rotation = (-screenYaw) + (Math.PI / 2);
+  const localPoints = [
+    { x: 0, y: triangleHeight },
+    { x: -triangleHalfBase, y: -triangleHeight * 0.5 },
+    { x: triangleHalfBase, y: -triangleHeight * 0.5 }
+  ].map(point => {
+    const rotated = rotateLocalPoint(point.x, point.y, rotation);
+    return {
+      x: center.x + rotated.x,
+      y: center.y + rotated.y
+    };
+  });
+
+  return [
+    { start: localPoints[0], end: localPoints[1], label: wp.isOrigin ? 'origin edge' : 'waypoint edge' },
+    { start: localPoints[1], end: localPoints[2], label: wp.isOrigin ? 'origin edge' : 'waypoint edge' },
+    { start: localPoints[2], end: localPoints[0], label: wp.isOrigin ? 'origin edge' : 'waypoint edge' }
+  ];
+}
+
+function getDashboardMeasureSnapPoint(canvasX, canvasY) {
+  const basePoint = createDashboardMeasurePoint(canvasX, canvasY);
+  let bestPoint = basePoint;
+  let bestDistance = Infinity;
+  const blockSnapRadius = Math.max(12, SC * 1.1);
+  const triangleSnapRadius = Math.max(20, SC * 1.8);
+
+  if (mapPixels && mapW && mapH) {
+    const cellX = Math.max(0, Math.min(mapW - 1, Math.floor(canvasX / SC)));
+    const cellY = Math.max(0, Math.min(mapH - 1, Math.floor(canvasY / SC)));
+    const searchRadius = Math.max(1, Math.ceil(blockSnapRadius / Math.max(1, SC)));
+    for (let row = Math.max(0, cellY - searchRadius); row <= Math.min(mapH - 1, cellY + searchRadius); row++) {
+      for (let col = Math.max(0, cellX - searchRadius); col <= Math.min(mapW - 1, cellX + searchRadius); col++) {
+        const idx = (row * mapW) + col;
+        if (mapPixels[idx] !== 0) continue;
+        const left = col * SC;
+        const top = row * SC;
+        const rectPoint = getClosestPointOnRectOutline(canvasX, canvasY, left, top, left + SC, top + SC);
+        if (rectPoint.distance <= blockSnapRadius && rectPoint.distance < bestDistance) {
+          bestDistance = rectPoint.distance;
+          bestPoint = createDashboardMeasurePoint(rectPoint.x, rectPoint.y, {
+            snapType: 'block',
+            snapLabel: 'block edge',
+            snapDistance: rectPoint.distance,
+            snapTarget: { row, col }
+          });
+        }
+      }
+    }
+  }
+
+  waypoints.forEach(wp => {
+    if (!isSpatialWaypoint(wp)) return;
+    const segments = getWaypointTriangleSegments(wp);
+    segments.forEach(segment => {
+      const projected = projectPointToSegment(canvasX, canvasY, segment.start.x, segment.start.y, segment.end.x, segment.end.y);
+      if (projected.distance <= triangleSnapRadius && projected.distance < bestDistance) {
+        bestDistance = projected.distance;
+        bestPoint = createDashboardMeasurePoint(projected.x, projected.y, {
+          snapType: 'waypoint',
+          snapLabel: segment.label,
+          snapDistance: projected.distance,
+          snapTarget: wp.id
+        });
+      }
+    });
+  });
+
+  return bestPoint;
+}
+
+function getDashboardMeasureStatusText(point) {
+  return point && point.snapLabel ? `Snap ${point.snapLabel}` : 'Free measure';
+}
+
 function formatMeasuredDistance(distanceM) {
   if (!Number.isFinite(distanceM)) return 'Ready';
   return distanceM >= 1 ? `${distanceM.toFixed(2)} m` : `${Math.round(distanceM * 100)} cm`;
@@ -1799,8 +1988,8 @@ function formatMeasuredDistance(distanceM) {
 function getMeasureComponentsMeters() {
   const endPoint = getMeasureTargetPoint();
   if (!dashboardMeasureStart || !endPoint) return null;
-  const dx = (endPoint.cellX - dashboardMeasureStart.cellX) * (mapRes / 100);
-  const dy = (endPoint.cellY - dashboardMeasureStart.cellY) * (mapRes / 100);
+  const dx = (endPoint.mapX - dashboardMeasureStart.mapX) * (mapRes / 100);
+  const dy = (endPoint.mapY - dashboardMeasureStart.mapY) * (mapRes / 100);
   return {
     dx,
     dy,
@@ -1818,15 +2007,17 @@ function updateDashboardMeasureUI() {
   const value = document.getElementById('mapMeasureValue');
   const hint = document.getElementById('mapMeasureHint');
   const components = getMeasureComponentsMeters();
+  const targetPoint = getMeasureTargetPoint();
   if (button) button.classList.toggle('is-active', dashboardMeasureMode);
   if (value) value.textContent = dashboardMeasureMode ? formatMeasuredDistance(getMeasureDistanceMeters()) : 'Ready';
   if (hint) {
-    if (!dashboardMeasureMode) hint.textContent = 'Click two points on the map';
-    else if (!dashboardMeasureStart) hint.textContent = 'Pick the first point';
-    else if (!dashboardMeasureEnd && components) hint.textContent = `ΔX ${components.dx.toFixed(2)} m • ΔY ${components.dy.toFixed(2)} m`;
-    else if (!dashboardMeasureEnd) hint.textContent = 'Pick the second point';
-    else if (components) hint.textContent = `Locked • ΔX ${components.dx.toFixed(2)} m • ΔY ${components.dy.toFixed(2)} m`;
-    else hint.textContent = 'Click again to start a new measure';
+    if (!dashboardMeasureMode) hint.textContent = 'Press and drag to measure';
+    else if (!dashboardMeasureStart) hint.textContent = targetPoint ? `${getDashboardMeasureStatusText(targetPoint)} • press and drag` : 'Press on the first point and drag';
+    else if (dashboardMeasureDragging && components) hint.textContent = `${getDashboardMeasureStatusText(targetPoint)} • ΔX ${components.dx.toFixed(2)} m • ΔY ${components.dy.toFixed(2)} m`;
+    else if (!dashboardMeasureEnd && components) hint.textContent = `${getDashboardMeasureStatusText(targetPoint)} • drag to preview`;
+    else if (!dashboardMeasureEnd) hint.textContent = 'Release to lock the measurement';
+    else if (components) hint.textContent = `Locked • ${getDashboardMeasureStatusText(targetPoint)} • ΔX ${components.dx.toFixed(2)} m • ΔY ${components.dy.toFixed(2)} m`;
+    else hint.textContent = 'Press and drag again to start a new measure';
   }
 }
 
@@ -1834,6 +2025,7 @@ function clearDashboardMeasure(retainMode = false) {
   dashboardMeasureStart = null;
   dashboardMeasureEnd = null;
   dashboardMeasureHover = null;
+  dashboardMeasureDragging = false;
   if (!retainMode) dashboardMeasureMode = false;
   mapCanvas.style.cursor = (dashboardMeasureMode || wpMapClickActive || settingOrig) ? 'crosshair' : 'default';
   updateDashboardMeasureUI();
@@ -1854,10 +2046,24 @@ function toggleDashboardMeasureMode(forceValue = null) {
   dashboardMeasureStart = null;
   dashboardMeasureEnd = null;
   dashboardMeasureHover = null;
+  dashboardMeasureDragging = false;
   mapCanvas.style.cursor = dashboardMeasureMode ? 'crosshair' : (wpMapClickActive || settingOrig ? 'crosshair' : 'default');
   updateDashboardMeasureUI();
   renderMap();
-  showToast('📏 Measure mode on — click first point, move to preview, click second point, right-click or Esc to clear');
+  showToast('📏 Measure mode on — press, drag, release. Auto-snap finds nearby blocks and waypoint edges.');
+}
+
+function finalizeDashboardMeasure(event = null) {
+  if (!dashboardMeasureMode || !dashboardMeasureDragging) return;
+  const pointer = event ? getDashboardCanvasPointer(event) : null;
+  const point = pointer ? getDashboardMeasureSnapPoint(pointer.canvasX, pointer.canvasY) : (dashboardMeasureHover || dashboardMeasureStart);
+  dashboardMeasureEnd = point || dashboardMeasureStart;
+  dashboardMeasureHover = dashboardMeasureEnd;
+  dashboardMeasureDragging = false;
+  mapCanvas.style.cursor = 'crosshair';
+  updateDashboardMeasureUI();
+  renderMap();
+  showToast(`📏 Locked ${formatMeasuredDistance(getMeasureDistanceMeters())} — press and drag again to re-measure`);
 }
 
 function getDashboardViewportCenterCell() {
@@ -2039,6 +2245,10 @@ function shouldSuppressMapCanvasClick() {
 
 function stopDashboardPan() {
   if (!dashboardPanState.active) return;
+  if (dashboardPanState.rafId) {
+    cancelAnimationFrame(dashboardPanState.rafId);
+    dashboardPanState.rafId = 0;
+  }
   dashboardPanState.active = false;
   if (dashboardPanState.moved) dashboardSuppressCanvasClickUntil = Date.now() + 180;
   dashboardPanState.moved = false;
@@ -2047,6 +2257,7 @@ function stopDashboardPan() {
 
 function beginDashboardPan(event) {
   if (!mapWrap || isEditorOpen()) return false;
+  if (dashboardPanState.active) return true;
   const allowPan = event.button === 1 || (event.button === 0 && dashboardPanModifierActive);
   if (!allowPan) return false;
   if (event.target.closest('.map-tools')) return false;
@@ -2056,9 +2267,21 @@ function beginDashboardPan(event) {
   dashboardPanState.startY = event.clientY;
   dashboardPanState.startLeft = mapWrap.scrollLeft;
   dashboardPanState.startTop = mapWrap.scrollTop;
+  dashboardPanState.latestX = event.clientX;
+  dashboardPanState.latestY = event.clientY;
   mapWrap.classList.add('is-panning');
   event.preventDefault();
   return true;
+}
+
+if (mapWrap) {
+  mapWrap.addEventListener('mousedown', event => {
+    if (event.button !== 1) return;
+    if (beginDashboardPan(event)) event.preventDefault();
+  });
+  mapWrap.addEventListener('auxclick', event => {
+    if (event.button === 1) event.preventDefault();
+  });
 }
 
 function drawRulerX(){
@@ -2376,14 +2599,18 @@ function renderMap(){
 
   const measureTarget = getMeasureTargetPoint();
   if (dashboardMeasureMode && dashboardMeasureStart && measureTarget) {
-    const startX = dashboardMeasureStart.cellX * SC + SC / 2;
-    const startY = dashboardMeasureStart.cellY * SC + SC / 2;
-    const endX = measureTarget.cellX * SC + SC / 2;
-    const endY = measureTarget.cellY * SC + SC / 2;
+    const startX = dashboardMeasureStart.mapX * SC;
+    const startY = dashboardMeasureStart.mapY * SC;
+    const endX = measureTarget.mapX * SC;
+    const endY = measureTarget.mapY * SC;
     const components = getMeasureComponentsMeters();
     const distanceM = components ? components.distance : null;
     const midX = (startX + endX) / 2;
     const midY = (startY + endY) / 2;
+    const lineAngle = Math.atan2(endY - startY, endX - startX);
+    const labelOffset = 18;
+    const labelX = midX - (Math.sin(lineAngle) * labelOffset);
+    const labelY = midY + (Math.cos(lineAngle) * labelOffset);
 
     mctx.save();
     mctx.strokeStyle = '#ffd54f';
@@ -2397,20 +2624,37 @@ function renderMap(){
     mctx.fillStyle = '#ffd54f';
     mctx.beginPath(); mctx.arc(startX, startY, 5, 0, Math.PI * 2); mctx.fill();
     mctx.beginPath(); mctx.arc(endX, endY, 5, 0, Math.PI * 2); mctx.fill();
-    mctx.font = 'bold 10px Segoe UI';
+
+    [dashboardMeasureStart, measureTarget].forEach(point => {
+      if (!point || !point.snapType) return;
+      mctx.save();
+      mctx.strokeStyle = point.snapType === 'block' ? 'rgba(255,243,200,.9)' : 'rgba(0,212,255,.95)';
+      mctx.lineWidth = 2;
+      mctx.beginPath();
+      mctx.arc(point.mapX * SC, point.mapY * SC, point.snapType === 'block' ? 7 : 8, 0, Math.PI * 2);
+      mctx.stroke();
+      mctx.restore();
+    });
+
     const measureLabel = formatMeasuredDistance(distanceM);
     const detailLabel = components ? `ΔX ${components.dx.toFixed(2)} m  ΔY ${components.dy.toFixed(2)} m` : '';
-    const labelWidth = Math.max(mctx.measureText(measureLabel).width, mctx.measureText(detailLabel).width);
-    mctx.fillStyle = 'rgba(10,14,23,.92)';
-    mctx.fillRect(midX - labelWidth / 2 - 8, midY - 27, labelWidth + 16, 30);
+    const snapLabel = measureTarget.snapLabel ? `• ${measureTarget.snapLabel}` : '';
+    mctx.font = 'bold 10px Segoe UI';
     mctx.fillStyle = '#fff3c8';
     mctx.textAlign = 'center';
     mctx.textBaseline = 'alphabetic';
-    mctx.fillText(measureLabel, midX, midY - 10);
-    if (detailLabel) {
+    mctx.lineWidth = 4;
+    mctx.strokeStyle = 'rgba(7,12,20,.72)';
+    mctx.strokeText(measureLabel, labelX, labelY - 6);
+    mctx.fillText(measureLabel, labelX, labelY - 6);
+    if (detailLabel || snapLabel) {
+      const subLabel = [detailLabel, snapLabel].filter(Boolean).join('  ');
       mctx.font = '9px Segoe UI';
       mctx.fillStyle = 'rgba(255,243,200,.82)';
-      mctx.fillText(detailLabel, midX, midY + 1);
+      mctx.lineWidth = 3;
+      mctx.strokeStyle = 'rgba(7,12,20,.66)';
+      mctx.strokeText(subLabel, labelX, labelY + 7);
+      mctx.fillText(subLabel, labelX, labelY + 7);
     }
     mctx.restore();
   }
@@ -2702,22 +2946,6 @@ function toggleOrigin(){
 mapCanvas.addEventListener('click',e=>{
   if (shouldSuppressMapCanvasClick()) return;
   if (dashboardMeasureMode && !settingOrig && !wpMapClickActive) {
-    const r=mapCanvas.getBoundingClientRect();
-    const mx=Math.floor((e.clientX-r.left)/SC), my=Math.floor((e.clientY-r.top)/SC);
-    if(mx<0||mx>=mapW||my<0||my>=mapH) return;
-    const point = { cellX: mx, cellY: my };
-    if (!dashboardMeasureStart || dashboardMeasureEnd) {
-      dashboardMeasureStart = point;
-      dashboardMeasureEnd = null;
-      showToast('📏 Start set — move and click second point');
-    } else {
-      dashboardMeasureEnd = point;
-      const measuredDistance = formatMeasuredDistance(getMeasureDistanceMeters());
-      showToast(`📏 Locked ${measuredDistance} — click again to start a new measure`);
-    }
-    dashboardMeasureHover = point;
-    updateDashboardMeasureUI();
-    renderMap();
     return;
   }
   if(!settingOrig||!mapW) return;
@@ -4308,13 +4536,11 @@ let wpDragging = false;  // is user dragging the waypoint?
 mapCanvas.addEventListener('mousemove', e=>{
   if (dashboardPanState.active) return;
   if(!wpMapClickActive && !settingOrig && !dashboardMeasureMode) return;
-  const r = mapCanvas.getBoundingClientRect();
-  const px = Math.floor((e.clientX - r.left) / SC);
-  const py = Math.floor((e.clientY - r.top) / SC);
-  if(px < 0 || px >= mapW || py < 0 || py >= mapH) {
+  const pointer = getDashboardCanvasPointer(e);
+  if(!pointer) {
     wpHoverX = null;
     wpHoverY = null;
-    if (dashboardMeasureMode) {
+    if (dashboardMeasureMode && !dashboardMeasureDragging) {
       dashboardMeasureHover = null;
       updateDashboardMeasureUI();
     }
@@ -4322,9 +4548,13 @@ mapCanvas.addEventListener('mousemove', e=>{
     return;
   }
 
+  const px = Math.max(0, Math.min(mapW - 1, Math.floor(pointer.canvasX / SC)));
+  const py = Math.max(0, Math.min(mapH - 1, Math.floor(pointer.canvasY / SC)));
+
   if(dashboardMeasureMode){
-    dashboardMeasureHover = { cellX: px, cellY: py };
+    dashboardMeasureHover = getDashboardMeasureSnapPoint(pointer.canvasX, pointer.canvasY);
     updateDashboardMeasureUI();
+    renderMap();
   }
   
   // For waypoint mode: convert pixel to odom coordinates for preview
@@ -4357,7 +4587,7 @@ mapCanvas.addEventListener('mouseleave', e=>{
   wpHoverY = null;
   hoverPixelX = null;
   hoverPixelY = null;
-  dashboardMeasureHover = null;
+  if (!dashboardMeasureDragging) dashboardMeasureHover = null;
   updateDashboardMeasureUI();
   wpDragging = false;  // Stop dragging if mouse leaves canvas
   renderMap();
@@ -4366,6 +4596,19 @@ mapCanvas.addEventListener('mouseleave', e=>{
 // Mouse down to start dragging in edit mode
 mapCanvas.addEventListener('mousedown', e=>{
   if (beginDashboardPan(e)) return;
+  if (dashboardMeasureMode && !settingOrig && !wpMapClickActive && e.button === 0) {
+    const pointer = getDashboardCanvasPointer(e);
+    if (!pointer) return;
+    dashboardMeasureStart = getDashboardMeasureSnapPoint(pointer.canvasX, pointer.canvasY);
+    dashboardMeasureEnd = null;
+    dashboardMeasureHover = dashboardMeasureStart;
+    dashboardMeasureDragging = true;
+    mapCanvas.style.cursor = 'crosshair';
+    updateDashboardMeasureUI();
+    renderMap();
+    e.preventDefault();
+    return;
+  }
   if(!wpMapClickActive || !wpEditMode) return;
   if(wpSelectedX === null) return;
   
@@ -4390,6 +4633,10 @@ mapCanvas.addEventListener('mousedown', e=>{
 mapCanvas.addEventListener('mouseup', e=>{
   if (dashboardPanState.active) {
     stopDashboardPan();
+    return;
+  }
+  if (dashboardMeasureMode && dashboardMeasureDragging && e.button === 0) {
+    finalizeDashboardMeasure(e);
     return;
   }
   if(wpDragging){
@@ -5212,14 +5459,13 @@ if (mapWrap) {
 
 window.addEventListener('mousemove', event => {
   if (!dashboardPanState.active || !mapWrap) return;
-  const deltaX = event.clientX - dashboardPanState.startX;
-  const deltaY = event.clientY - dashboardPanState.startY;
-  if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) dashboardPanState.moved = true;
-  mapWrap.scrollLeft = dashboardPanState.startLeft - deltaX;
-  mapWrap.scrollTop = dashboardPanState.startTop - deltaY;
+  dashboardPanState.latestX = event.clientX;
+  dashboardPanState.latestY = event.clientY;
+  scheduleDashboardPanFrame();
 });
 
-window.addEventListener('mouseup', () => {
+window.addEventListener('mouseup', event => {
+  finalizeDashboardMeasure(event);
   stopDashboardPan();
 });
 
