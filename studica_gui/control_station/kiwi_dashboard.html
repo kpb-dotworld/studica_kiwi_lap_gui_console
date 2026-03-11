@@ -417,6 +417,26 @@ body.is-resizing-sequence,body.is-resizing-sequence *{cursor:col-resize !importa
 .quick-router-menu-btn:hover{background:rgba(156,39,176,.26);color:#fff;transform:translateY(-1px);}
 .quick-router-menu-close{padding:6px 8px;border:none;background:none;color:var(--muted2);font-family:inherit;font-size:10px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;}
 .quick-router-menu-close:hover{color:var(--red);}
+.quick-router-action-popup{position:fixed;display:none;flex-direction:column;gap:10px;width:min(360px,calc(100vw - 24px));max-height:min(420px,calc(100vh - 24px));padding:12px;border:1px solid rgba(156,39,176,.52);border-radius:14px;background:linear-gradient(180deg,rgba(14,20,31,.98),rgba(10,18,30,.97));box-shadow:0 18px 38px rgba(0,0,0,.42);z-index:1260;overflow:hidden;}
+.quick-router-action-popup.open{display:flex;}
+.quick-router-action-popup-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding-bottom:8px;border-bottom:1px solid rgba(156,39,176,.24);cursor:grab;touch-action:none;user-select:none;}
+.quick-router-action-popup-header:active{cursor:grabbing;}
+.quick-router-action-popup-title{display:flex;flex-direction:column;gap:4px;min-width:0;}
+.quick-router-action-popup-title strong{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#f0c7ff;}
+.quick-router-action-popup-title span{font-size:10px;color:var(--muted2);line-height:1.4;}
+.quick-router-action-popup-close{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:none;border-radius:8px;background:rgba(255,255,255,.04);color:var(--muted2);font-family:inherit;font-size:16px;cursor:pointer;transition:background .15s ease,color .15s ease;}
+.quick-router-action-popup-close:hover{background:rgba(255,255,255,.08);color:var(--red);}
+.quick-router-action-popup-close:focus-visible{outline:1px solid rgba(255,255,255,.4);outline-offset:2px;color:#fff;}
+.quick-router-action-popup-body{display:flex;flex-direction:column;gap:10px;min-height:0;overflow:auto;padding-right:2px;}
+.quick-router-action-popup .seq-cond-cases{background:rgba(16,24,40,.92);border-color:rgba(156,39,176,.4);}
+.quick-router-action-popup .seq-cond-index{color:#f0c7ff;}
+.quick-router-action-popup .seq-cond-input{color:#f0c7ff;border-color:rgba(156,39,176,.3);}
+.quick-router-action-popup .seq-cond-add{background:rgba(77,255,145,.12);}
+.quick-router-action-popup .seq-cond-dropzone{min-height:84px;border-color:rgba(156,39,176,.5);background:rgba(15,10,26,.52);}
+.quick-router-action-popup .seq-cond-dropzone.dragover{border-color:#4dff91;background:rgba(77,255,145,.08);}
+.quick-router-action-popup .seq-case-chip{background:rgba(156,39,176,.12);border-color:rgba(156,39,176,.36);color:#f0c7ff;}
+.quick-router-action-popup .seq-chip-remove{color:#f0c7ff;}
+.quick-router-action-popup .seq-item--nested-action{background:rgba(18,12,33,.72);border-color:rgba(156,39,176,.3);}
 
 /* CONDITIONAL DETECT_COLOR */
 .seq-conditional-wrapper{display:flex;flex-direction:column;gap:8px;width:100%;min-width:0;}
@@ -754,6 +774,8 @@ body.is-resizing-sequence,body.is-resizing-sequence *{cursor:col-resize !importa
           });
           updateWPList();
           renderMap();
+
+        syncQuickRouterActionPopupPosition(false);
           runMission();
         }
             </script>
@@ -1569,6 +1591,17 @@ body.is-resizing-sequence,body.is-resizing-sequence *{cursor:col-resize !importa
   <button class="quick-router-menu-btn" type="button" onclick="addQuickRouterAction('detect_color')">🔍 Detect Colour</button>
   <button class="quick-router-menu-btn" type="button" onclick="addQuickRouterAction('detect_qr')">📱 Detect QR</button>
   <button class="quick-router-menu-close" type="button" onclick="closeQuickRouterMenu()">Close</button>
+</div>
+
+<div class="quick-router-action-popup" id="quickRouterActionPopup" aria-hidden="true">
+  <div class="quick-router-action-popup-header" id="quickRouterActionPopupHeader">
+    <div class="quick-router-action-popup-title">
+      <strong id="quickRouterActionPopupTitle">Detect Colour</strong>
+      <span id="quickRouterActionPopupMeta">Default case</span>
+    </div>
+    <button class="quick-router-action-popup-close" type="button" onclick="closeQuickRouterActionPopup()" aria-label="Close action window">✕</button>
+  </div>
+  <div class="quick-router-action-popup-body" id="quickRouterActionPopupBody"></div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
@@ -5047,6 +5080,10 @@ mapCanvas.addEventListener('dblclick', e=>{
     const pointer = getDashboardCanvasPointer(e);
     if (!pointer) return;
     const idx = findSpatialWaypointAtCanvasPoint(pointer.canvasX, pointer.canvasY);
+    if (idx !== -1 && openQuickRouterActionPopupForWaypoint(idx)) {
+      e.preventDefault();
+      return;
+    }
     if (idx !== -1 && addQuickRouterWaypointToCurrentCase(idx)) {
       e.preventDefault();
       return;
@@ -7516,6 +7553,19 @@ let quickRouterConditionalSeqKey = null;
 let quickRouterClickTimer = null;
 let quickRouterPointerCanvasX = null;
 let quickRouterPointerCanvasY = null;
+const quickRouterActionPopup = {
+  open: false,
+  seqKey: null,
+  entryPathValue: '',
+  waypointId: null,
+  actionType: '',
+  left: 0,
+  top: 0,
+  userMoved: false,
+  dragPointerId: null,
+  dragOffsetX: 0,
+  dragOffsetY: 0
+};
 
 function getSequencePanelWidthLimits() {
   const viewportWidth = window.innerWidth || 1280;
@@ -7633,6 +7683,345 @@ function getQuickRouterLastWaypointInfo() {
   return null;
 }
 
+function getQuickRouterActionPopupElement() {
+  return document.getElementById('quickRouterActionPopup');
+}
+
+function clampQuickRouterActionPopupPosition(left, top) {
+  const popup = getQuickRouterActionPopupElement();
+  const margin = 12;
+  const width = popup ? (popup.offsetWidth || 340) : 340;
+  const height = popup ? (popup.offsetHeight || 280) : 280;
+  return {
+    left: Math.max(margin, Math.min(window.innerWidth - width - margin, left)),
+    top: Math.max(margin, Math.min(window.innerHeight - height - margin, top))
+  };
+}
+
+function getQuickRouterActionPopupAnchorPosition(waypointId) {
+  const idx = findSpatialWaypointIndexById(Number(waypointId));
+  if (idx === -1 || !mapCanvas) return null;
+  const wp = waypoints[idx];
+  const point = wpToCanvas(wp);
+  if (!point) return null;
+
+  const rect = mapCanvas.getBoundingClientRect();
+  const scaleX = rect.width / Math.max(1, mapCanvas.width);
+  const scaleY = rect.height / Math.max(1, mapCanvas.height);
+
+  return {
+    left: rect.left + point.x * scaleX + 22,
+    top: rect.top + point.y * scaleY - 18
+  };
+}
+
+function positionQuickRouterActionPopup(anchorToWaypoint = false) {
+  const popup = getQuickRouterActionPopupElement();
+  if (!popup || !quickRouterActionPopup.open) return;
+
+  let nextLeft = quickRouterActionPopup.left;
+  let nextTop = quickRouterActionPopup.top;
+  if (anchorToWaypoint || !quickRouterActionPopup.userMoved) {
+    const anchor = getQuickRouterActionPopupAnchorPosition(quickRouterActionPopup.waypointId);
+    if (anchor) {
+      nextLeft = anchor.left;
+      nextTop = anchor.top;
+    }
+  }
+
+  const clamped = clampQuickRouterActionPopupPosition(nextLeft, nextTop);
+  quickRouterActionPopup.left = clamped.left;
+  quickRouterActionPopup.top = clamped.top;
+  popup.style.left = `${clamped.left}px`;
+  popup.style.top = `${clamped.top}px`;
+}
+
+function syncQuickRouterActionPopupPosition(anchorToWaypoint = false) {
+  if (!quickRouterActionPopup.open) return;
+  if (!anchorToWaypoint && quickRouterActionPopup.userMoved) return;
+  positionQuickRouterActionPopup(anchorToWaypoint);
+}
+
+function closeQuickRouterActionPopup() {
+  const popup = getQuickRouterActionPopupElement();
+  if (popup) {
+    popup.classList.remove('open');
+    popup.setAttribute('aria-hidden', 'true');
+  }
+  quickRouterActionPopup.open = false;
+  quickRouterActionPopup.seqKey = null;
+  quickRouterActionPopup.entryPathValue = '';
+  quickRouterActionPopup.waypointId = null;
+  quickRouterActionPopup.actionType = '';
+  quickRouterActionPopup.dragPointerId = null;
+}
+
+function buildQuickRouterConditionalTargetFromSeqKey(seqKey) {
+  const seqItem = document.querySelector(`[data-seq-key="${seqKey}"]`);
+  if (!seqItem || seqItem.dataset.hasConditional !== 'true' || !seqItem.dataset.cases) return null;
+  const condWrapper = seqItem.querySelector('.seq-conditional-wrapper');
+  const cases = normalizeConditionalCases(JSON.parse(seqItem.dataset.cases));
+  const caseInfo = getCaseNumberAtIndex(cases, parseInt(condWrapper?.dataset.caseIndex, 10) || 0);
+  quickRouterConditionalSeqKey = seqKey;
+  return {
+    seqKey,
+    seqItem,
+    cases,
+    rootCases: cases,
+    condWrapper,
+    caseIdx: caseInfo.caseIdx,
+    caseNum: caseInfo.caseNum,
+    entryPathValue: ''
+  };
+}
+
+function buildQuickRouterConditionalTargetFromPopup() {
+  if (!quickRouterActionPopup.open || !quickRouterActionPopup.seqKey) return null;
+
+  if (quickRouterActionPopup.entryPathValue) {
+    const target = getConditionalActionTarget(quickRouterActionPopup.seqKey, quickRouterActionPopup.entryPathValue);
+    if (!target) return null;
+    target.entry.nestedCases = normalizeConditionalCases(target.entry.nestedCases);
+    const caseInfo = getCaseNumberAtIndex(target.entry.nestedCases, target.entry.nestedCaseIndex || 0);
+    return {
+      seqKey: quickRouterActionPopup.seqKey,
+      seqItem: target.seqItem,
+      cases: target.entry.nestedCases,
+      rootCases: target.cases,
+      caseIdx: caseInfo.caseIdx,
+      caseNum: caseInfo.caseNum,
+      entryPathValue: quickRouterActionPopup.entryPathValue,
+      entry: target.entry,
+      actionType: target.entry.actionType || target.entry.name,
+      waypointId: quickRouterActionPopup.waypointId
+    };
+  }
+
+  const topLevelTarget = buildQuickRouterConditionalTargetFromSeqKey(quickRouterActionPopup.seqKey);
+  if (!topLevelTarget) return null;
+  topLevelTarget.actionType = quickRouterActionPopup.actionType;
+  topLevelTarget.waypointId = quickRouterActionPopup.waypointId;
+  return topLevelTarget;
+}
+
+function findQuickRouterActionPopupTargetInEntries(seqKey, entries, caseNum, parentPath, lastSpatialWaypoint, waypointId) {
+  let currentSpatialWaypoint = lastSpatialWaypoint;
+
+  for (let entryIndex = 0; entryIndex < (entries || []).length; entryIndex++) {
+    const entry = entries[entryIndex];
+    if (!entry) continue;
+
+    if (entry.isAction) {
+      const actionType = entry.actionType || entry.name;
+      if (currentSpatialWaypoint && currentSpatialWaypoint.id === waypointId && isQuickRouterConditionalActionId(actionType)) {
+        return {
+          seqKey,
+          entryPathValue: encodeConditionalPath([...parentPath, { caseNum, wpIndex: entryIndex }]),
+          waypointId,
+          actionType
+        };
+      }
+
+      if (entry.nestedToggled && entry.nestedCases) {
+        const nestedCases = normalizeConditionalCases(entry.nestedCases);
+        const nestedInfo = getCaseNumberAtIndex(nestedCases, entry.nestedCaseIndex || 0);
+        const nestedCase = nestedCases[nestedInfo.caseNum];
+        if (nestedCase && Array.isArray(nestedCase.wps)) {
+          const nestedMatch = findQuickRouterActionPopupTargetInEntries(
+            seqKey,
+            nestedCase.wps,
+            nestedInfo.caseNum,
+            [...parentPath, { caseNum, wpIndex: entryIndex }],
+            currentSpatialWaypoint,
+            waypointId
+          );
+          if (nestedMatch) return nestedMatch;
+        }
+      }
+      continue;
+    }
+
+    const waypoint = getWaypointFromConditionalEntry(entry);
+    if (waypoint) currentSpatialWaypoint = waypoint;
+  }
+
+  return null;
+}
+
+function findQuickRouterActionPopupTargetForWaypointId(waypointId) {
+  let lastSpatialWaypoint = null;
+
+  for (const seqEntry of sequence) {
+    if (seqEntry?.type === 'waypoint' && isSpatialWaypoint(seqEntry.data)) {
+      lastSpatialWaypoint = seqEntry.data;
+      continue;
+    }
+
+    if (seqEntry?.type !== 'action' || !isQuickRouterConditionalActionId(seqEntry.data?.node || seqEntry.id)) {
+      continue;
+    }
+
+    const seqItem = document.querySelector(`[data-seq-key="${seqEntry.seqKey}"]`);
+    const hasConditional = !!seqItem && seqItem.dataset.hasConditional === 'true' && !!seqItem.dataset.cases;
+    if (lastSpatialWaypoint && lastSpatialWaypoint.id === waypointId && hasConditional) {
+      return {
+        seqKey: seqEntry.seqKey,
+        entryPathValue: '',
+        waypointId,
+        actionType: seqEntry.data?.node || seqEntry.id
+      };
+    }
+
+    if (!hasConditional) continue;
+
+    const cases = normalizeConditionalCases(JSON.parse(seqItem.dataset.cases));
+    const condWrapper = seqItem.querySelector('.seq-conditional-wrapper');
+    const caseInfo = getCaseNumberAtIndex(cases, parseInt(condWrapper?.dataset.caseIndex, 10) || 0);
+    const activeCase = cases[caseInfo.caseNum];
+    if (!activeCase || !Array.isArray(activeCase.wps)) continue;
+
+    const nestedMatch = findQuickRouterActionPopupTargetInEntries(seqEntry.seqKey, activeCase.wps, caseInfo.caseNum, [], lastSpatialWaypoint, waypointId);
+    if (nestedMatch) return nestedMatch;
+  }
+
+  return null;
+}
+
+function renderQuickRouterActionPopup() {
+  const popup = getQuickRouterActionPopupElement();
+  const body = document.getElementById('quickRouterActionPopupBody');
+  const title = document.getElementById('quickRouterActionPopupTitle');
+  const meta = document.getElementById('quickRouterActionPopupMeta');
+  if (!popup || !body || !title || !meta) return;
+
+  if (!quickRouterActionPopup.open) {
+    popup.classList.remove('open');
+    popup.setAttribute('aria-hidden', 'true');
+    return;
+  }
+
+  const target = buildQuickRouterConditionalTargetFromPopup();
+  if (!target) {
+    closeQuickRouterActionPopup();
+    return;
+  }
+
+  quickRouterActionPopup.actionType = target.actionType || quickRouterActionPopup.actionType;
+  const activeCase = target.cases[target.caseNum] || { name: '', wps: [] };
+  const isDefaultCase = isDefaultConditionalCase(target.caseNum);
+  const waypointIdx = findSpatialWaypointIndexById(Number(target.waypointId));
+  const waypointLabel = waypointIdx !== -1 && waypoints[waypointIdx]
+    ? (waypoints[waypointIdx].name || `WP ${waypoints[waypointIdx].id}`)
+    : 'waypoint';
+
+  title.textContent = getSequenceActionLabel(target.actionType || 'action');
+  meta.textContent = `${isDefaultCase ? 'Default case' : `Case ${target.caseNum}`} • ${waypointLabel}`;
+
+  const parentPathValue = target.entryPathValue || '';
+  body.innerHTML = `
+    <div class="seq-cond-cases">
+      <button class="seq-cond-nav" type="button" onclick="navigateQuickRouterActionPopupCase(-1)">◀</button>
+      <span class="seq-cond-index">${isDefaultCase ? '&lt; Default &gt;' : `&lt; ${target.caseNum} &gt;`}</span>
+      <input id="quickRouterActionPopupCaseInput" type="text" class="seq-cond-input" placeholder="${isDefaultCase ? 'Default branch' : 'e.g., GREEN'}" value="${escapeHtml(isDefaultCase ? 'Default' : (activeCase.name || ''))}" ${isDefaultCase ? 'disabled' : ''} oninput="updateQuickRouterActionPopupCaseName(this.value)">
+      <button class="seq-cond-add" type="button" onclick="addQuickRouterActionPopupCase()">+ ADD</button>
+      <button class="seq-cond-nav" type="button" onclick="navigateQuickRouterActionPopupCase(1)">▶</button>
+    </div>
+    <div class="seq-cond-dropzone" data-case-num="${target.caseNum}" ondragover="event.preventDefault(); this.classList.add('dragover');" ondragleave="this.classList.remove('dragover');" ondrop="handleConditionalCaseDrop(event, '${target.seqKey}', '${parentPathValue}', ${target.caseNum})">
+      ${renderConditionalEntries(target.seqItem, parentPathValue, target.caseNum, activeCase.wps || [])}
+    </div>`;
+
+  popup.classList.add('open');
+  popup.setAttribute('aria-hidden', 'false');
+  positionQuickRouterActionPopup(false);
+}
+
+function syncQuickRouterActionPopupForSeqItem(seqItem) {
+  if (!quickRouterActionPopup.open || !seqItem) return;
+  if (quickRouterActionPopup.seqKey !== seqItem.dataset.seqKey) return;
+  renderQuickRouterActionPopup();
+}
+
+function openQuickRouterActionPopupForWaypoint(idx) {
+  const wp = waypoints[idx];
+  if (!isSpatialWaypoint(wp) || wp.isOrigin) return false;
+
+  const target = findQuickRouterActionPopupTargetForWaypointId(wp.id);
+  if (!target) return false;
+
+  quickRouterActionPopup.open = true;
+  quickRouterActionPopup.seqKey = target.seqKey;
+  quickRouterActionPopup.entryPathValue = target.entryPathValue || '';
+  quickRouterActionPopup.waypointId = wp.id;
+  quickRouterActionPopup.actionType = target.actionType || '';
+  quickRouterActionPopup.userMoved = false;
+  renderQuickRouterActionPopup();
+  positionQuickRouterActionPopup(true);
+  showToast(`⚡ ${getSequenceActionLabel(target.actionType)} ready for ${wp.name || `WP ${wp.id}`}`);
+  return true;
+}
+
+function navigateQuickRouterActionPopupCase(direction) {
+  const target = buildQuickRouterConditionalTargetFromPopup();
+  if (!target) return;
+
+  if (target.entryPathValue) {
+    const caseNums = getOrderedCaseNumbers(target.cases);
+    if (!caseNums.length) return;
+    const currentIdx = parseInt(target.entry.nestedCaseIndex, 10) || 0;
+    target.entry.nestedCaseIndex = (currentIdx + direction + caseNums.length) % caseNums.length;
+    refreshConditionalSeqItem(target.seqItem, target.rootCases);
+    return;
+  }
+
+  navigateCase(target.seqItem, direction);
+}
+
+function addQuickRouterActionPopupCase() {
+  const target = buildQuickRouterConditionalTargetFromPopup();
+  if (!target) return;
+
+  if (target.entryPathValue) {
+    target.entry.nestedCases = normalizeConditionalCases(target.entry.nestedCases);
+    const nestedCaseNums = getOrderedCaseNumbers(target.entry.nestedCases);
+    const nextNum = (nestedCaseNums[nestedCaseNums.length - 1] || 0) + 1;
+    target.entry.nestedCases[nextNum] = { name: '', wps: [] };
+    target.entry.nestedCaseIndex = nestedCaseNums.length;
+    target.entry.nestedToggled = true;
+    refreshConditionalSeqItem(target.seqItem, target.rootCases);
+    return;
+  }
+
+  addConditionalCase(target.seqItem);
+}
+
+function updateQuickRouterActionPopupCaseName(value) {
+  const target = buildQuickRouterConditionalTargetFromPopup();
+  if (!target || isDefaultConditionalCase(target.caseNum)) return;
+
+  if (!target.cases[target.caseNum]) {
+    target.cases[target.caseNum] = { name: '', wps: [] };
+  }
+  target.cases[target.caseNum].name = value;
+  target.seqItem.dataset.cases = JSON.stringify(target.rootCases || target.cases);
+}
+
+function beginQuickRouterActionPopupDrag(event) {
+  if (event.button !== 0 || !quickRouterActionPopup.open) return;
+  if (event.target && event.target.closest('button,input,textarea,select,label,a')) return;
+  const popup = getQuickRouterActionPopupElement();
+  if (!popup) return;
+
+  const rect = popup.getBoundingClientRect();
+  quickRouterActionPopup.userMoved = true;
+  quickRouterActionPopup.dragPointerId = event.pointerId;
+  quickRouterActionPopup.dragOffsetX = event.clientX - rect.left;
+  quickRouterActionPopup.dragOffsetY = event.clientY - rect.top;
+  if (event.currentTarget && event.currentTarget.setPointerCapture) {
+    try { event.currentTarget.setPointerCapture(event.pointerId); } catch (err) {}
+  }
+  event.preventDefault();
+}
+
 function isQuickRouterEndpointWaypoint(idx) {
   const wp = waypoints[idx];
   if (!isSpatialWaypoint(wp) || wp.isOrigin) return false;
@@ -7641,6 +8030,9 @@ function isQuickRouterEndpointWaypoint(idx) {
 }
 
 function getQuickRouterConditionalTarget() {
+  const popupTarget = buildQuickRouterConditionalTargetFromPopup();
+  if (popupTarget) return popupTarget;
+
   const seqKeyCandidates = [];
   if (quickRouterConditionalSeqKey) seqKeyCandidates.push(quickRouterConditionalSeqKey);
   sequence.forEach(seqEntry => {
@@ -7650,21 +8042,8 @@ function getQuickRouterConditionalTarget() {
   });
 
   for (let idx = seqKeyCandidates.length - 1; idx >= 0; idx--) {
-    const seqKey = seqKeyCandidates[idx];
-    const seqItem = document.querySelector(`[data-seq-key="${seqKey}"]`);
-    if (!seqItem || seqItem.dataset.hasConditional !== 'true' || !seqItem.dataset.cases) continue;
-    const condWrapper = seqItem.querySelector('.seq-conditional-wrapper');
-    const cases = normalizeConditionalCases(JSON.parse(seqItem.dataset.cases));
-    const caseInfo = getCaseNumberAtIndex(cases, parseInt(condWrapper?.dataset.caseIndex, 10) || 0);
-    quickRouterConditionalSeqKey = seqKey;
-    return {
-      seqKey,
-      seqItem,
-      cases,
-      condWrapper,
-      caseIdx: caseInfo.caseIdx,
-      caseNum: caseInfo.caseNum
-    };
+    const target = buildQuickRouterConditionalTargetFromSeqKey(seqKeyCandidates[idx]);
+    if (target) return target;
   }
 
   quickRouterConditionalSeqKey = null;
@@ -7681,7 +8060,7 @@ function addQuickRouterWaypointToCurrentCase(idx) {
   if (!target.cases[target.caseNum]) target.cases[target.caseNum] = { name: '', wps: [] };
   if (!Array.isArray(target.cases[target.caseNum].wps)) target.cases[target.caseNum].wps = [];
   target.cases[target.caseNum].wps.push(createConditionalWaypointEntry(wp));
-  refreshConditionalSeqItem(target.seqItem, target.cases);
+  refreshConditionalSeqItem(target.seqItem, target.rootCases || target.cases);
   setSelectedWaypoint(idx, { scrollWaypoint: true, scrollSequence: true });
   pulseWaypointHighlight(idx, true);
   showToast(`🛣 Added ${wp.name || `WP ${wp.id}`} to case ${target.caseNum === 0 ? 'Default' : target.caseNum}`);
@@ -7692,7 +8071,7 @@ function removeLastQuickRouterNode() {
   const target = getQuickRouterConditionalTarget();
   if (target && target.cases[target.caseNum] && Array.isArray(target.cases[target.caseNum].wps) && target.cases[target.caseNum].wps.length) {
     target.cases[target.caseNum].wps.pop();
-    refreshConditionalSeqItem(target.seqItem, target.cases);
+    refreshConditionalSeqItem(target.seqItem, target.rootCases || target.cases);
     showToast(`Removed last case node from ${target.caseNum === 0 ? 'Default' : `case ${target.caseNum}`}`);
     return true;
   }
@@ -7718,6 +8097,10 @@ function queueQuickRouterWaypointAdd(idx) {
   clearQuickRouterPendingClick();
   quickRouterClickTimer = setTimeout(() => {
     quickRouterClickTimer = null;
+    if (quickRouterActionPopup.open && buildQuickRouterConditionalTargetFromPopup()) {
+      addQuickRouterWaypointToCurrentCase(idx);
+      return;
+    }
     addQuickRouterWaypoint(idx);
   }, 220);
 }
@@ -7821,6 +8204,7 @@ function toggleQuickRouter(forceValue = null) {
   if (!nextState) {
     quickRouterConditionalSeqKey = null;
     clearQuickRouterPendingClick();
+    closeQuickRouterActionPopup();
   }
 
   if (!quickRouterActive) {
@@ -8103,6 +8487,7 @@ async function removeFromSequence(btn) {
   if (!(await confirmDestructiveAction('Remove this item from the sequence?', { title: 'Remove Sequence Item', confirmLabel: 'Remove' }))) return;
   const idx = sequence.findIndex(s => s.seqKey === item.dataset.seqKey);
   if (item.dataset.seqKey === quickRouterConditionalSeqKey) quickRouterConditionalSeqKey = null;
+  if (item.dataset.seqKey === quickRouterActionPopup.seqKey) closeQuickRouterActionPopup();
   if (idx !== -1) sequence.splice(idx, 1);
   item.remove();
   if (quickRouterActive) quickRouterInsertIndex = sequence.length;
@@ -8127,6 +8512,7 @@ function navigateCase(seqItem, direction) {
   const caseNum = caseNums[currentIdx];
   
   updateConditionalUI(seqItem, currentIdx, caseNum, cases);
+  syncQuickRouterActionPopupForSeqItem(seqItem);
   renderMap();
 }
 
@@ -8144,6 +8530,7 @@ function addConditionalCase(seqItem) {
   condWrapper.dataset.caseIndex = getOrderedCaseNumbers(cases).length - 1;
   
   updateConditionalUI(seqItem, condWrapper.dataset.caseIndex, newCaseNum, cases);
+  syncQuickRouterActionPopupForSeqItem(seqItem);
   renderMap();
 }
 
@@ -8299,6 +8686,7 @@ function refreshConditionalSeqItem(seqItem, cases) {
   const condWrapper = seqItem.querySelector('.seq-conditional-wrapper');
   if (!condWrapper) {
     syncSelectedSequenceCards();
+    renderQuickRouterActionPopup();
     renderMap();
     return;
   }
@@ -8307,6 +8695,9 @@ function refreshConditionalSeqItem(seqItem, cases) {
   const caseInfo = getCaseNumberAtIndex(cases, caseIdx);
   updateConditionalUI(seqItem, caseInfo.caseIdx, caseInfo.caseNum, cases);
   syncSelectedSequenceCards();
+  if (quickRouterActionPopup.open && quickRouterActionPopup.seqKey === seqItem.dataset.seqKey) {
+    renderQuickRouterActionPopup();
+  }
   renderMap();
 }
 
@@ -8578,7 +8969,10 @@ function updateConditionalUI(seqItem, caseIdx, caseNum, cases) {
   input.oninput = isDefaultCase ? null : () => {
     cases[activeCaseNum].name = input.value;
     seqItem.dataset.cases = JSON.stringify(cases);
+    syncQuickRouterActionPopupForSeqItem(seqItem);
   };
+
+  syncQuickRouterActionPopupForSeqItem(seqItem);
 }
 
 async function removeConditionalEntry(event, seqItemId, parentPathValue, caseNum, entryIndex) {
@@ -8664,6 +9058,7 @@ function updateConditionalCaseName(seqItemId, entryPathValue, nestedCaseNum, val
 
   target.entry.nestedCases[nestedCaseNum].name = value;
   target.seqItem.dataset.cases = JSON.stringify(target.cases);
+  syncQuickRouterActionPopupForSeqItem(target.seqItem);
 }
 
 function selectWaypointFromSequence(seqKey, scrollIntoView = true) {
@@ -8697,6 +9092,7 @@ async function clearSeq() {
   if (!(await confirmDestructiveAction(`Clear all ${sequence.length} sequence items?`, { title: 'Clear Sequence', confirmLabel: 'Clear All' }))) return;
   sequence = [];
   quickRouterConditionalSeqKey = null;
+  closeQuickRouterActionPopup();
   if (quickRouterActive) quickRouterInsertIndex = 0;
   const list = document.getElementById('seqList');
   list.querySelectorAll('.seq-item').forEach(item => item.remove());
@@ -8810,9 +9206,20 @@ document.addEventListener('pointerdown', event => {
 document.addEventListener('keydown', event => {
   const target = event.target;
   const isTypingTarget = !!target && ((target.tagName && /input|textarea|select/i.test(target.tagName)) || target.isContentEditable);
+  if (quickRouterActionPopup.open && (event.key === 'Enter' || event.key === 'Escape')) {
+    closeQuickRouterActionPopup();
+    if (event.key === 'Escape') {
+      clearQuickRouterPendingClick();
+      closeQuickRouterMenu();
+      if (quickRouterActive) toggleQuickRouter(false);
+    }
+    event.preventDefault();
+    return;
+  }
   if (event.key === 'Escape') {
     clearQuickRouterPendingClick();
     closeQuickRouterMenu();
+    closeQuickRouterActionPopup();
     if (quickRouterActive) toggleQuickRouter(false);
   }
   if (isTypingTarget) return;
@@ -8827,7 +9234,39 @@ document.addEventListener('keydown', event => {
 window.addEventListener('resize', () => {
   clearQuickRouterPendingClick();
   closeQuickRouterMenu();
+  syncQuickRouterActionPopupPosition(true);
 });
+
+document.addEventListener('pointermove', event => {
+  if (quickRouterActionPopup.dragPointerId !== event.pointerId) return;
+  const clamped = clampQuickRouterActionPopupPosition(
+    event.clientX - quickRouterActionPopup.dragOffsetX,
+    event.clientY - quickRouterActionPopup.dragOffsetY
+  );
+  quickRouterActionPopup.left = clamped.left;
+  quickRouterActionPopup.top = clamped.top;
+  const popup = getQuickRouterActionPopupElement();
+  if (popup) {
+    popup.style.left = `${clamped.left}px`;
+    popup.style.top = `${clamped.top}px`;
+  }
+});
+
+document.addEventListener('pointerup', event => {
+  if (quickRouterActionPopup.dragPointerId !== event.pointerId) return;
+  quickRouterActionPopup.dragPointerId = null;
+});
+
+if (mapWrap) {
+  mapWrap.addEventListener('scroll', () => {
+    syncQuickRouterActionPopupPosition(false);
+  });
+}
+
+const quickRouterActionPopupHeader = document.getElementById('quickRouterActionPopupHeader');
+if (quickRouterActionPopupHeader) {
+  quickRouterActionPopupHeader.addEventListener('pointerdown', beginQuickRouterActionPopupDrag);
+}
 
 const seqContainer = document.getElementById('seqList');
 if (seqContainer) {
