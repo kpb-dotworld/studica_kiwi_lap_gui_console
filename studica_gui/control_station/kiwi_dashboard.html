@@ -390,6 +390,12 @@ body.is-resizing-sequence,body.is-resizing-sequence *{cursor:col-resize !importa
 .seq-item.is-selected{border-color:rgba(0,212,255,.78);background:linear-gradient(180deg,rgba(0,212,255,.16),rgba(10,18,28,.96));box-shadow:0 0 0 1px rgba(0,212,255,.14) inset,0 0 20px rgba(0,212,255,.12);}
 .seq-item:active{cursor:grabbing;}
 .seq-item.dragging{opacity:0.6;background:var(--panel2);}
+.seq-header-controls{display:flex;flex-direction:column;gap:8px;margin-bottom:8px;}
+.quick-router-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(61,88,112,.92);background:linear-gradient(180deg,rgba(14,28,45,.94),rgba(8,18,29,.92));color:var(--text2);font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:border-color .15s ease,background .15s ease,color .15s ease,transform .15s ease,box-shadow .15s ease;}
+.quick-router-btn:hover{transform:translateY(-1px);border-color:var(--accent);background:linear-gradient(180deg,rgba(0,212,255,.16),rgba(11,22,36,.92));color:#fff;}
+.quick-router-btn.is-active{border-color:#ffd54f;background:linear-gradient(135deg,rgba(255,213,79,.28),rgba(255,107,53,.24));color:#fff4c8;box-shadow:0 0 0 1px rgba(255,213,79,.18) inset,0 10px 24px rgba(255,193,7,.14);}
+.quick-router-status{padding:9px 10px;border:1px dashed rgba(61,88,112,.72);border-radius:10px;background:rgba(8,18,29,.7);color:var(--muted2);font-size:10px;line-height:1.5;letter-spacing:.04em;}
+.quick-router-status.is-active{border-color:rgba(255,213,79,.52);background:rgba(255,213,79,.08);color:#ffe7a0;}
 .seq-item-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;width:100%;min-width:0;}
 .seq-item-main{display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap;min-width:0;}
 .seq-item--nested-action{cursor:default;}
@@ -397,6 +403,14 @@ body.is-resizing-sequence,body.is-resizing-sequence *{cursor:col-resize !importa
 .seq-remove{background:none;border:none;color:var(--muted);cursor:pointer;padding:2px 6px;border-radius:2px;font-size:12px;transition:color 0.2s;font-family:inherit;}
 .seq-remove:hover{color:var(--red);}
 .seq-empty{color:var(--muted);text-align:center;padding:20px 8px;font-size:11px;line-height:1.6;pointer-events:none;min-width:100%;}
+.quick-router-menu{position:fixed;display:none;flex-direction:column;gap:8px;min-width:220px;padding:12px;border:1px solid rgba(255,213,79,.42);border-radius:12px;background:linear-gradient(180deg,rgba(14,20,31,.98),rgba(10,18,30,.96));box-shadow:0 14px 28px rgba(0,0,0,.36);z-index:1250;}
+.quick-router-menu.open{display:flex;}
+.quick-router-menu-title{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#ffe7a0;}
+.quick-router-menu-copy{font-size:10px;color:var(--muted2);line-height:1.45;}
+.quick-router-menu-btn{display:flex;align-items:center;gap:8px;width:100%;padding:9px 10px;border:none;border-radius:9px;background:rgba(156,39,176,.14);color:#f0c7ff;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:background .15s ease,color .15s ease,transform .15s ease;}
+.quick-router-menu-btn:hover{background:rgba(156,39,176,.26);color:#fff;transform:translateY(-1px);}
+.quick-router-menu-close{padding:6px 8px;border:none;background:none;color:var(--muted2);font-family:inherit;font-size:10px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;}
+.quick-router-menu-close:hover{color:var(--red);}
 
 /* CONDITIONAL DETECT_COLOR */
 .seq-conditional-wrapper{display:flex;flex-direction:column;gap:8px;width:100%;min-width:0;}
@@ -888,6 +902,10 @@ body.is-resizing-sequence,body.is-resizing-sequence *{cursor:col-resize !importa
           <button id="seqReverseBtn" onclick="reverseSeq()" title="Reverse sequence" style="padding:4px 10px;border-radius:4px;border:1px solid var(--muted);background:transparent;color:var(--muted);cursor:pointer;font-size:11px;font-weight:600;transition:all 0.2s;">Reverse</button>
           <button id="seqReorderToggle" onclick="toggleSeqReorder()" title="Toggle reorder mode" style="width:28px;height:28px;border-radius:50%;border:2px solid var(--muted);background:transparent;color:var(--muted);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;">⇅</button>
         </div>
+      </div>
+      <div class="seq-header-controls">
+        <button class="quick-router-btn" id="quickRouterBtn" type="button" onclick="toggleQuickRouter()" title="Build the route directly from the map">🛣 Quick Router</button>
+        <div class="quick-router-status" id="quickRouterStatus">Left click map waypoints to append the route. Right click a waypoint to insert an action.</div>
       </div>
       <div class="seq-list" id="seqList" style="flex:1;overflow-y:auto;background:var(--panel2);border:1px solid var(--border);border-radius:3px;padding:4px;">
         <div class="seq-empty" style="color:var(--muted);text-align:center;padding:20px 8px;font-size:11px;">Drag items from<br>WP DATA to arrange<br>execution sequence</div>
@@ -1537,6 +1555,14 @@ body.is-resizing-sequence,body.is-resizing-sequence *{cursor:col-resize !importa
     </div>
     <button class="action-close-btn" onclick="closeSaveAnchorPopup()">✕ Close</button>
   </div>
+</div>
+
+<div class="quick-router-menu" id="quickRouterMenu" aria-hidden="true">
+  <div class="quick-router-menu-title" id="quickRouterMenuTitle">Quick Router Action</div>
+  <div class="quick-router-menu-copy" id="quickRouterMenuCopy">Insert an action after the current route point.</div>
+  <button class="quick-router-menu-btn" type="button" onclick="addQuickRouterAction('detect_color')">🔍 Detect Colour</button>
+  <button class="quick-router-menu-btn" type="button" onclick="addQuickRouterAction('detect_qr')">📱 Detect QR</button>
+  <button class="quick-router-menu-close" type="button" onclick="closeQuickRouterMenu()">Close</button>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
@@ -2462,6 +2488,7 @@ function renderMap(){
     const p = isEditingWaypoint ? odomToCanvas(renderX, renderY) : wpToCanvas(wp); if(!p) return;
     const isSelected = i === selectedWpIdx;
     const isHighlighted = i === highlightedWpIdx;
+    const isQuickRouterHover = quickRouterActive && i === quickRouterHoverIdx;
     const isOriginWaypoint = !!wp.isOrigin;
     const sequenceActionKind = actionWaypointKinds.get(wp.id) || null;
     const hasSequenceAction = !!sequenceActionKind;
@@ -2492,15 +2519,15 @@ function renderMap(){
         mctx.restore();
       }
     }
-    if (isSelected || isHighlighted) {
+    if (isSelected || isHighlighted || isQuickRouterHover) {
       mctx.save();
       mctx.globalAlpha = Math.max(0.12, wpOpacity);
       mctx.beginPath();
-      mctx.arc(p.x, p.y, isEditingWaypoint && wpDragging ? 22 : (isSelected ? 18 : 15), 0, Math.PI * 2);
+      mctx.arc(p.x, p.y, isEditingWaypoint && wpDragging ? 22 : (isSelected ? 18 : (isQuickRouterHover ? 16 : 15)), 0, Math.PI * 2);
       mctx.strokeStyle = isEditingWaypoint
         ? 'rgba(77,255,145,.98)'
-        : (isSelected ? 'rgba(0,212,255,.95)' : 'rgba(77,255,145,.95)');
-      mctx.lineWidth = isSelected ? 3 : 2.5;
+        : (isSelected ? 'rgba(0,212,255,.95)' : (isQuickRouterHover ? 'rgba(255,213,79,.98)' : 'rgba(77,255,145,.95)'));
+      mctx.lineWidth = isSelected ? 3 : (isQuickRouterHover ? 2.8 : 2.5);
       mctx.stroke();
       mctx.restore();
     }
@@ -4753,11 +4780,16 @@ let wpDragStartPointer = null;
 // Mouse move for waypoint preview
 mapCanvas.addEventListener('mousemove', e=>{
   if (dashboardPanState.active) return;
-  if(!wpMapClickActive && !settingOrig && !dashboardMeasureMode) return;
+  const quickRouterHoverActive = quickRouterActive && !wpMapClickActive && !settingOrig && !dashboardMeasureMode;
+  if(!wpMapClickActive && !settingOrig && !dashboardMeasureMode && !quickRouterHoverActive) return;
   const pointer = getDashboardCanvasPointer(e);
   if(!pointer) {
     wpHoverX = null;
     wpHoverY = null;
+    if (quickRouterHoverIdx !== -1) {
+      quickRouterHoverIdx = -1;
+      syncQuickRouterUI();
+    }
     if (dashboardMeasureMode && !dashboardMeasureDragging) {
       dashboardMeasureHover = null;
       updateDashboardMeasureUI();
@@ -4773,6 +4805,16 @@ mapCanvas.addEventListener('mousemove', e=>{
     dashboardMeasureHover = getDashboardMeasureSnapPoint(pointer.canvasX, pointer.canvasY);
     updateDashboardMeasureUI();
     renderMap();
+  }
+
+  if (quickRouterHoverActive) {
+    const hoverIdx = findSpatialWaypointAtCanvasPoint(pointer.canvasX, pointer.canvasY, 44);
+    const nextHoverIdx = hoverIdx !== -1 && isSpatialWaypoint(waypoints[hoverIdx]) && !waypoints[hoverIdx].isOrigin ? hoverIdx : -1;
+    if (nextHoverIdx !== quickRouterHoverIdx) {
+      quickRouterHoverIdx = nextHoverIdx;
+      syncQuickRouterUI();
+      renderMap();
+    }
   }
   
   // For waypoint mode: convert pixel to odom coordinates for preview
@@ -4812,11 +4854,15 @@ mapCanvas.addEventListener('mousemove', e=>{
 });
 
 mapCanvas.addEventListener('mouseleave', e=>{
-  if(!wpMapClickActive && !settingOrig && !dashboardMeasureMode) return;
+  if(!wpMapClickActive && !settingOrig && !dashboardMeasureMode && !quickRouterActive) return;
   wpHoverX = null;
   wpHoverY = null;
   hoverPixelX = null;
   hoverPixelY = null;
+  if (quickRouterHoverIdx !== -1) {
+    quickRouterHoverIdx = -1;
+    syncQuickRouterUI();
+  }
   if (!dashboardMeasureDragging) dashboardMeasureHover = null;
   updateDashboardMeasureUI();
   wpDragging = false;  // Stop dragging if mouse leaves canvas
@@ -4932,6 +4978,17 @@ mapCanvas.addEventListener('click', e=>{
 // Double-click on waypoint to edit it
 mapCanvas.addEventListener('dblclick', e=>{
   if (shouldSuppressMapCanvasClick()) return;
+  if (quickRouterActive) {
+    clearQuickRouterPendingClick();
+    const pointer = getDashboardCanvasPointer(e);
+    if (!pointer) return;
+    const idx = findSpatialWaypointAtCanvasPoint(pointer.canvasX, pointer.canvasY);
+    if (idx !== -1 && addQuickRouterWaypointToCurrentCase(idx)) {
+      e.preventDefault();
+      return;
+    }
+    return;
+  }
   console.log('[DBLCLICK] Event fired, wpMapClickActive:', wpMapClickActive, 'settingOrig:', settingOrig, 'simEditMode:', simEditMode);
   // Allow edit in simEditMode (paused visualization) or normal mode
   if(settingOrig) return;  // Don't allow edit while setting origin
@@ -5008,6 +5065,13 @@ mapCanvas.addEventListener('click', e=>{
   const clickY = (e.clientY - r.top) * cssScaleY;
   const idx = findSpatialWaypointAtCanvasPoint(clickX, clickY);
 
+  if (quickRouterActive) {
+    closeQuickRouterMenu();
+    if (idx === -1) return;
+    queueQuickRouterWaypointAdd(idx);
+    return;
+  }
+
   if (idx === -1) {
     clearSelectedWaypoint(true);
     return;
@@ -5023,6 +5087,23 @@ mapCanvas.addEventListener('contextmenu', e => {
   e.preventDefault();
   clearDashboardMeasure(true);
   showToast('📏 Measure cleared');
+});
+
+mapCanvas.addEventListener('contextmenu', e => {
+  if (!quickRouterActive || dashboardMeasureMode || settingOrig || wpMapClickActive) return;
+  const pointer = getDashboardCanvasPointer(e);
+  if (!pointer) return;
+
+  const idx = findSpatialWaypointAtCanvasPoint(pointer.canvasX, pointer.canvasY, 44);
+  if (idx === -1 || !isSpatialWaypoint(waypoints[idx]) || waypoints[idx].isOrigin) {
+    closeQuickRouterMenu();
+    return;
+  }
+
+  e.preventDefault();
+  quickRouterHoverIdx = idx;
+  syncQuickRouterUI();
+  openQuickRouterMenu(e.clientX, e.clientY, idx);
 });
 
 function cancelWaypointInteraction() {
@@ -7351,6 +7432,12 @@ function loadMapData(d){
 let sequence = [];  // Array of {id: 'wp1', type: 'waypoint'|'anchor'} or {id: 'action_name', type: 'action'}
 let sequenceItemCounter = 0;
 let sequenceResizeActive = false;
+let quickRouterActive = false;
+let quickRouterHoverIdx = -1;
+let quickRouterInsertIndex = null;
+let quickRouterMenuWaypointIdx = -1;
+let quickRouterConditionalSeqKey = null;
+let quickRouterClickTimer = null;
 
 function getSequencePanelWidthLimits() {
   const viewportWidth = window.innerWidth || 1280;
@@ -7430,6 +7517,240 @@ function nextSequenceKey() {
   return `seq_${sequenceItemCounter}`;
 }
 
+function clampQuickRouterInsertIndex(index) {
+  if (!Number.isFinite(index)) return sequence.length;
+  return Math.max(0, Math.min(sequence.length, Math.round(index)));
+}
+
+function resolveQuickRouterInsertIndex() {
+  if (!quickRouterActive) return sequence.length;
+  quickRouterInsertIndex = clampQuickRouterInsertIndex(quickRouterInsertIndex ?? sequence.length);
+  return quickRouterInsertIndex;
+}
+
+function isQuickRouterConditionalActionId(actionId) {
+  return actionId === 'detect_color' || actionId === 'detect_qr';
+}
+
+function clearQuickRouterPendingClick() {
+  if (quickRouterClickTimer !== null) {
+    clearTimeout(quickRouterClickTimer);
+    quickRouterClickTimer = null;
+  }
+}
+
+function getQuickRouterConditionalTarget() {
+  const seqKeyCandidates = [];
+  if (quickRouterConditionalSeqKey) seqKeyCandidates.push(quickRouterConditionalSeqKey);
+  sequence.forEach(seqEntry => {
+    if (seqEntry?.type === 'action' && isQuickRouterConditionalActionId(seqEntry.data?.node || seqEntry.id)) {
+      seqKeyCandidates.push(seqEntry.seqKey);
+    }
+  });
+
+  for (let idx = seqKeyCandidates.length - 1; idx >= 0; idx--) {
+    const seqKey = seqKeyCandidates[idx];
+    const seqItem = document.querySelector(`[data-seq-key="${seqKey}"]`);
+    if (!seqItem || seqItem.dataset.hasConditional !== 'true' || !seqItem.dataset.cases) continue;
+    const condWrapper = seqItem.querySelector('.seq-conditional-wrapper');
+    const cases = normalizeConditionalCases(JSON.parse(seqItem.dataset.cases));
+    const caseInfo = getCaseNumberAtIndex(cases, parseInt(condWrapper?.dataset.caseIndex, 10) || 0);
+    quickRouterConditionalSeqKey = seqKey;
+    return {
+      seqKey,
+      seqItem,
+      cases,
+      condWrapper,
+      caseIdx: caseInfo.caseIdx,
+      caseNum: caseInfo.caseNum
+    };
+  }
+
+  quickRouterConditionalSeqKey = null;
+  return null;
+}
+
+function addQuickRouterWaypointToCurrentCase(idx) {
+  const wp = waypoints[idx];
+  if (!isSpatialWaypoint(wp) || wp.isOrigin) return false;
+
+  const target = getQuickRouterConditionalTarget();
+  if (!target) return false;
+
+  if (!target.cases[target.caseNum]) target.cases[target.caseNum] = { name: '', wps: [] };
+  if (!Array.isArray(target.cases[target.caseNum].wps)) target.cases[target.caseNum].wps = [];
+  target.cases[target.caseNum].wps.push(createConditionalWaypointEntry(wp));
+  refreshConditionalSeqItem(target.seqItem, target.cases);
+  setSelectedWaypoint(idx, { scrollWaypoint: true, scrollSequence: true });
+  pulseWaypointHighlight(idx, true);
+  showToast(`🛣 Added ${wp.name || `WP ${wp.id}`} to case ${target.caseNum === 0 ? 'Default' : target.caseNum}`);
+  return true;
+}
+
+function removeLastQuickRouterNode() {
+  const target = getQuickRouterConditionalTarget();
+  if (target && target.cases[target.caseNum] && Array.isArray(target.cases[target.caseNum].wps) && target.cases[target.caseNum].wps.length) {
+    target.cases[target.caseNum].wps.pop();
+    refreshConditionalSeqItem(target.seqItem, target.cases);
+    showToast(`Removed last case node from ${target.caseNum === 0 ? 'Default' : `case ${target.caseNum}`}`);
+    return true;
+  }
+
+  if (!sequence.length) return false;
+
+  const list = document.getElementById('seqList');
+  const items = list ? [...list.querySelectorAll('.seq-item')] : [];
+  const lastItem = items[items.length - 1];
+  if (lastItem) lastItem.remove();
+  const removed = sequence.pop();
+  if (removed?.seqKey === quickRouterConditionalSeqKey) quickRouterConditionalSeqKey = null;
+  quickRouterInsertIndex = sequence.length;
+  syncSelectedSequenceCards();
+  syncSequenceOriginCard();
+  syncQuickRouterUI();
+  renderMap();
+  showToast('Removed last Quick Router node');
+  return true;
+}
+
+function queueQuickRouterWaypointAdd(idx) {
+  clearQuickRouterPendingClick();
+  quickRouterClickTimer = setTimeout(() => {
+    quickRouterClickTimer = null;
+    addQuickRouterWaypoint(idx);
+  }, 220);
+}
+
+function resolveQuickRouterActionInsertIndex() {
+  if (quickRouterMenuWaypointIdx !== -1 && isSpatialWaypoint(waypoints[quickRouterMenuWaypointIdx])) {
+    const waypointId = waypoints[quickRouterMenuWaypointIdx].id;
+    for (let idx = sequence.length - 1; idx >= 0; idx--) {
+      const seqEntry = sequence[idx];
+      if (seqEntry?.type === 'waypoint' && seqEntry.data?.id === waypointId) {
+        return idx + 1;
+      }
+    }
+  }
+
+  return resolveQuickRouterInsertIndex();
+}
+
+function syncQuickRouterUI() {
+  const button = document.getElementById('quickRouterBtn');
+  const status = document.getElementById('quickRouterStatus');
+
+  if (button) {
+    button.classList.toggle('is-active', quickRouterActive);
+    button.textContent = quickRouterActive ? '🛣 Quick Router On' : '🛣 Quick Router';
+  }
+
+  if (status) {
+    status.classList.toggle('is-active', quickRouterActive);
+    if (!quickRouterActive) {
+      status.textContent = 'Left click map waypoints to append the route. Right click a waypoint to insert an action.';
+    } else if (quickRouterHoverIdx !== -1 && isSpatialWaypoint(waypoints[quickRouterHoverIdx])) {
+      const wp = waypoints[quickRouterHoverIdx];
+      status.textContent = `${wp.name || `WP ${wp.id}`} ready. Left click adds it. Right click inserts an action after it.`;
+    } else {
+      status.textContent = 'Hover a waypoint on the map, left click to append it, right click to insert an action.';
+    }
+  }
+
+  if (mapCanvas && !settingOrig && !wpMapClickActive && !dashboardMeasureMode) {
+    mapCanvas.style.cursor = quickRouterActive ? 'pointer' : 'default';
+  }
+}
+
+function closeQuickRouterMenu() {
+  const menu = document.getElementById('quickRouterMenu');
+  if (!menu) return;
+  menu.classList.remove('open');
+  menu.setAttribute('aria-hidden', 'true');
+  quickRouterMenuWaypointIdx = -1;
+}
+
+function openQuickRouterMenu(clientX, clientY, waypointIdx) {
+  const menu = document.getElementById('quickRouterMenu');
+  const title = document.getElementById('quickRouterMenuTitle');
+  const copy = document.getElementById('quickRouterMenuCopy');
+  if (!menu) return;
+
+  const wp = waypoints[waypointIdx];
+  const wpLabel = wp && isSpatialWaypoint(wp) ? (wp.name || `WP ${wp.id}`) : 'route point';
+  quickRouterMenuWaypointIdx = waypointIdx;
+
+  if (title) title.textContent = `Action After ${wpLabel}`;
+  if (copy) copy.textContent = 'If this waypoint is already in the route, the action is inserted right after it. Otherwise it is added at the current Quick Router position.';
+
+  menu.classList.add('open');
+  menu.setAttribute('aria-hidden', 'false');
+
+  const margin = 14;
+  const menuWidth = 240;
+  const menuHeight = 170;
+  const nextLeft = Math.max(margin, Math.min(window.innerWidth - menuWidth - margin, clientX + 8));
+  const nextTop = Math.max(margin, Math.min(window.innerHeight - menuHeight - margin, clientY + 8));
+  menu.style.left = `${nextLeft}px`;
+  menu.style.top = `${nextTop}px`;
+}
+
+function toggleQuickRouter(forceValue = null) {
+  if (settingOrig) {
+    showToast('Finish origin placement before using Quick Router');
+    return;
+  }
+
+  if (wpMapClickActive) cancelWaypointInteraction();
+  if (dashboardMeasureMode) clearDashboardMeasure(false);
+
+  const nextState = typeof forceValue === 'boolean' ? forceValue : !quickRouterActive;
+  quickRouterActive = nextState;
+  quickRouterHoverIdx = -1;
+  quickRouterInsertIndex = nextState ? sequence.length : null;
+  if (!nextState) {
+    quickRouterConditionalSeqKey = null;
+    clearQuickRouterPendingClick();
+  }
+
+  if (!quickRouterActive) {
+    closeQuickRouterMenu();
+    showToast('Quick Router off');
+  } else {
+    showToast('🛣 Quick Router on — left click waypoints to append, right click to insert actions');
+  }
+
+  syncQuickRouterUI();
+  renderMap();
+}
+
+function addQuickRouterWaypoint(idx) {
+  const wp = waypoints[idx];
+  if (!isSpatialWaypoint(wp)) return;
+  if (wp.isOrigin) {
+    showToast('Origin stays fixed at the top. Choose a route waypoint instead.');
+    return;
+  }
+
+  const insertIndex = resolveQuickRouterInsertIndex();
+  addToSequence('wp' + wp.id, 'waypoint', wp, { insertIndex });
+  quickRouterInsertIndex = insertIndex + 1;
+  setSelectedWaypoint(idx, { scrollWaypoint: true, scrollSequence: true });
+  pulseWaypointHighlight(idx, true);
+  syncQuickRouterUI();
+  showToast(`🛣 Added ${wp.name || `WP ${wp.id}`} to sequence`);
+}
+
+function addQuickRouterAction(actionNode) {
+  if (!quickRouterActive) return;
+  const insertIndex = resolveQuickRouterActionInsertIndex();
+  const added = addToSequence(actionNode, 'action', { type: 'ACTION', node: actionNode }, { insertIndex });
+  quickRouterInsertIndex = insertIndex + 1;
+  if (isQuickRouterConditionalActionId(actionNode)) quickRouterConditionalSeqKey = added?.seqKey || null;
+  closeQuickRouterMenu();
+  syncQuickRouterUI();
+  showToast(`⚡ Inserted ${getSequenceActionLabel(actionNode)} into sequence`);
+}
+
 function createDefaultConditionalCases() {
   return { 0: { name: 'Default', wps: [] } };
 }
@@ -7496,7 +7817,7 @@ function getDraggedSequenceSource(dataTransfer) {
   return { itemId: 'wp' + wp.id, itemType: 'waypoint', itemData: wp };
 }
 
-function addToSequence(itemId, itemType, itemData) {
+function addToSequence(itemId, itemType, itemData, options = {}) {
   const seqKey = nextSequenceKey();
   const seqItem = document.createElement('div');
   seqItem.className = 'seq-item';
@@ -7516,7 +7837,12 @@ function addToSequence(itemId, itemType, itemData) {
   
   const label = document.createElement('span');
   label.className = 'seq-label';
-  label.textContent = `${itemType === 'action' ? '⚡ ' : itemType === 'anchor' ? '📍 ' : '🎯 '}${itemId}`;
+  const displayLabel = itemType === 'action'
+    ? getSequenceActionLabel(itemData?.node || itemId)
+    : itemType === 'anchor'
+      ? (itemData?.anchor_name || itemId)
+      : (itemData?.name || itemId);
+  label.textContent = `${itemType === 'action' ? '⚡ ' : itemType === 'anchor' ? '📍 ' : '🎯 '}${displayLabel}`;
   leftGroup.appendChild(label);
   
   // Create toggle for detect_color and detect_qr EARLY so it's in the header
@@ -7645,12 +7971,17 @@ function addToSequence(itemId, itemType, itemData) {
   const container = document.getElementById('seqList');
   const empty = container.querySelector('.seq-empty');
   if (empty) empty.remove();
-  container.appendChild(seqItem);
+  const insertIndex = clampQuickRouterInsertIndex(typeof options.insertIndex === 'number' ? options.insertIndex : sequence.length);
+  const sequenceItems = [...container.querySelectorAll('.seq-item')];
+  if (insertIndex >= sequenceItems.length) container.appendChild(seqItem);
+  else container.insertBefore(seqItem, sequenceItems[insertIndex]);
   
-  sequence.push({id: itemId, seqKey, type: itemType, data: itemData});
+  sequence.splice(insertIndex, 0, {id: itemId, seqKey, type: itemType, data: itemData});
   syncSelectedSequenceCards();
   syncSequenceOriginCard();
+  syncQuickRouterUI();
   renderMap();
+  return { seqKey, seqItem };
 }
 
 async function removeFromSequence(btn) {
@@ -7658,11 +7989,14 @@ async function removeFromSequence(btn) {
   if (!item) return;
   if (!(await confirmDestructiveAction('Remove this item from the sequence?', { title: 'Remove Sequence Item', confirmLabel: 'Remove' }))) return;
   const idx = sequence.findIndex(s => s.seqKey === item.dataset.seqKey);
+  if (item.dataset.seqKey === quickRouterConditionalSeqKey) quickRouterConditionalSeqKey = null;
   if (idx !== -1) sequence.splice(idx, 1);
   item.remove();
+  if (quickRouterActive) quickRouterInsertIndex = sequence.length;
 
   syncSelectedSequenceCards();
   syncSequenceOriginCard();
+  syncQuickRouterUI();
   renderMap();
 }
 
@@ -8249,21 +8583,26 @@ async function clearSeq() {
   if (!sequence.length) return;
   if (!(await confirmDestructiveAction(`Clear all ${sequence.length} sequence items?`, { title: 'Clear Sequence', confirmLabel: 'Clear All' }))) return;
   sequence = [];
+  quickRouterConditionalSeqKey = null;
+  if (quickRouterActive) quickRouterInsertIndex = 0;
   const list = document.getElementById('seqList');
   list.querySelectorAll('.seq-item').forEach(item => item.remove());
   syncSelectedSequenceCards();
   syncSequenceOriginCard();
+  syncQuickRouterUI();
   renderMap();
 }
 
 function reverseSeq() {
   if (sequence.length < 2) return;
   sequence.reverse();
+  if (quickRouterActive) quickRouterInsertIndex = sequence.length;
   // Rebuild DOM to match reversed order
   const list = document.getElementById('seqList');
   const items = [...list.querySelectorAll('.seq-item')];
   items.reverse().forEach(el => list.appendChild(el));
   syncSelectedSequenceCards();
+  syncQuickRouterUI();
   renderMap();
 }
 
@@ -8337,12 +8676,44 @@ function setupSeqReorderDrop() {
       if (found) newSeq.push(found);
     });
     sequence = newSeq;
+    if (quickRouterActive) quickRouterInsertIndex = sequence.length;
+    syncQuickRouterUI();
     renderMap();
   });
 }
 setupSeqReorderDrop();
 syncSequenceOriginCard();
+syncQuickRouterUI();
 updateWPList();
+
+document.addEventListener('pointerdown', event => {
+  const menu = document.getElementById('quickRouterMenu');
+  const button = document.getElementById('quickRouterBtn');
+  if (!menu || !menu.classList.contains('open')) return;
+  if (menu.contains(event.target) || (button && button.contains(event.target))) return;
+  closeQuickRouterMenu();
+});
+
+document.addEventListener('keydown', event => {
+  const target = event.target;
+  const isTypingTarget = !!target && ((target.tagName && /input|textarea|select/i.test(target.tagName)) || target.isContentEditable);
+  if (event.key === 'Escape') {
+    clearQuickRouterPendingClick();
+    closeQuickRouterMenu();
+  }
+  if (isTypingTarget) return;
+  if (!quickRouterActive) return;
+  if (event.key === 'Delete') {
+    event.preventDefault();
+    clearQuickRouterPendingClick();
+    removeLastQuickRouterNode();
+  }
+});
+
+window.addEventListener('resize', () => {
+  clearQuickRouterPendingClick();
+  closeQuickRouterMenu();
+});
 
 const seqContainer = document.getElementById('seqList');
 if (seqContainer) {
