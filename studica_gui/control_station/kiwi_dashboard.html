@@ -1601,6 +1601,7 @@ let SC=12;                           // scale px/cell
 let originPx=null, settingOrig=false;
 let originYaw=0;                     // degrees — robot facing direction at origin (0=right,90=up,180=left,270=down)
 let originDraftYaw=null;
+let originRepositionActive=false;
 let robot={x:0,y:0,yaw:0};
 let waypoints=[];
 const SEQ_EMPTY_HTML = '<div class="seq-empty" style="color:var(--muted);text-align:center;padding:20px 8px;font-size:11px;">Drag items from<br>WP DATA to arrange<br>execution sequence</div>';
@@ -1636,6 +1637,33 @@ function formatWaypointSummary(wp){
 
 function getActiveOriginYaw(){
   return settingOrig && originDraftYaw !== null ? originDraftYaw : originYaw;
+}
+
+function preserveWaypointsForOriginFrameChange(nextOriginPx, nextOriginYaw) {
+  const preservedSpatialWaypoints = waypoints
+    .filter(wp => isSpatialWaypoint(wp) && !wp.isOrigin)
+    .map(wp => {
+      const mapPoint = odomToMapPixelForOrigin(wp.x_m, wp.y_m, originPx, originYaw);
+      return mapPoint ? {
+        waypoint: wp,
+        mapPoint,
+        mapYaw: odomYawToMapYawForOrigin(wp.yaw_deg, originYaw)
+      } : null;
+    })
+    .filter(Boolean);
+
+  originPx = nextOriginPx;
+  originYaw = nextOriginYaw;
+
+  preservedSpatialWaypoints.forEach(({ waypoint, mapPoint, mapYaw }) => {
+    const odomPoint = mapPixelToOdomForOrigin(mapPoint.x, mapPoint.y, nextOriginPx, nextOriginYaw);
+    if (!odomPoint) return;
+    waypoint.x_m = +odomPoint.x.toFixed(4);
+    waypoint.y_m = +odomPoint.y.toFixed(4);
+    const odomYawDeg = mapYawToOdomYawForOrigin(mapYaw, nextOriginYaw);
+    waypoint.yaw_deg = odomYawDeg;
+    waypoint.yaw_rad = odomYawDeg * Math.PI / 180;
+  });
 }
 
 function upsertOriginWaypoint(){
@@ -2416,44 +2444,72 @@ function renderMap(){
   waypoints.forEach((wp, i)=>{
     if (wp.type === 'ACTION' || wp.type === 'ANCHOR') return;
     wpDisplayNum++;  // Increment counter for spatial waypoints
-    const p=wpToCanvas(wp); if(!p) return;
+    const isEditingWaypoint = wpEditMode && i === wpEditIndex && wpSelectedX !== null && wpSelectedY !== null;
+    const renderX = isEditingWaypoint ? wpSelectedX : wp.x_m;
+    const renderY = isEditingWaypoint ? wpSelectedY : wp.y_m;
+    const renderYawRad = isEditingWaypoint ? wpOrientation : wp.yaw_rad;
+    const renderYawDeg = isEditingWaypoint ? Math.round((renderYawRad * 180 / Math.PI + 360) % 360) : wp.yaw_deg;
+    const p = isEditingWaypoint ? odomToCanvas(renderX, renderY) : wpToCanvas(wp); if(!p) return;
     const isSelected = i === selectedWpIdx;
     const isHighlighted = i === highlightedWpIdx;
     const isOriginWaypoint = !!wp.isOrigin;
     const isInSequence = isOriginWaypoint || usedWaypointIds.has(wp.id);
     const wpOpacity = getSpatialWaypointOpacity(wp, usedWaypointIds);
     const originYaw_rad = originYaw * Math.PI / 180;
-    const screenYaw = originYaw_rad - wp.yaw_rad;
+    const screenYaw = originYaw_rad - renderYawRad;
+    if (isEditingWaypoint && wpDragging) {
+      const originalPoint = wpToCanvas(wp);
+      if (originalPoint) {
+        mctx.save();
+        mctx.globalAlpha = 0.55;
+        mctx.setLineDash([6, 5]);
+        mctx.strokeStyle = 'rgba(77,255,145,.85)';
+        mctx.lineWidth = 2;
+        mctx.beginPath();
+        mctx.moveTo(originalPoint.x, originalPoint.y);
+        mctx.lineTo(p.x, p.y);
+        mctx.stroke();
+        mctx.setLineDash([]);
+        mctx.beginPath();
+        mctx.arc(originalPoint.x, originalPoint.y, 8, 0, Math.PI * 2);
+        mctx.strokeStyle = 'rgba(77,255,145,.45)';
+        mctx.lineWidth = 1.5;
+        mctx.stroke();
+        mctx.restore();
+      }
+    }
     if (isSelected || isHighlighted) {
       mctx.save();
       mctx.globalAlpha = Math.max(0.12, wpOpacity);
       mctx.beginPath();
-      mctx.arc(p.x, p.y, isSelected ? 18 : 15, 0, Math.PI * 2);
-      mctx.strokeStyle = isSelected ? 'rgba(0,212,255,.95)' : 'rgba(77,255,145,.95)';
+      mctx.arc(p.x, p.y, isEditingWaypoint && wpDragging ? 22 : (isSelected ? 18 : 15), 0, Math.PI * 2);
+      mctx.strokeStyle = isEditingWaypoint
+        ? 'rgba(77,255,145,.98)'
+        : (isSelected ? 'rgba(0,212,255,.95)' : 'rgba(77,255,145,.95)');
       mctx.lineWidth = isSelected ? 3 : 2.5;
       mctx.stroke();
       mctx.restore();
     }
     mctx.save();
-    mctx.globalAlpha = wpOpacity;
+    mctx.globalAlpha = isEditingWaypoint ? 1 : wpOpacity;
     drawTriangle(
       mctx,
       p.x,
       p.y,
       screenYaw,
       SC*.7,
-      isOriginWaypoint ? '#ff6b35' : (isSelected ? '#00d4ff' : (isInSequence ? '#5fbaff' : '#aeb8c4')),
-      { fillAlpha: isOriginWaypoint ? 1 : (isSelected ? 0.34 : (isInSequence ? 0.28 : 0.3)) }
+      isOriginWaypoint ? '#ff6b35' : (isEditingWaypoint ? '#4dff91' : (isSelected ? '#00d4ff' : (isInSequence ? '#5fbaff' : '#aeb8c4'))),
+      { fillAlpha: isOriginWaypoint ? 1 : (isEditingWaypoint ? 0.46 : (isSelected ? 0.34 : (isInSequence ? 0.28 : 0.3))) }
     );
     mctx.restore();
     // Draw WP DATA number (matching the list display numbering)
     mctx.save();
-    mctx.globalAlpha = Math.max(0.02, wpOpacity);
+    mctx.globalAlpha = isEditingWaypoint ? 1 : Math.max(0.02, wpOpacity);
     mctx.beginPath();
     mctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
     mctx.fillStyle = isOriginWaypoint
       ? 'rgba(255,107,53,0.92)'
-      : 'rgba(77,255,145,0.92)';
+      : (isEditingWaypoint ? 'rgba(77,255,145,0.98)' : 'rgba(77,255,145,0.92)');
     mctx.fill();
     mctx.strokeStyle = isOriginWaypoint ? '#ffd2c2' : '#d8ffe8';
     mctx.lineWidth = 1.5;
@@ -2466,16 +2522,16 @@ function renderMap(){
     mctx.restore();
     if (dashboardShowWaypointLabels) {
       mctx.save(); mctx.font='8px Courier New';
-      mctx.globalAlpha = getWaypointLabelOpacity();
-      const lbl=`(${wp.x_m.toFixed(2)},${wp.y_m.toFixed(2)})`, tw=mctx.measureText(lbl).width;
+      mctx.globalAlpha = isEditingWaypoint ? 1 : getWaypointLabelOpacity();
+      const lbl=`(${renderX.toFixed(2)},${renderY.toFixed(2)})`, tw=mctx.measureText(lbl).width;
       mctx.fillStyle='rgba(10,14,23,.85)'; mctx.fillRect(p.x+14,p.y-15,tw+4,11);
-      mctx.fillStyle='#00d4ff'; mctx.textAlign='left'; mctx.textBaseline='alphabetic'; mctx.fillText(lbl,p.x+16,p.y-6); mctx.restore();
+      mctx.fillStyle=isEditingWaypoint ? '#4dff91' : '#00d4ff'; mctx.textAlign='left'; mctx.textBaseline='alphabetic'; mctx.fillText(lbl,p.x+16,p.y-6); mctx.restore();
     } else {
       mctx.save(); mctx.font='8px Courier New';
-      mctx.globalAlpha = getWaypointLabelOpacity();
-      const lbl=`(${wp.x_m.toFixed(2)},${wp.y_m.toFixed(2)})`, tw=mctx.measureText(lbl).width;
+      mctx.globalAlpha = isEditingWaypoint ? 1 : getWaypointLabelOpacity();
+      const lbl=`(${renderX.toFixed(2)},${renderY.toFixed(2)})`, tw=mctx.measureText(lbl).width;
       mctx.fillStyle='rgba(10,14,23,.78)'; mctx.fillRect(p.x+14,p.y-15,tw+4,11);
-      mctx.fillStyle='#8aa6bd'; mctx.textAlign='left'; mctx.textBaseline='alphabetic'; mctx.fillText(lbl,p.x+16,p.y-6); mctx.restore();
+      mctx.fillStyle=isEditingWaypoint ? '#4dff91' : '#8aa6bd'; mctx.textAlign='left'; mctx.textBaseline='alphabetic'; mctx.fillText(lbl,p.x+16,p.y-6); mctx.restore();
     }
   });
 
@@ -2587,7 +2643,8 @@ function renderMap(){
   });
 
   const selectedWaypoint = getSelectedWaypoint();
-  if (selectedWaypoint && isSpatialWaypoint(selectedWaypoint)) {
+  const selectedWaypointIsBeingEdited = wpEditMode && selectedWpIdx === wpEditIndex && wpSelectedX !== null && wpSelectedY !== null;
+  if (selectedWaypoint && isSpatialWaypoint(selectedWaypoint) && !selectedWaypointIsBeingEdited) {
     drawWaypointSelectionOverlay(selectedWaypoint, 'rgba(0,212,255,.98)', 20, 3.2);
     if (selectedWaypoint.isOrigin) {
       drawSelectedOriginOverlay();
@@ -2596,7 +2653,7 @@ function renderMap(){
 
   if (Number.isInteger(highlightedWpIdx) && highlightedWpIdx >= 0 && highlightedWpIdx < waypoints.length) {
     const highlightedWaypoint = waypoints[highlightedWpIdx];
-    if (isSpatialWaypoint(highlightedWaypoint)) {
+    if (isSpatialWaypoint(highlightedWaypoint) && !(wpEditMode && highlightedWpIdx === wpEditIndex && wpSelectedX !== null && wpSelectedY !== null)) {
       drawWaypointSelectionOverlay(highlightedWaypoint, 'rgba(77,255,145,.96)', selectedWaypoint === highlightedWaypoint ? 24 : 17, selectedWaypoint === highlightedWaypoint ? 2.4 : 2.8);
     }
   }
@@ -2717,8 +2774,8 @@ function drawSmallTriangle(ctx, cx, cy, yaw, sz, col) {
     }
   }
   
-  // Draw robot model at cursor during waypoint mode (hover or selected)
-  if(wpMapClickActive && (wpHoverX !== null || wpSelectedX !== null)){
+  // Draw robot model at cursor during waypoint add mode (hover or selected)
+  if(wpMapClickActive && !wpEditMode && (wpHoverX !== null || wpSelectedX !== null)){
     const displayX = wpSelectedX !== null ? wpSelectedX : wpHoverX;
     const displayY = wpSelectedY !== null ? wpSelectedY : wpHoverY;
     const wp = odomToCanvas(displayX, displayY);
@@ -2742,6 +2799,26 @@ function drawSmallTriangle(ctx, cx, cy, yaw, sz, col) {
     const px = dispPixelX * SC + SC/2;
     const py = dispPixelY * SC + SC/2;
     const color = selectedMarkerPixelX !== null ? '#ff9900' : '#ff6b35';  // brighter if selected
+    if (originDragging && originPx) {
+      const originBaseX = originPx.x * SC + SC / 2;
+      const originBaseY = originPx.y * SC + SC / 2;
+      mctx.save();
+      mctx.globalAlpha = 0.65;
+      mctx.setLineDash([6, 5]);
+      mctx.strokeStyle = 'rgba(255,153,0,.92)';
+      mctx.lineWidth = 2;
+      mctx.beginPath();
+      mctx.moveTo(originBaseX, originBaseY);
+      mctx.lineTo(px, py);
+      mctx.stroke();
+      mctx.setLineDash([]);
+      mctx.beginPath();
+      mctx.arc(originBaseX, originBaseY, 8, 0, Math.PI * 2);
+      mctx.strokeStyle = 'rgba(255,153,0,.4)';
+      mctx.lineWidth = 1.5;
+      mctx.stroke();
+      mctx.restore();
+    }
     // Origin itself faces originYaw direction on screen (screen heading = originYaw)
     const screenYaw = getActiveOriginYaw() * Math.PI / 180;
     drawTriangle(mctx, px, py, screenYaw, SC*.85, color, { fillAlpha: 1 });
@@ -2940,6 +3017,7 @@ function toggleOrigin(){
   if(!settingOrig && dashboardMeasureMode) clearDashboardMeasure(false);
   settingOrig=!settingOrig;
   originDraftYaw = settingOrig ? originYaw : null;
+  originRepositionActive = !!(settingOrig && originPx);
   const btn=document.getElementById('origBtn');
   btn.classList.toggle('on',settingOrig);
   btn.textContent=settingOrig?'⏳ Click on the map to set origin…'
@@ -2954,8 +3032,13 @@ mapCanvas.addEventListener('click',e=>{
     return;
   }
   if(!settingOrig||!mapW) return;
-  const r=mapCanvas.getBoundingClientRect();
-  const mx=Math.floor((e.clientX-r.left)/SC), my=Math.floor((e.clientY-r.top)/SC);
+  if (originSuppressNextClick) {
+    originSuppressNextClick = false;
+    return;
+  }
+  const pointer = getDashboardCanvasPointer(e);
+  if (!pointer) return;
+  const mx = Math.floor(pointer.canvasX / SC), my = Math.floor(pointer.canvasY / SC);
   if(mx<0||mx>=mapW||my<0||my>=mapH) return;
   
   // Set the origin marker at clicked position
@@ -2970,7 +3053,11 @@ function setOriginYaw(deg, options = {}){
   const shouldCommit = options.commit !== false;
   const normalizedDeg = ((deg % 360) + 360) % 360;
   if (shouldCommit) {
-    originYaw = normalizedDeg;
+    if (originPx) {
+      preserveWaypointsForOriginFrameChange(originPx, normalizedDeg);
+    } else {
+      originYaw = normalizedDeg;
+    }
     originDraftYaw = null;
   } else {
     originDraftYaw = normalizedDeg;
@@ -3000,25 +3087,16 @@ function confirmOrigin(){
     return;
   }
 
+  const shouldEnterWaypointMode = !originRepositionActive;
+
   const nextOriginPx = {x: Math.round(selectedMarkerPixelX), y: Math.round(selectedMarkerPixelY)};
   const nextOriginYaw = originDraftYaw !== null ? originDraftYaw : originYaw;
-  const preservedSpatialWaypoints = waypoints
-    .filter(wp => isSpatialWaypoint(wp) && !wp.isOrigin)
-    .map(wp => {
-      const mapPoint = odomToMapPixelForOrigin(wp.x_m, wp.y_m, originPx, originYaw);
-      return mapPoint ? {
-        waypoint: wp,
-        mapPoint,
-        mapYaw: odomYawToMapYawForOrigin(wp.yaw_deg, originYaw)
-      } : null;
-    })
-    .filter(Boolean);
   
   // Use pixel coordinates directly as origin
-  originPx = nextOriginPx;
-  originYaw = nextOriginYaw;
+  preserveWaypointsForOriginFrameChange(nextOriginPx, nextOriginYaw);
   settingOrig = false;
   originDraftYaw = null;
+  originRepositionActive = false;
   selectedMarkerPixelX = null;
   selectedMarkerPixelY = null;
   hoverPixelX = null;
@@ -3029,28 +3107,20 @@ function confirmOrigin(){
   btn.textContent='🎯 Reset Origin';
   document.getElementById('origOrient').style.display='block';
 
-  preservedSpatialWaypoints.forEach(({ waypoint, mapPoint, mapYaw }) => {
-    const odomPoint = mapPixelToOdomForOrigin(mapPoint.x, mapPoint.y, originPx, originYaw);
-    if (!odomPoint) return;
-    waypoint.x_m = +odomPoint.x.toFixed(4);
-    waypoint.y_m = +odomPoint.y.toFixed(4);
-    const odomYawDeg = mapYawToOdomYawForOrigin(mapYaw, originYaw);
-    waypoint.yaw_deg = odomYawDeg;
-    waypoint.yaw_rad = odomYawDeg * Math.PI / 180;
-  });
-
   upsertOriginWaypoint();
   updateWPList();
   renderMap();
   showToast('✅ Origin saved at pixel('+originPx.x+','+originPx.y+')');
   
-  // Automatically open waypoint mode after origin is set
-  selectWaypointMode();
+  if (shouldEnterWaypointMode) {
+    selectWaypointMode();
+  }
 }
 
 function cancelOrigin(){
   settingOrig = false;
   originDraftYaw = null;
+  originRepositionActive = false;
   selectedMarkerPixelX = null;
   selectedMarkerPixelY = null;
   const btn=document.getElementById('origBtn');
@@ -3245,6 +3315,10 @@ let selectedMarkerY = null;
 let selectedMarkerYaw = 0;
 let selectedMarkerPixelX = null;  // temp marker position in pixel coords (for origin setting)
 let selectedMarkerPixelY = null;
+let originDragging = false;
+let originDragMoved = false;
+let originSuppressNextClick = false;
+let originDragStartPointer = null;
 
 window.addEventListener('keydown', e=>{
   const key = e.key.toLowerCase();
@@ -3742,6 +3816,7 @@ function beginOriginReposition(options = {}) {
   clearWaypointInteractionState();
   settingOrig = true;
   originDraftYaw = originYaw;
+  originRepositionActive = true;
   selectedMarkerPixelX = originPx.x;
   selectedMarkerPixelY = originPx.y;
   hoverPixelX = originPx.x;
@@ -4613,6 +4688,9 @@ let hoverPixelX = null, hoverPixelY = null;  // cursor hover position in pixel c
 let wpEditMode = false;
 let wpEditIndex = -1;  // index of waypoint being edited
 let wpDragging = false;  // is user dragging the waypoint?
+let wpDragMoved = false;
+let wpSuppressNextClick = false;
+let wpDragStartPointer = null;
 
 // Mouse move for waypoint preview
 mapCanvas.addEventListener('mousemove', e=>{
@@ -4649,6 +4727,10 @@ mapCanvas.addEventListener('mousemove', e=>{
       if(wpEditMode && wpDragging){
         wpSelectedX = pos.x;
         wpSelectedY = pos.y;
+        if (wpDragStartPointer) {
+          const dragDistance = Math.hypot(pointer.canvasX - wpDragStartPointer.x, pointer.canvasY - wpDragStartPointer.y);
+          if (dragDistance > 4) wpDragMoved = true;
+        }
         updateWaypointDisplay();
       }
       renderMap();
@@ -4659,6 +4741,14 @@ mapCanvas.addEventListener('mousemove', e=>{
   if(settingOrig){
     hoverPixelX = px;
     hoverPixelY = py;
+    if (originDragging) {
+      selectedMarkerPixelX = px;
+      selectedMarkerPixelY = py;
+      if (originDragStartPointer) {
+        const dragDistance = Math.hypot(pointer.canvasX - originDragStartPointer.x, pointer.canvasY - originDragStartPointer.y);
+        if (dragDistance > 4) originDragMoved = true;
+      }
+    }
     renderMap();
   }
 });
@@ -4672,6 +4762,9 @@ mapCanvas.addEventListener('mouseleave', e=>{
   if (!dashboardMeasureDragging) dashboardMeasureHover = null;
   updateDashboardMeasureUI();
   wpDragging = false;  // Stop dragging if mouse leaves canvas
+  wpDragStartPointer = null;
+  originDragging = false;
+  originDragStartPointer = null;
   renderMap();
 });
 
@@ -4691,22 +4784,36 @@ mapCanvas.addEventListener('mousedown', e=>{
     e.preventDefault();
     return;
   }
+  if (settingOrig && selectedMarkerPixelX !== null && selectedMarkerPixelY !== null) {
+    const pointer = getDashboardCanvasPointer(e);
+    if (!pointer) return;
+    const markerX = selectedMarkerPixelX * SC + SC / 2;
+    const markerY = selectedMarkerPixelY * SC + SC / 2;
+    const dist = Math.hypot(pointer.canvasX - markerX, pointer.canvasY - markerY);
+    if (dist < 50) {
+      originDragging = true;
+      originDragMoved = false;
+      originDragStartPointer = { x: pointer.canvasX, y: pointer.canvasY };
+      mapCanvas.style.cursor = 'grabbing';
+      e.preventDefault();
+      return;
+    }
+  }
   if(!wpMapClickActive || !wpEditMode) return;
   if(wpSelectedX === null) return;
-  
-  const r = mapCanvas.getBoundingClientRect();
-  const cssScaleX = mapCanvas.width / r.width;
-  const cssScaleY = mapCanvas.height / r.height;
-  const clickX = (e.clientX - r.left) * cssScaleX;
-  const clickY = (e.clientY - r.top) * cssScaleY;
+  const pointer = getDashboardCanvasPointer(e);
+  if (!pointer) return;
   
   // Check if clicking on the robot model
   const wp = odomToCanvas(wpSelectedX, wpSelectedY);
   if(wp){
-    const dist = Math.sqrt(Math.pow(clickX - wp.x, 2) + Math.pow(clickY - wp.y, 2));
+    const dist = Math.sqrt(Math.pow(pointer.canvasX - wp.x, 2) + Math.pow(pointer.canvasY - wp.y, 2));
     if(dist < 50){  // Within robot model area
       wpDragging = true;
+      wpDragMoved = false;
+      wpDragStartPointer = { x: pointer.canvasX, y: pointer.canvasY };
       mapCanvas.style.cursor = 'grabbing';
+      e.preventDefault();
     }
   }
 });
@@ -4721,8 +4828,17 @@ mapCanvas.addEventListener('mouseup', e=>{
     finalizeDashboardMeasure(e);
     return;
   }
+  if(originDragging){
+    if (originDragMoved) originSuppressNextClick = true;
+    originDragging = false;
+    originDragStartPointer = null;
+    mapCanvas.style.cursor = settingOrig ? 'crosshair' : (wpMapClickActive ? 'crosshair' : 'default');
+    return;
+  }
   if(wpDragging){
+    if (wpDragMoved) wpSuppressNextClick = true;
     wpDragging = false;
+    wpDragStartPointer = null;
     mapCanvas.style.cursor = wpMapClickActive ? 'crosshair' : 'default';
   }
 });
@@ -4731,9 +4847,15 @@ mapCanvas.addEventListener('click', e=>{
   if (shouldSuppressMapCanvasClick()) return;
   if (dashboardMeasureMode) return;
   if(!wpMapClickActive) return;
-  const r = mapCanvas.getBoundingClientRect();
-  const px = Math.floor((e.clientX - r.left) / SC);
-  const py = Math.floor((e.clientY - r.top) / SC);
+  if (wpSuppressNextClick) {
+    wpSuppressNextClick = false;
+    return;
+  }
+
+  const pointer = getDashboardCanvasPointer(e);
+  if (!pointer) return;
+  const px = Math.floor(pointer.canvasX / SC);
+  const py = Math.floor(pointer.canvasY / SC);
   if(px < 0 || px >= mapW || py < 0 || py >= mapH) return;
   
   // Convert pixel to odom coordinates
@@ -4743,7 +4865,9 @@ mapCanvas.addEventListener('click', e=>{
     wpSelectedY = pos.y;
     updateWaypointDisplay();
     renderMap();  // Show the selected waypoint on map immediately
-    showToast(`Position set: ${pos.x.toFixed(2)}, ${pos.y.toFixed(2)} — use arrows for orientation`);
+    showToast(wpEditMode
+      ? `Waypoint moved to ${pos.x.toFixed(2)}, ${pos.y.toFixed(2)} — drag or use arrows, ENTER to save`
+      : `Position set: ${pos.x.toFixed(2)}, ${pos.y.toFixed(2)} — use arrows for orientation`);
   }
 });
 
@@ -4754,7 +4878,6 @@ mapCanvas.addEventListener('dblclick', e=>{
   // Allow edit in simEditMode (paused visualization) or normal mode
   if(settingOrig) return;  // Don't allow edit while setting origin
   if(wpMapClickActive && !wpEditMode && !simEditMode) return;  // Keep add mode protected, but allow switching while editing
-  
   const r = mapCanvas.getBoundingClientRect();
   // Use the same coordinate system as single click but without dividing by SC
   const clickX = e.clientX - r.left;
