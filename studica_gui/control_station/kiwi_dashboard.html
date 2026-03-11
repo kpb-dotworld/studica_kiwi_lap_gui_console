@@ -190,6 +190,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:3px;}
 .wp-item{display:flex;align-items:center;gap:8px;padding:7px 10px;margin-bottom:5px;background:var(--panel2);border:1px solid var(--border);border-radius:4px;font-size:.95em;}
 .wp-item.is-selected{border-color:rgba(0,212,255,.7);background:linear-gradient(180deg,rgba(0,212,255,.18),rgba(0,212,255,.08));box-shadow:0 0 0 1px rgba(0,212,255,.14) inset,0 0 18px rgba(0,212,255,.12);}
 .wp-item.is-editing{border-color:rgba(77,255,145,.7);box-shadow:0 0 0 1px rgba(77,255,145,.16) inset,0 0 22px rgba(77,255,145,.14);}
+.wp-item.is-hovering{border-color:rgba(184,198,212,.8);background:linear-gradient(180deg,rgba(184,198,212,.18),rgba(113,129,148,.08));box-shadow:0 0 0 1px rgba(184,198,212,.14) inset,0 0 18px rgba(148,164,181,.12);}
 .wp-num{width:22px;height:22px;border-radius:50%;background:var(--green);color:#000;font-size:.9em;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 
 .wp-sidebar{width:260px;min-width:220px;max-width:320px;background:var(--panel2);display:flex;flex-direction:column;gap:0;box-shadow:1px 0 0 var(--border);min-height:0;}
@@ -2660,6 +2661,28 @@ function renderMap(){
     mctx.restore();
   }
 
+  if (quickRouterActive && quickRouterPointerCanvasX !== null && quickRouterPointerCanvasY !== null) {
+    const previewAnchor = getQuickRouterPreviewAnchorWaypoint();
+    const anchorPoint = previewAnchor ? wpToCanvas(previewAnchor) : null;
+    if (anchorPoint) {
+      mctx.save();
+      mctx.globalAlpha = 0.9;
+      mctx.setLineDash([10, 6]);
+      mctx.strokeStyle = 'rgba(82,92,104,.98)';
+      mctx.lineWidth = 2;
+      mctx.beginPath();
+      mctx.moveTo(anchorPoint.x, anchorPoint.y);
+      mctx.lineTo(quickRouterPointerCanvasX, quickRouterPointerCanvasY);
+      mctx.stroke();
+      mctx.setLineDash([]);
+      mctx.beginPath();
+      mctx.arc(quickRouterPointerCanvasX, quickRouterPointerCanvasY, 5, 0, Math.PI * 2);
+      mctx.fillStyle = 'rgba(82,92,104,.98)';
+      mctx.fill();
+      mctx.restore();
+    }
+  }
+
   // Numbered circles for sequence waypoints only
   _seqRouteNodes.forEach((routeNode, i)=>{
     const wp = routeNode.waypoint;
@@ -3761,6 +3784,7 @@ function syncSelectedWaypointCard(scrollIntoView = false) {
     const idx = Number(card.dataset.idx);
     card.classList.toggle('is-selected', idx === selectedWpIdx);
     card.classList.toggle('is-editing', idx === wpEditIndex);
+    card.classList.toggle('is-hovering', idx === quickRouterHoverIdx);
   });
 
   if (scrollIntoView && selectedWpIdx !== null) {
@@ -4780,12 +4804,14 @@ let wpDragStartPointer = null;
 // Mouse move for waypoint preview
 mapCanvas.addEventListener('mousemove', e=>{
   if (dashboardPanState.active) return;
-  const quickRouterHoverActive = quickRouterActive && !wpMapClickActive && !settingOrig && !dashboardMeasureMode;
+  const quickRouterHoverActive = quickRouterActive && !settingOrig && !dashboardMeasureMode;
   if(!wpMapClickActive && !settingOrig && !dashboardMeasureMode && !quickRouterHoverActive) return;
   const pointer = getDashboardCanvasPointer(e);
   if(!pointer) {
     wpHoverX = null;
     wpHoverY = null;
+    quickRouterPointerCanvasX = null;
+    quickRouterPointerCanvasY = null;
     if (quickRouterHoverIdx !== -1) {
       quickRouterHoverIdx = -1;
       syncQuickRouterUI();
@@ -4808,11 +4834,19 @@ mapCanvas.addEventListener('mousemove', e=>{
   }
 
   if (quickRouterHoverActive) {
+    const prevPointerX = quickRouterPointerCanvasX;
+    const prevPointerY = quickRouterPointerCanvasY;
+    const prevHoverIdx = quickRouterHoverIdx;
+    quickRouterPointerCanvasX = pointer.canvasX;
+    quickRouterPointerCanvasY = pointer.canvasY;
     const hoverIdx = findSpatialWaypointAtCanvasPoint(pointer.canvasX, pointer.canvasY, 44);
     const nextHoverIdx = hoverIdx !== -1 && isSpatialWaypoint(waypoints[hoverIdx]) && !waypoints[hoverIdx].isOrigin ? hoverIdx : -1;
     if (nextHoverIdx !== quickRouterHoverIdx) {
       quickRouterHoverIdx = nextHoverIdx;
       syncQuickRouterUI();
+      syncSelectedWaypointCard(false);
+    }
+    if (prevHoverIdx !== quickRouterHoverIdx || prevPointerX !== quickRouterPointerCanvasX || prevPointerY !== quickRouterPointerCanvasY) {
       renderMap();
     }
   }
@@ -4859,9 +4893,12 @@ mapCanvas.addEventListener('mouseleave', e=>{
   wpHoverY = null;
   hoverPixelX = null;
   hoverPixelY = null;
+  quickRouterPointerCanvasX = null;
+  quickRouterPointerCanvasY = null;
   if (quickRouterHoverIdx !== -1) {
     quickRouterHoverIdx = -1;
     syncQuickRouterUI();
+    syncSelectedWaypointCard(false);
   }
   if (!dashboardMeasureDragging) dashboardMeasureHover = null;
   updateDashboardMeasureUI();
@@ -4958,6 +4995,14 @@ mapCanvas.addEventListener('click', e=>{
 
   const pointer = getDashboardCanvasPointer(e);
   if (!pointer) return;
+  if (quickRouterActive) {
+    const existingWpIdx = findSpatialWaypointAtCanvasPoint(pointer.canvasX, pointer.canvasY, 44);
+    if (existingWpIdx !== -1 && isSpatialWaypoint(waypoints[existingWpIdx]) && !waypoints[existingWpIdx].isOrigin) {
+      closeQuickRouterMenu();
+      queueQuickRouterWaypointAdd(existingWpIdx);
+      return;
+    }
+  }
   const px = Math.floor(pointer.canvasX / SC);
   const py = Math.floor(pointer.canvasY / SC);
   if(px < 0 || px >= mapW || py < 0 || py >= mapH) return;
@@ -5056,7 +5101,8 @@ function findSpatialWaypointAtCanvasPoint(canvasX, canvasY, maxDistance = 40) {
 mapCanvas.addEventListener('click', e=>{
   if (shouldSuppressMapCanvasClick()) return;
   if (dashboardMeasureMode) return;
-  if (settingOrig || wpMapClickActive || !mapW || !mapH) return;
+  if (settingOrig || !mapW || !mapH) return;
+  if (wpMapClickActive) return;
 
   const r = mapCanvas.getBoundingClientRect();
   const cssScaleX = mapCanvas.width / r.width;
@@ -5090,18 +5136,29 @@ mapCanvas.addEventListener('contextmenu', e => {
 });
 
 mapCanvas.addEventListener('contextmenu', e => {
-  if (!quickRouterActive || dashboardMeasureMode || settingOrig || wpMapClickActive) return;
+  if (!quickRouterActive || dashboardMeasureMode || settingOrig) return;
   const pointer = getDashboardCanvasPointer(e);
   if (!pointer) return;
 
   const idx = findSpatialWaypointAtCanvasPoint(pointer.canvasX, pointer.canvasY, 44);
   if (idx === -1 || !isSpatialWaypoint(waypoints[idx]) || waypoints[idx].isOrigin) {
+    e.preventDefault();
+    clearQuickRouterPendingClick();
     closeQuickRouterMenu();
+    toggleQuickRouter(false);
     return;
   }
 
   e.preventDefault();
+  e.stopImmediatePropagation();
+  clearQuickRouterPendingClick();
+  const shouldAddWaypoint = !isQuickRouterEndpointWaypoint(idx);
+  if (shouldAddWaypoint) {
+    addQuickRouterWaypoint(idx);
+  }
   quickRouterHoverIdx = idx;
+  setSelectedWaypoint(idx, { scrollWaypoint: true, scrollSequence: true });
+  pulseWaypointHighlight(idx, true);
   syncQuickRouterUI();
   openQuickRouterMenu(e.clientX, e.clientY, idx);
 });
@@ -7438,6 +7495,8 @@ let quickRouterInsertIndex = null;
 let quickRouterMenuWaypointIdx = -1;
 let quickRouterConditionalSeqKey = null;
 let quickRouterClickTimer = null;
+let quickRouterPointerCanvasX = null;
+let quickRouterPointerCanvasY = null;
 
 function getSequencePanelWidthLimits() {
   const viewportWidth = window.innerWidth || 1280;
@@ -7539,6 +7598,29 @@ function clearQuickRouterPendingClick() {
   }
 }
 
+function getQuickRouterPreviewAnchorWaypoint() {
+  const routeNodes = getActiveSequenceRouteNodes();
+  if (routeNodes.length) return routeNodes[routeNodes.length - 1].waypoint;
+  return getOriginWaypoint();
+}
+
+function getQuickRouterLastWaypointInfo() {
+  for (let idx = sequence.length - 1; idx >= 0; idx--) {
+    const seqEntry = sequence[idx];
+    if (seqEntry?.type === 'waypoint' && isSpatialWaypoint(seqEntry.data)) {
+      return { index: idx, waypoint: seqEntry.data };
+    }
+  }
+  return null;
+}
+
+function isQuickRouterEndpointWaypoint(idx) {
+  const wp = waypoints[idx];
+  if (!isSpatialWaypoint(wp) || wp.isOrigin) return false;
+  const lastWaypointInfo = getQuickRouterLastWaypointInfo();
+  return !!lastWaypointInfo && lastWaypointInfo.waypoint?.id === wp.id;
+}
+
 function getQuickRouterConditionalTarget() {
   const seqKeyCandidates = [];
   if (quickRouterConditionalSeqKey) seqKeyCandidates.push(quickRouterConditionalSeqKey);
@@ -7627,7 +7709,9 @@ function resolveQuickRouterActionInsertIndex() {
     for (let idx = sequence.length - 1; idx >= 0; idx--) {
       const seqEntry = sequence[idx];
       if (seqEntry?.type === 'waypoint' && seqEntry.data?.id === waypointId) {
-        return idx + 1;
+        let insertIdx = idx + 1;
+        while (insertIdx < sequence.length && sequence[insertIdx]?.type === 'action') insertIdx += 1;
+        return insertIdx;
       }
     }
   }
@@ -7650,7 +7734,9 @@ function syncQuickRouterUI() {
       status.textContent = 'Left click map waypoints to append the route. Right click a waypoint to insert an action.';
     } else if (quickRouterHoverIdx !== -1 && isSpatialWaypoint(waypoints[quickRouterHoverIdx])) {
       const wp = waypoints[quickRouterHoverIdx];
-      status.textContent = `${wp.name || `WP ${wp.id}`} ready. Left click adds it. Right click inserts an action after it.`;
+      status.textContent = isQuickRouterEndpointWaypoint(quickRouterHoverIdx)
+        ? `${wp.name || `WP ${wp.id}`} is the route endpoint. Right click opens actions here.`
+        : `${wp.name || `WP ${wp.id}`} ready. Left click adds it. Right click routes here and opens actions.`;
     } else {
       status.textContent = 'Hover a waypoint on the map, left click to append it, right click to insert an action.';
     }
@@ -7700,13 +7786,14 @@ function toggleQuickRouter(forceValue = null) {
     return;
   }
 
-  if (wpMapClickActive) cancelWaypointInteraction();
   if (dashboardMeasureMode) clearDashboardMeasure(false);
 
   const nextState = typeof forceValue === 'boolean' ? forceValue : !quickRouterActive;
   quickRouterActive = nextState;
   quickRouterHoverIdx = -1;
   quickRouterInsertIndex = nextState ? sequence.length : null;
+  quickRouterPointerCanvasX = null;
+  quickRouterPointerCanvasY = null;
   if (!nextState) {
     quickRouterConditionalSeqKey = null;
     clearQuickRouterPendingClick();
@@ -7720,6 +7807,7 @@ function toggleQuickRouter(forceValue = null) {
   }
 
   syncQuickRouterUI();
+  syncSelectedWaypointCard(false);
   renderMap();
 }
 
@@ -8700,6 +8788,7 @@ document.addEventListener('keydown', event => {
   if (event.key === 'Escape') {
     clearQuickRouterPendingClick();
     closeQuickRouterMenu();
+    if (quickRouterActive) toggleQuickRouter(false);
   }
   if (isTypingTarget) return;
   if (!quickRouterActive) return;
