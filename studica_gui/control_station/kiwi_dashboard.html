@@ -3789,6 +3789,10 @@ function handleQKeyPress() {
     return;
   }
 
+  if (quickRouterActive) {
+    toggleQuickRouter(false);
+  }
+
   selectWaypointMode();
 }
 
@@ -7804,6 +7808,11 @@ function toggleQuickRouter(forceValue = null) {
   if (dashboardMeasureMode) clearDashboardMeasure(false);
 
   const nextState = typeof forceValue === 'boolean' ? forceValue : !quickRouterActive;
+
+  if (nextState && wpMapClickActive) {
+    closeAddWP();
+  }
+
   quickRouterActive = nextState;
   quickRouterHoverIdx = -1;
   quickRouterInsertIndex = nextState ? sequence.length : null;
