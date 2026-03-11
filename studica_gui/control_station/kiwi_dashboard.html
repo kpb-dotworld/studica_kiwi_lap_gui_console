@@ -3688,9 +3688,47 @@ function pulseWaypointHighlight(idx, scrollIntoView = false) {
   renderMap();
 }
 
+function beginOriginReposition(options = {}) {
+  const scrollIntoView = options.scrollIntoView !== false;
+  const originIdx = getOriginWaypointIndex();
+
+  if (!originPx) {
+    toggleOrigin();
+    return;
+  }
+
+  if (dashboardMeasureMode) clearDashboardMeasure(false);
+
+  clearWaypointInteractionState();
+  settingOrig = true;
+  selectedMarkerPixelX = originPx.x;
+  selectedMarkerPixelY = originPx.y;
+  hoverPixelX = originPx.x;
+  hoverPixelY = originPx.y;
+  mapCanvas.style.cursor = 'crosshair';
+
+  if (originIdx !== -1) {
+    setSelectedWaypoint(originIdx, { scrollWaypoint: scrollIntoView, scrollSequence: scrollIntoView });
+    pulseWaypointHighlight(originIdx, scrollIntoView);
+  }
+
+  const btn = document.getElementById('origBtn');
+  if (btn) {
+    btn.classList.add('on');
+    btn.textContent = '⏳ Click on the map to set origin…';
+  }
+
+  renderMap();
+  showToast('🎯 Reposition origin — click map, use IJKL to nudge, arrows to rotate, ENTER to save');
+}
+
 function beginWaypointEdit(idx, options = {}) {
   const wp = waypoints[idx];
   if (!isSpatialWaypoint(wp)) return;
+  if (wp.isOrigin) {
+    beginOriginReposition(options);
+    return;
+  }
 
   const scrollIntoView = options.scrollIntoView !== false;
   wpEditMode = true;
@@ -3725,6 +3763,10 @@ function clearWaypointInteractionState() {
 function selectWaypointFromList(idx) {
   if (!isSpatialWaypoint(waypoints[idx])) return;
   expandSidebarSection('waypoints');
+  if (waypoints[idx].isOrigin) {
+    beginOriginReposition({ scrollIntoView: true });
+    return;
+  }
   beginWaypointEdit(idx, { scrollIntoView: true });
 }
 
@@ -4699,6 +4741,10 @@ mapCanvas.addEventListener('dblclick', e=>{
     console.log('[DBLCLICK] Distance to WP', i, ':', dist.toFixed(1));
     if(dist < 40){
       expandSidebarSection('waypoints');
+      if (wp.isOrigin) {
+        beginOriginReposition({ scrollIntoView: true });
+        return;
+      }
       beginWaypointEdit(i, { scrollIntoView: true });
       return;
     }
@@ -4872,6 +4918,12 @@ function confirmWPEdit(){
   if(wpEditIndex < 0 || wpEditIndex >= waypoints.length) {
     showToast('❌ Invalid waypoint index');
     cancelWPEdit();
+    return;
+  }
+
+  if (waypoints[wpEditIndex]?.isOrigin) {
+    cancelWPEdit();
+    beginOriginReposition({ scrollIntoView: true });
     return;
   }
   
