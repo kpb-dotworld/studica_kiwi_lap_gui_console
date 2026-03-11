@@ -391,6 +391,11 @@ body.is-resizing-sequence,body.is-resizing-sequence *{cursor:col-resize !importa
 .seq-item.is-selected{border-color:rgba(0,212,255,.78);background:linear-gradient(180deg,rgba(0,212,255,.16),rgba(10,18,28,.96));box-shadow:0 0 0 1px rgba(0,212,255,.14) inset,0 0 20px rgba(0,212,255,.12);}
 .seq-item:active{cursor:grabbing;}
 .seq-item.dragging{opacity:0.6;background:var(--panel2);}
+.seq-item.seq-item--action{border-color:rgba(156,39,176,.68);background:linear-gradient(180deg,rgba(156,39,176,.18),rgba(24,13,33,.96));}
+.seq-item.seq-item--action:hover{border-color:#d26df0;background:linear-gradient(180deg,rgba(156,39,176,.26),rgba(28,14,38,.98));}
+.seq-item.seq-item--action .seq-label{color:#e9b3ff;}
+.seq-item.seq-item--action .seq-remove{color:#d9a0ef;}
+.seq-item.seq-item--action .seq-remove:hover{color:#fff;}
 .seq-header-controls{display:flex;flex-direction:column;gap:8px;margin-bottom:8px;}
 .quick-router-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(61,88,112,.92);background:linear-gradient(180deg,rgba(14,28,45,.94),rgba(8,18,29,.92));color:var(--text2);font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:border-color .15s ease,background .15s ease,color .15s ease,transform .15s ease,box-shadow .15s ease;}
 .quick-router-btn:hover{transform:translateY(-1px);border-color:var(--accent);background:linear-gradient(180deg,rgba(0,212,255,.16),rgba(11,22,36,.92));color:#fff;}
@@ -1593,6 +1598,10 @@ document.addEventListener('keydown', function(e) {
     handleQKeyPress();
     e.preventDefault();
   }
+  if ((e.key === 'q' || e.key === 'Q') && !e.target.matches('input,textarea')) {
+    toggleQuickRouter();
+    e.preventDefault();
+  }
 });
 // Clear all cache and reload page
 async function clearCache() {
@@ -2534,14 +2543,20 @@ function renderMap(){
     }
     mctx.save();
     mctx.globalAlpha = isEditingWaypoint ? 1 : wpOpacity;
+    const triangleColor = isOriginWaypoint
+      ? '#ff6b35'
+      : (isEditingWaypoint ? '#4dff91' : (hasSequenceAction ? actionAccent : (isSelected ? '#00d4ff' : (isInSequence ? '#5fbaff' : '#aeb8c4'))));
+    const triangleFillAlpha = isOriginWaypoint
+      ? 1
+      : (isEditingWaypoint ? 0.46 : (hasSequenceAction ? 0.4 : (isSelected ? 0.34 : (isInSequence ? 0.28 : 0.3))));
     drawTriangle(
       mctx,
       p.x,
       p.y,
       screenYaw,
       SC*.7,
-      isOriginWaypoint ? '#ff6b35' : (isEditingWaypoint ? '#4dff91' : (isSelected ? '#00d4ff' : (hasSequenceAction ? actionAccent : (isInSequence ? '#5fbaff' : '#aeb8c4')))),
-      { fillAlpha: isOriginWaypoint ? 1 : (isEditingWaypoint ? 0.46 : (isSelected ? 0.34 : (hasSequenceAction ? 0.4 : (isInSequence ? 0.28 : 0.3)))) }
+      triangleColor,
+      { fillAlpha: triangleFillAlpha }
     );
     mctx.restore();
     // Draw WP DATA number (matching the list display numbering)
@@ -7909,6 +7924,7 @@ function addToSequence(itemId, itemType, itemData, options = {}) {
   const seqKey = nextSequenceKey();
   const seqItem = document.createElement('div');
   seqItem.className = 'seq-item';
+  if (itemType === 'action') seqItem.classList.add('seq-item--action');
   seqItem.draggable = seqReorderMode;
   seqItem.dataset.id = itemId;
   seqItem.dataset.seqKey = seqKey;
