@@ -2436,6 +2436,16 @@ function renderMap(){
   }
 
   const _seqRouteNodes = getActiveSequenceRouteNodes();
+  const sequenceActionAnnotations = getSequenceActionAnnotations();
+  const actionWaypointKinds = new Map();
+  sequenceActionAnnotations.forEach(annotation => {
+    const waypointId = annotation?.waypoint?.id;
+    if (waypointId === undefined || waypointId === null) return;
+    const currentKind = actionWaypointKinds.get(waypointId);
+    if (!currentKind || annotation.kind === 'nested-action') {
+      actionWaypointKinds.set(waypointId, annotation.kind);
+    }
+  });
   const usedWaypointIds = new Set(_seqRouteNodes.map(routeNode => routeNode && routeNode.waypoint ? routeNode.waypoint.id : null).filter(id => id !== null && id !== undefined));
   const sequenceOverlayAlpha = dashboardShowUsedWaypoints ? 1 : 0.018;
 
@@ -2453,8 +2463,12 @@ function renderMap(){
     const isSelected = i === selectedWpIdx;
     const isHighlighted = i === highlightedWpIdx;
     const isOriginWaypoint = !!wp.isOrigin;
+    const sequenceActionKind = actionWaypointKinds.get(wp.id) || null;
+    const hasSequenceAction = !!sequenceActionKind;
     const isInSequence = isOriginWaypoint || usedWaypointIds.has(wp.id);
     const wpOpacity = getSpatialWaypointOpacity(wp, usedWaypointIds);
+    const actionAccent = sequenceActionKind ? getSequenceOverlayColor(sequenceActionKind) : null;
+    const actionStroke = sequenceActionKind ? getSequenceOverlayStrokeColor(sequenceActionKind) : null;
     const originYaw_rad = originYaw * Math.PI / 180;
     const screenYaw = originYaw_rad - renderYawRad;
     if (isEditingWaypoint && wpDragging) {
@@ -2498,8 +2512,8 @@ function renderMap(){
       p.y,
       screenYaw,
       SC*.7,
-      isOriginWaypoint ? '#ff6b35' : (isEditingWaypoint ? '#4dff91' : (isSelected ? '#00d4ff' : (isInSequence ? '#5fbaff' : '#aeb8c4'))),
-      { fillAlpha: isOriginWaypoint ? 1 : (isEditingWaypoint ? 0.46 : (isSelected ? 0.34 : (isInSequence ? 0.28 : 0.3))) }
+      isOriginWaypoint ? '#ff6b35' : (isEditingWaypoint ? '#4dff91' : (isSelected ? '#00d4ff' : (hasSequenceAction ? actionAccent : (isInSequence ? '#5fbaff' : '#aeb8c4')))),
+      { fillAlpha: isOriginWaypoint ? 1 : (isEditingWaypoint ? 0.46 : (isSelected ? 0.34 : (hasSequenceAction ? 0.4 : (isInSequence ? 0.28 : 0.3)))) }
     );
     mctx.restore();
     // Draw WP DATA number (matching the list display numbering)
@@ -2509,9 +2523,9 @@ function renderMap(){
     mctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
     mctx.fillStyle = isOriginWaypoint
       ? 'rgba(255,107,53,0.92)'
-      : (isEditingWaypoint ? 'rgba(77,255,145,0.98)' : 'rgba(77,255,145,0.92)');
+      : (isEditingWaypoint ? 'rgba(77,255,145,0.98)' : (hasSequenceAction ? actionAccent : 'rgba(77,255,145,0.92)'));
     mctx.fill();
-    mctx.strokeStyle = isOriginWaypoint ? '#ffd2c2' : '#d8ffe8';
+    mctx.strokeStyle = isOriginWaypoint ? '#ffd2c2' : (hasSequenceAction ? actionStroke : '#d8ffe8');
     mctx.lineWidth = 1.5;
     mctx.stroke();
     mctx.font = 'bold 10px Arial';
@@ -2544,7 +2558,7 @@ function renderMap(){
     const rp = robotToCanvas();
     const activeRouteNode = _seqRouteNodes[idx];
     const wp1 = activeRouteNode ? wpToCanvas(activeRouteNode.waypoint) : null;
-    const activeRouteColor = activeRouteNode && activeRouteNode.variant === 'branch' ? '#9c27b0' : '#ff6b35';
+    const activeRouteColor = getSequenceOverlayColor(activeRouteNode?.variant || 'default');
     if (rp && wp1) {
       mctx.save();
       mctx.globalAlpha = sequenceOverlayAlpha;
@@ -2583,7 +2597,7 @@ function renderMap(){
       const p1 = wpToCanvas(routeNode1.waypoint);
       const p2 = wpToCanvas(routeNode2.waypoint);
       if (p1 && p2) {
-        const segmentColor = routeNode2.variant === 'branch' ? '#9c27b0' : '#ff6b35';
+        const segmentColor = getSequenceOverlayColor(routeNode2.variant || 'default');
         mctx.strokeStyle = segmentColor;
         mctx.beginPath();
         mctx.moveTo(p1.x, p1.y);
@@ -2624,7 +2638,10 @@ function renderMap(){
     const wp = routeNode.waypoint;
     const p=wpToCanvas(wp); if(!p) return;
     const seqNum = wp.id || (i + 1);
-    const routeFill = routeNode.variant === 'branch' ? 'rgba(156,39,176,0.92)' : 'rgba(255,107,53,0.9)';
+    const waypointActionKind = actionWaypointKinds.get(wp.id) || null;
+    const routeFill = waypointActionKind
+      ? getSequenceOverlayColor(waypointActionKind)
+      : getSequenceOverlayColor(routeNode.variant || 'default');
     mctx.save();
     mctx.globalAlpha = sequenceOverlayAlpha;
     mctx.beginPath();
@@ -2640,6 +2657,10 @@ function renderMap(){
     mctx.textBaseline = 'middle';
     mctx.fillText(seqNum.toString(), p.x, p.y);
     mctx.restore();
+  });
+
+  sequenceActionAnnotations.forEach(annotation => {
+    drawSequenceActionLabels(annotation);
   });
 
   const selectedWaypoint = getSelectedWaypoint();
@@ -3009,6 +3030,43 @@ function drawSelectedOriginOverlay() {
   mctx.save();
   mctx.globalAlpha = 1;
   drawTriangle(mctx, point.x, point.y, screenYaw, SC * 0.95, '#ff6b35', { fillAlpha: 1 });
+  mctx.restore();
+}
+
+function drawSequenceActionLabels(annotation) {
+  if (!annotation || !annotation.waypoint || !annotation.actionLabels || !annotation.actionLabels.length) return;
+
+  const point = wpToCanvas(annotation.waypoint);
+  if (!point) return;
+
+  const boxHeight = 18;
+  const gap = 6;
+  const startX = point.x + 18;
+  const startY = point.y - 14;
+  const accentColor = getSequenceOverlayColor(annotation.kind);
+  const strokeColor = getSequenceOverlayStrokeColor(annotation.kind);
+
+  mctx.save();
+  mctx.font = '700 10px Segoe UI';
+  mctx.textAlign = 'left';
+  mctx.textBaseline = 'middle';
+
+  annotation.actionLabels.forEach((label, index) => {
+    const textWidth = Math.ceil(mctx.measureText(label).width);
+    const boxWidth = textWidth + 14;
+    const boxY = startY + index * (boxHeight + gap);
+
+    mctx.fillStyle = accentColor;
+    mctx.fillRect(startX, boxY, boxWidth, boxHeight);
+
+    mctx.strokeStyle = strokeColor;
+    mctx.lineWidth = 1;
+    mctx.strokeRect(startX + 0.5, boxY + 0.5, boxWidth - 1, boxHeight - 1);
+
+    mctx.fillStyle = '#ffffff';
+    mctx.fillText(label, startX + 7, boxY + boxHeight / 2 + 0.5);
+  });
+
   mctx.restore();
 }
 
@@ -7821,7 +7879,7 @@ function collectActiveConditionalRouteNodes(entries, variant = 'branch', caseNam
         const activeNestedCase = entry.nestedCases[nestedInfo.caseNum];
         if (activeNestedCase && Array.isArray(activeNestedCase.wps)) {
           const activeCaseName = isDefaultConditionalCase(nestedInfo.caseNum) ? 'Default' : (activeNestedCase.name || `Case ${nestedInfo.caseNum}`);
-          collected.push(...collectActiveConditionalRouteNodes(activeNestedCase.wps, 'branch', activeCaseName));
+          collected.push(...collectActiveConditionalRouteNodes(activeNestedCase.wps, 'nested', activeCaseName));
         }
       }
       return;
@@ -7869,6 +7927,134 @@ function getActiveSequenceRouteNodes() {
 
 function getSequenceSpatialWaypoints() {
   return getActiveSequenceRouteNodes().map(routeNode => routeNode.waypoint);
+}
+
+function getSequenceActionLabel(actionId) {
+  const actionLabels = {
+    detect_color: 'Detect Colour',
+    detect_qr: 'Detect QR'
+  };
+  return actionLabels[actionId] || String(actionId || 'Action')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, chr => chr.toUpperCase());
+}
+
+function getSequenceOverlayColor(kind = 'default') {
+  switch (kind) {
+    case 'action':
+    case 'branch':
+      return '#9c27b0';
+    case 'nested-action':
+    case 'nested':
+      return '#00bfa5';
+    default:
+      return '#ff6b35';
+  }
+}
+
+function getSequenceOverlayStrokeColor(kind = 'default') {
+  switch (kind) {
+    case 'action':
+    case 'branch':
+      return '#f2d0ff';
+    case 'nested-action':
+    case 'nested':
+      return '#cffff4';
+    default:
+      return '#ffffff';
+  }
+}
+
+function appendSequenceActionAnnotation(annotationStore, waypoint, kind, label) {
+  if (!annotationStore || !waypoint || waypoint.id === undefined || waypoint.id === null || !label) return;
+
+  const key = `${waypoint.id}:${kind}`;
+  let annotation = annotationStore.byKey.get(key);
+  if (!annotation) {
+    annotation = { waypoint, kind, actionLabels: [] };
+    annotationStore.byKey.set(key, annotation);
+    annotationStore.items.push(annotation);
+  }
+
+  annotation.actionLabels.push(label);
+}
+
+function collectActiveConditionalActionAnnotations(entries, annotationStore, lastSpatialWaypoint = null) {
+  let currentSpatialWaypoint = lastSpatialWaypoint;
+
+  (entries || []).forEach(entry => {
+    if (!entry) return;
+
+    if (entry.isAction) {
+      if (currentSpatialWaypoint) {
+        appendSequenceActionAnnotation(
+          annotationStore,
+          currentSpatialWaypoint,
+          'nested-action',
+          getSequenceActionLabel(entry.actionType || entry.name)
+        );
+      }
+
+      if (entry.nestedToggled && entry.nestedCases) {
+        const nestedInfo = getCaseNumberAtIndex(entry.nestedCases, entry.nestedCaseIndex || 0);
+        const activeNestedCase = entry.nestedCases[nestedInfo.caseNum];
+        if (activeNestedCase && Array.isArray(activeNestedCase.wps)) {
+          collectActiveConditionalActionAnnotations(activeNestedCase.wps, annotationStore, currentSpatialWaypoint);
+        }
+      }
+      return;
+    }
+
+    const waypoint = getWaypointFromConditionalEntry(entry);
+    if (waypoint && waypoint.x_m !== undefined) {
+      currentSpatialWaypoint = waypoint;
+    }
+  });
+
+  return currentSpatialWaypoint;
+}
+
+function getSequenceActionAnnotations() {
+  if (!sequence.length) return [];
+
+  const annotationStore = {
+    items: [],
+    byKey: new Map()
+  };
+  let lastSpatialWaypoint = null;
+
+  sequence.forEach(seqItem => {
+    if (seqItem.type === 'waypoint' && seqItem.data && seqItem.data.x_m !== undefined) {
+      lastSpatialWaypoint = seqItem.data;
+      return;
+    }
+
+    if (seqItem.type !== 'action') return;
+
+    if (lastSpatialWaypoint) {
+      appendSequenceActionAnnotation(
+        annotationStore,
+        lastSpatialWaypoint,
+        'action',
+        getSequenceActionLabel(seqItem.data?.node || seqItem.id)
+      );
+    }
+
+    const seqItemElement = document.querySelector(`[data-seq-key="${seqItem.seqKey}"]`);
+    if (!seqItemElement || seqItemElement.dataset.hasConditional !== 'true' || !seqItemElement.dataset.cases) {
+      return;
+    }
+
+    const cases = JSON.parse(seqItemElement.dataset.cases);
+    const condWrapper = seqItemElement.querySelector('.seq-conditional-wrapper');
+    const caseInfo = getCaseNumberAtIndex(cases, parseInt(condWrapper?.dataset.caseIndex, 10) || 0);
+    const activeCase = cases[caseInfo.caseNum];
+    if (activeCase && Array.isArray(activeCase.wps)) {
+      collectActiveConditionalActionAnnotations(activeCase.wps, annotationStore, lastSpatialWaypoint);
+    }
+  });
+
+  return annotationStore.items;
 }
 
 function renderConditionalEntries(seqItem, parentPathValue, caseNum, entries) {
