@@ -66,21 +66,27 @@ header{display:flex;align-items:center;justify-content:space-between;padding:12p
 .map-wrap{
   flex:1.2;
   display:flex;
-  align-items:center;
-  justify-content:center;
+  align-items:stretch;
+  justify-content:flex-start;
   padding:0;
   overflow:auto;
   min-height:0;
   min-width:0;
   height:100%;
+  position:relative;
+  scroll-behavior:smooth;
 }
+.map-wrap.is-panning{cursor:grabbing;}
 .map-inner{
   display:inline-flex;
   flex-direction:column;
-  width:98vw;
-  height:94vh;
+  width:max-content;
+  height:max-content;
+  min-width:100%;
+  min-height:100%;
   align-items:center;
   justify-content:center;
+  padding:18px;
 }
 .ruler-row{display:flex;}
 .corner{width:26px;height:26px;background:var(--panel);border-right:1px solid var(--border);border-bottom:1px solid var(--border);}
@@ -89,15 +95,45 @@ header{display:flex;align-items:center;justify-content:space-between;padding:12p
 canvas{display:block;image-rendering:pixelated;max-width:100vw;max-height:90vh;}
 #mapCanvas{
   cursor:crosshair;
-  width:100%;
-  height:100%;
-  max-width:100vw;
-  max-height:90vh;
+  width:auto;
+  height:auto;
+  max-width:none;
+  max-height:none;
+  flex:0 0 auto;
 }
+#rulerX,#rulerY{width:auto;height:auto;max-width:none;max-height:none;flex:0 0 auto;}
 .sensor-strip{padding:5px 14px;border-top:1px solid var(--border);background:var(--panel);display:flex;gap:20px;flex-wrap:wrap;flex-shrink:0;align-items:center;}
 .sv{font-size:11px;}.sv .k{color:var(--muted2);}.sv .v{color:var(--accent);font-weight:700;}
 .legend{padding:4px 12px;background:var(--panel2);border-top:1px solid var(--border);display:flex;gap:16px;flex-shrink:0;}
 .leg{font-size:10px;color:var(--muted2);}.leg b{margin-right:4px;}
+.center-panel{position:relative;}
+.map-tools{position:absolute;top:12px;left:12px;z-index:15;width:min(248px,calc(100% - 24px));display:flex;flex-direction:column;gap:8px;padding:10px 10px 8px;border:1px solid rgba(0,212,255,.22);border-radius:14px;background:linear-gradient(180deg,rgba(8,18,29,.84),rgba(10,18,30,.74));box-shadow:0 14px 32px rgba(0,0,0,.2),0 0 0 1px rgba(255,255,255,.02) inset;backdrop-filter:blur(8px);}
+.map-tools.is-collapsed{width:auto;min-width:0;padding-bottom:10px;}
+.map-tools-header{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.map-tools-title{font-size:9px;color:var(--muted2);letter-spacing:.18em;text-transform:uppercase;margin-right:auto;padding-left:2px;}
+.map-tools-body{display:flex;flex-direction:column;gap:8px;}
+.map-tools.is-collapsed .map-tools-body{display:none;}
+.map-tool-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.map-tool-row.compact{justify-content:space-between;align-items:center;gap:10px;}
+.map-tool-heading{font-size:9px;color:var(--muted2);letter-spacing:.18em;text-transform:uppercase;}
+.map-tool-btn,.map-toggle-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:30px;padding:6px 9px;border-radius:9px;border:1px solid rgba(49,89,120,.92);background:rgba(10,24,40,.84);color:var(--text2);font-family:inherit;font-size:10px;font-weight:700;letter-spacing:.04em;cursor:pointer;transition:border-color .15s ease,background .15s ease,color .15s ease,transform .15s ease;white-space:nowrap;}
+.map-tool-btn:hover,.map-toggle-btn:hover{transform:translateY(-1px);border-color:var(--accent);background:rgba(0,212,255,.1);color:#fff;}
+.map-tool-btn.is-active,.map-toggle-btn.is-active{border-color:rgba(77,255,145,.62);background:rgba(77,255,145,.12);color:#d9ffe8;}
+.map-tool-btn.is-warn,.map-toggle-btn.is-warn{border-color:rgba(255,213,79,.55);background:rgba(255,213,79,.12);color:#ffe79b;}
+.map-tool-btn.is-measure{border-color:rgba(255,213,79,.55);color:#ffe79b;}
+.map-tool-btn.is-measure.is-active{background:rgba(255,213,79,.14);border-color:var(--yellow);color:#fff3c8;}
+.map-tool-stat{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;color:var(--muted2);padding:2px 2px 0;}
+.map-tool-stat strong{color:var(--accent);font-size:11px;letter-spacing:.04em;}
+.map-pan-grid{display:grid;grid-template-columns:30px 30px 30px;gap:5px;align-items:center;justify-content:flex-start;}
+.map-pan-grid .map-tool-btn{padding:0;min-width:30px;min-height:30px;}
+.map-toggle-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+.map-tool-help{font-size:8px;color:var(--muted2);line-height:1.5;padding-top:2px;opacity:.9;}
+.map-measure-readout{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;color:var(--muted2);font-size:9px;line-height:1.35;}
+.map-measure-readout strong{color:#fff3c8;font-size:11px;font-weight:800;letter-spacing:.04em;}
+@media (max-width: 900px){
+  .map-tools{width:min(220px,calc(100% - 24px));padding:9px;}
+  .map-toggle-grid{grid-template-columns:1fr;}
+}
 
 /* ── RIGHT PANEL ── */
 .right{width:260px;background:var(--panel);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;justify-content:flex-start;}
@@ -868,6 +904,51 @@ body.is-resizing-sequence,body.is-resizing-sequence *{cursor:col-resize !importa
   <div class="sequence-resizer" id="sequenceResizer" title="Drag to resize sequence panel"></div>
 
   <div class="center-panel" style="flex:1;display:flex;flex-direction:column;min-width:0;">
+    <div class="map-tools is-collapsed" id="mapTools" aria-label="Map controls">
+      <div class="map-tools-header">
+        <div class="map-tools-title">Map Tools</div>
+        <button class="map-tool-btn" id="zoomOutBtn" type="button" onclick="zoomDashboardMapBy(-1)" title="Zoom out (-)">−</button>
+        <button class="map-tool-btn" id="zoomFitBtn" type="button" onclick="zoomDashboardMapToFit()" title="Fit map to view (0)">Fit</button>
+        <button class="map-tool-btn" id="zoomInBtn" type="button" onclick="zoomDashboardMapBy(1)" title="Zoom in (+)">+</button>
+        <button class="map-tool-btn" id="centerRobotBtn" type="button" onclick="centerDashboardOnRobot('smooth')" title="Center on robot (C)">◎</button>
+        <button class="map-tool-btn" id="mapToolsToggleBtn" type="button" onclick="toggleMapToolsCollapsed()" title="Show or hide detailed map controls">▾</button>
+      </div>
+      <div class="map-tool-stat">
+        <span><strong id="mapZoomValue">100%</strong> <span id="mapViewModeValue">FIT</span></span>
+        <span id="mapFilterSummary">All waypoints</span>
+      </div>
+      <div class="map-tools-body" id="mapToolsBody">
+        <div class="map-tool-heading">Measure</div>
+        <div class="map-tool-row compact">
+          <button class="map-tool-btn is-measure" id="measureMapBtn" type="button" onclick="toggleDashboardMeasureMode()" title="Measure distance on the map">📏 Measure</button>
+          <div class="map-measure-readout" id="mapMeasureReadout">
+            <strong id="mapMeasureValue">Ready</strong>
+            <span id="mapMeasureHint">Click two points on the map</span>
+          </div>
+        </div>
+        <div class="map-tool-heading">Pan</div>
+        <div class="map-tool-row">
+          <div class="map-pan-grid" aria-label="Pan controls">
+            <span></span>
+            <button class="map-tool-btn" type="button" onclick="panDashboardMapBy(0, -180)" title="Pan up (Alt+Up)">↑</button>
+            <span></span>
+            <button class="map-tool-btn" type="button" onclick="panDashboardMapBy(-180, 0)" title="Pan left (Alt+Left)">←</button>
+            <button class="map-tool-btn" type="button" onclick="centerDashboardOnMap('smooth')" title="Center map">•</button>
+            <button class="map-tool-btn" type="button" onclick="panDashboardMapBy(180, 0)" title="Pan right (Alt+Right)">→</button>
+            <span></span>
+            <button class="map-tool-btn" type="button" onclick="panDashboardMapBy(0, 180)" title="Pan down (Alt+Down)">↓</button>
+            <span></span>
+          </div>
+        </div>
+        <div class="map-tool-heading">Visibility</div>
+        <div class="map-toggle-grid">
+          <button class="map-toggle-btn is-active" id="toggleUsedWpBtn" type="button" onclick="toggleUsedWaypointVisibility()" title="Toggle used waypoints (Shift+Y)">Used</button>
+          <button class="map-toggle-btn is-active" id="toggleUnusedWpBtn" type="button" onclick="toggleUnusedWaypointVisibility()" title="Toggle unused waypoints (Shift+U)">Unused</button>
+          <button class="map-toggle-btn is-active" id="toggleLabelBtn" type="button" onclick="toggleWaypointLabelVisibility()" title="Toggle labels (Shift+L)">Labels</button>
+        </div>
+        <div class="map-tool-help">Shortcuts: + / - zoom, 0 fit, C center robot, Alt+Arrows pan, Ctrl+Wheel zoom, middle mouse pan, Space+Drag pan, M measure.</div>
+      </div>
+    </div>
     <div class="map-wrap">
       <div class="map-inner">
         <div class="ruler-row">
@@ -1625,6 +1706,28 @@ let lastCameraSource = null;  // 'colour' or 'qr' or null
 // ── MAP CANVAS INIT ──────────────────────────────────────────────────────────
 const mapCanvas = document.getElementById('mapCanvas');
 const mctx      = mapCanvas ? mapCanvas.getContext('2d') : null;
+const mapWrap   = document.querySelector('.map-wrap');
+
+let dashboardScaleMode = 'fit';
+let dashboardManualScale = null;
+let dashboardShowUsedWaypoints = true;
+let dashboardShowUnusedWaypoints = true;
+let dashboardShowWaypointLabels = true;
+let dashboardMapToolsCollapsed = true;
+let dashboardMeasureMode = false;
+let dashboardMeasureStart = null;
+let dashboardMeasureEnd = null;
+let dashboardMeasureHover = null;
+let dashboardPanModifierActive = false;
+let dashboardSuppressCanvasClickUntil = 0;
+const dashboardPanState = {
+  active: false,
+  moved: false,
+  startX: 0,
+  startY: 0,
+  startLeft: 0,
+  startTop: 0
+};
 
 console.log('[INIT] mapCanvas exists:', !!mapCanvas);
 console.log('[INIT] mctx exists:', !!mctx);
@@ -1636,7 +1739,221 @@ if(!mctx) {
   console.error('[INIT] ERROR: 2D context not available! Map display will not work.');
 }
 
-function initCanvas(){
+function isTypingTarget(target) {
+  if (!target) return false;
+  const tagName = target.tagName ? target.tagName.toLowerCase() : '';
+  return tagName === 'input' || tagName === 'textarea' || target.isContentEditable;
+}
+
+function isEditorOpen() {
+  const editorOverlay = document.getElementById('editorOverlay');
+  return !!editorOverlay && editorOverlay.classList.contains('open');
+}
+
+function clampDashboardScale(scale) {
+  return Math.max(4, Math.min(42, Math.round(scale)));
+}
+
+function computeDashboardFitScale() {
+  if (!mapWrap || !mapW || !mapH) return 12;
+  const availableWidth = Math.max(180, mapWrap.clientWidth - 96);
+  const availableHeight = Math.max(180, mapWrap.clientHeight - 96);
+  return clampDashboardScale(Math.min(availableWidth / mapW, availableHeight / mapH));
+}
+
+function getUsedWaypointIdSet() {
+  const usedIds = new Set();
+  getActiveSequenceRouteNodes().forEach(routeNode => {
+    const waypointId = routeNode && routeNode.waypoint ? routeNode.waypoint.id : null;
+    if (waypointId !== null && waypointId !== undefined) usedIds.add(waypointId);
+  });
+  const originWaypoint = getOriginWaypoint();
+  if (originWaypoint && originWaypoint.id !== null && originWaypoint.id !== undefined) {
+    usedIds.add(originWaypoint.id);
+  }
+  return usedIds;
+}
+
+function getSpatialWaypointOpacity(wp, usedWaypointIds = null) {
+  if (!isSpatialWaypoint(wp) || wp.isOrigin) return 1;
+  const ids = usedWaypointIds || getUsedWaypointIdSet();
+  const isUsed = ids.has(wp.id);
+  if (isUsed && !dashboardShowUsedWaypoints) return 0.012;
+  if (!isUsed && !dashboardShowUnusedWaypoints) return 0.012;
+  return 1;
+}
+
+function getWaypointLabelOpacity() {
+  return dashboardShowWaypointLabels ? 1 : 0.03;
+}
+
+function getMeasureTargetPoint() {
+  return dashboardMeasureEnd || dashboardMeasureHover;
+}
+
+function formatMeasuredDistance(distanceM) {
+  if (!Number.isFinite(distanceM)) return 'Ready';
+  return distanceM >= 1 ? `${distanceM.toFixed(2)} m` : `${Math.round(distanceM * 100)} cm`;
+}
+
+function getMeasureComponentsMeters() {
+  const endPoint = getMeasureTargetPoint();
+  if (!dashboardMeasureStart || !endPoint) return null;
+  const dx = (endPoint.cellX - dashboardMeasureStart.cellX) * (mapRes / 100);
+  const dy = (endPoint.cellY - dashboardMeasureStart.cellY) * (mapRes / 100);
+  return {
+    dx,
+    dy,
+    distance: Math.hypot(dx, dy)
+  };
+}
+
+function getMeasureDistanceMeters() {
+  const components = getMeasureComponentsMeters();
+  return components ? components.distance : null;
+}
+
+function updateDashboardMeasureUI() {
+  const button = document.getElementById('measureMapBtn');
+  const value = document.getElementById('mapMeasureValue');
+  const hint = document.getElementById('mapMeasureHint');
+  const components = getMeasureComponentsMeters();
+  if (button) button.classList.toggle('is-active', dashboardMeasureMode);
+  if (value) value.textContent = dashboardMeasureMode ? formatMeasuredDistance(getMeasureDistanceMeters()) : 'Ready';
+  if (hint) {
+    if (!dashboardMeasureMode) hint.textContent = 'Click two points on the map';
+    else if (!dashboardMeasureStart) hint.textContent = 'Pick the first point';
+    else if (!dashboardMeasureEnd && components) hint.textContent = `ΔX ${components.dx.toFixed(2)} m • ΔY ${components.dy.toFixed(2)} m`;
+    else if (!dashboardMeasureEnd) hint.textContent = 'Pick the second point';
+    else if (components) hint.textContent = `Locked • ΔX ${components.dx.toFixed(2)} m • ΔY ${components.dy.toFixed(2)} m`;
+    else hint.textContent = 'Click again to start a new measure';
+  }
+}
+
+function clearDashboardMeasure(retainMode = false) {
+  dashboardMeasureStart = null;
+  dashboardMeasureEnd = null;
+  dashboardMeasureHover = null;
+  if (!retainMode) dashboardMeasureMode = false;
+  mapCanvas.style.cursor = (dashboardMeasureMode || wpMapClickActive || settingOrig) ? 'crosshair' : 'default';
+  updateDashboardMeasureUI();
+  renderMap();
+}
+
+function toggleDashboardMeasureMode(forceValue = null) {
+  if ((settingOrig || wpMapClickActive) && forceValue !== false) {
+    showToast('Finish origin or waypoint placement before using measure');
+    return;
+  }
+  const nextState = typeof forceValue === 'boolean' ? forceValue : !dashboardMeasureMode;
+  dashboardMeasureMode = nextState;
+  if (!dashboardMeasureMode) {
+    clearDashboardMeasure(false);
+    return;
+  }
+  dashboardMeasureStart = null;
+  dashboardMeasureEnd = null;
+  dashboardMeasureHover = null;
+  mapCanvas.style.cursor = dashboardMeasureMode ? 'crosshair' : (wpMapClickActive || settingOrig ? 'crosshair' : 'default');
+  updateDashboardMeasureUI();
+  renderMap();
+  showToast('📏 Measure mode on — click first point, move to preview, click second point, right-click or Esc to clear');
+}
+
+function getDashboardViewportCenterCell() {
+  if (!mapWrap || !mapW || !mapH || !mapCanvas) return null;
+  const centerX = mapWrap.scrollLeft + mapWrap.clientWidth / 2 - mapCanvas.offsetLeft;
+  const centerY = mapWrap.scrollTop + mapWrap.clientHeight / 2 - mapCanvas.offsetTop;
+  return {
+    x: Math.max(0, Math.min(mapW - 1, centerX / SC)),
+    y: Math.max(0, Math.min(mapH - 1, centerY / SC))
+  };
+}
+
+function centerDashboardOnCanvasPoint(canvasX, canvasY, behavior = 'auto') {
+  if (!mapWrap || !mapCanvas) return;
+  const maxLeft = Math.max(0, mapWrap.scrollWidth - mapWrap.clientWidth);
+  const maxTop = Math.max(0, mapWrap.scrollHeight - mapWrap.clientHeight);
+  const nextLeft = Math.max(0, Math.min(maxLeft, mapCanvas.offsetLeft + canvasX - mapWrap.clientWidth / 2));
+  const nextTop = Math.max(0, Math.min(maxTop, mapCanvas.offsetTop + canvasY - mapWrap.clientHeight / 2));
+  requestAnimationFrame(() => {
+    mapWrap.scrollTo({ left: nextLeft, top: nextTop, behavior });
+  });
+}
+
+function centerDashboardOnCell(cellX, cellY, behavior = 'auto') {
+  centerDashboardOnCanvasPoint(cellX * SC + SC / 2, cellY * SC + SC / 2, behavior);
+}
+
+function centerDashboardOnMap(behavior = 'smooth') {
+  if (!mapW || !mapH) return;
+  centerDashboardOnCell(mapW / 2, mapH / 2, behavior);
+}
+
+function centerDashboardOnRobot(behavior = 'smooth') {
+  const robotPoint = robotToCanvas();
+  if (robotPoint) {
+    centerDashboardOnCanvasPoint(robotPoint.x, robotPoint.y, behavior);
+    return;
+  }
+  if (originPx) {
+    centerDashboardOnCell(originPx.x, originPx.y, behavior);
+    return;
+  }
+  centerDashboardOnMap(behavior);
+}
+
+function toggleMapToolsCollapsed(forceValue = null) {
+  dashboardMapToolsCollapsed = typeof forceValue === 'boolean' ? forceValue : !dashboardMapToolsCollapsed;
+  const root = document.getElementById('mapTools');
+  const toggleBtn = document.getElementById('mapToolsToggleBtn');
+  if (root) root.classList.toggle('is-collapsed', dashboardMapToolsCollapsed);
+  if (toggleBtn) {
+    toggleBtn.textContent = dashboardMapToolsCollapsed ? '▾' : '▴';
+    toggleBtn.setAttribute('aria-expanded', dashboardMapToolsCollapsed ? 'false' : 'true');
+    toggleBtn.title = dashboardMapToolsCollapsed ? 'Show detailed map controls' : 'Hide detailed map controls';
+  }
+}
+
+function syncDashboardMapControls() {
+  const fitScale = mapW && mapH ? computeDashboardFitScale() : Math.max(1, SC);
+  const zoomValue = document.getElementById('mapZoomValue');
+  const viewModeValue = document.getElementById('mapViewModeValue');
+  const filterSummary = document.getElementById('mapFilterSummary');
+  const fitButton = document.getElementById('zoomFitBtn');
+  const usedButton = document.getElementById('toggleUsedWpBtn');
+  const unusedButton = document.getElementById('toggleUnusedWpBtn');
+  const labelButton = document.getElementById('toggleLabelBtn');
+  const toolsRoot = document.getElementById('mapTools');
+
+  if (zoomValue) zoomValue.textContent = `${Math.round((SC / Math.max(1, fitScale)) * 100)}%`;
+  if (viewModeValue) viewModeValue.textContent = dashboardScaleMode === 'fit' ? 'FIT' : `${SC}px/cell`;
+  if (filterSummary) {
+    const parts = [];
+    if (!dashboardShowUsedWaypoints) parts.push('used dim');
+    if (!dashboardShowUnusedWaypoints) parts.push('unused dim');
+    if (!dashboardShowWaypointLabels) parts.push('labels dim');
+    filterSummary.textContent = parts.length ? parts.join(' • ') : 'All waypoints';
+  }
+  if (fitButton) fitButton.classList.toggle('is-active', dashboardScaleMode === 'fit');
+  if (usedButton) {
+    usedButton.classList.toggle('is-active', dashboardShowUsedWaypoints);
+    usedButton.classList.toggle('is-warn', !dashboardShowUsedWaypoints);
+  }
+  if (unusedButton) {
+    unusedButton.classList.toggle('is-active', dashboardShowUnusedWaypoints);
+    unusedButton.classList.toggle('is-warn', !dashboardShowUnusedWaypoints);
+  }
+  if (labelButton) {
+    labelButton.classList.toggle('is-active', dashboardShowWaypointLabels);
+    labelButton.classList.toggle('is-warn', !dashboardShowWaypointLabels);
+  }
+  if (toolsRoot) toolsRoot.classList.toggle('is-collapsed', dashboardMapToolsCollapsed);
+  toggleMapToolsCollapsed(dashboardMapToolsCollapsed);
+  updateDashboardMeasureUI();
+}
+
+function initCanvas(options = {}){
   console.log('[CANVAS] initCanvas called:', {mapW, mapH, mapRes, mapPixels: mapPixels ? 'exists' : 'null'});
   
   if(!mapCanvas) {
@@ -1648,20 +1965,100 @@ function initCanvas(){
     console.error('[CANVAS] ERROR: mctx is null!');
     return;
   }
+
+  const preserveView = options.preserveView !== false;
+  const anchorCell = options.anchorCell || (preserveView ? getDashboardViewportCenterCell() : null);
   
   if(!mapW || !mapH){ 
     console.warn('[CANVAS] mapW or mapH missing, drawing placeholder');
-    mapCanvas.width=400; mapCanvas.height=400; mctx.fillStyle='#0a1520'; mctx.fillRect(0,0,400,400); return; 
+    mapCanvas.width=400; mapCanvas.height=400; mctx.fillStyle='#0a1520'; mctx.fillRect(0,0,400,400); syncDashboardMapControls(); return; 
   }
-  const avail = Math.min(window.innerHeight-200, window.innerWidth-340);
-  SC = Math.max(4, Math.min(20, Math.floor(avail / Math.max(mapW,mapH))));
-  console.log('[CANVAS] Canvas dimensions:', {mapW, mapH, avail, SC, canvasWidth: mapW * SC, canvasHeight: mapH * SC});
+  const nextScale = dashboardScaleMode === 'fit' || dashboardManualScale === null
+    ? computeDashboardFitScale()
+    : clampDashboardScale(dashboardManualScale);
+  SC = nextScale;
+  if (dashboardScaleMode === 'manual') dashboardManualScale = nextScale;
+  console.log('[CANVAS] Canvas dimensions:', {mapW, mapH, SC, canvasWidth: mapW * SC, canvasHeight: mapH * SC});
   mapCanvas.width  = mapW * SC;
   mapCanvas.height = mapH * SC;
   console.log('[CANVAS] Set canvas size:', {actualWidth: mapCanvas.width, actualHeight: mapCanvas.height});
   drawRulerX(); drawRulerY(); renderMap();
   const legRes = document.getElementById('legRes');
   if(legRes) legRes.textContent = `${(mapRes/100).toFixed(2)} m/cell · ${mapW}×${mapH}`;
+  syncDashboardMapControls();
+  if (options.centerRobot) centerDashboardOnRobot(options.behavior || 'smooth');
+  else if (anchorCell) centerDashboardOnCell(anchorCell.x, anchorCell.y, options.behavior || 'auto');
+  else centerDashboardOnMap(options.behavior || 'auto');
+}
+
+function zoomDashboardMapToFit() {
+  dashboardScaleMode = 'fit';
+  dashboardManualScale = null;
+  initCanvas({ preserveView: true, behavior: 'auto' });
+}
+
+function zoomDashboardMapBy(direction, options = {}) {
+  if (!mapW || !mapH) return;
+  const baseScale = dashboardScaleMode === 'fit'
+    ? computeDashboardFitScale()
+    : (dashboardManualScale || SC || computeDashboardFitScale());
+  const step = baseScale >= 18 ? 2 : 1;
+  const nextScale = clampDashboardScale(baseScale + (direction * step));
+  if (nextScale === SC && dashboardScaleMode === 'manual') return;
+  dashboardScaleMode = 'manual';
+  dashboardManualScale = nextScale;
+  initCanvas({ preserveView: true, anchorCell: options.anchorCell || getDashboardViewportCenterCell(), behavior: 'auto' });
+}
+
+function panDashboardMapBy(deltaX, deltaY) {
+  if (!mapWrap) return;
+  mapWrap.scrollBy({ left: deltaX, top: deltaY, behavior: 'smooth' });
+}
+
+function toggleUsedWaypointVisibility() {
+  dashboardShowUsedWaypoints = !dashboardShowUsedWaypoints;
+  renderMap();
+  syncDashboardMapControls();
+}
+
+function toggleUnusedWaypointVisibility() {
+  dashboardShowUnusedWaypoints = !dashboardShowUnusedWaypoints;
+  renderMap();
+  syncDashboardMapControls();
+}
+
+function toggleWaypointLabelVisibility() {
+  dashboardShowWaypointLabels = !dashboardShowWaypointLabels;
+  renderMap();
+  syncDashboardMapControls();
+}
+
+function shouldSuppressMapCanvasClick() {
+  return Date.now() < dashboardSuppressCanvasClickUntil;
+}
+
+function stopDashboardPan() {
+  if (!dashboardPanState.active) return;
+  dashboardPanState.active = false;
+  if (dashboardPanState.moved) dashboardSuppressCanvasClickUntil = Date.now() + 180;
+  dashboardPanState.moved = false;
+  if (mapWrap) mapWrap.classList.remove('is-panning');
+}
+
+function beginDashboardPan(event) {
+  if (!mapWrap || isEditorOpen()) return false;
+  const allowPan = event.button === 1 || (event.button === 0 && dashboardPanModifierActive);
+  if (!allowPan) return false;
+  if (event.target.closest('.map-tools')) return false;
+  dashboardPanState.active = true;
+  dashboardPanState.moved = false;
+  dashboardPanState.startX = event.clientX;
+  dashboardPanState.startY = event.clientY;
+  dashboardPanState.startLeft = mapWrap.scrollLeft;
+  dashboardPanState.startTop = mapWrap.scrollTop;
+  mapWrap.classList.add('is-panning');
+  event.preventDefault();
+  return true;
 }
 
 function drawRulerX(){
@@ -1784,6 +2181,8 @@ function renderMap(){
   }
 
   const _seqRouteNodes = getActiveSequenceRouteNodes();
+  const usedWaypointIds = new Set(_seqRouteNodes.map(routeNode => routeNode && routeNode.waypoint ? routeNode.waypoint.id : null).filter(id => id !== null && id !== undefined));
+  const sequenceOverlayAlpha = dashboardShowUsedWaypoints ? 1 : 0.018;
 
   // ── WP DATA: draw robot model (triangle) for ALL waypoints in WP DATA panel ──
   let wpDisplayNum = 0;  // Counter for spatial waypoints only
@@ -1794,14 +2193,13 @@ function renderMap(){
     const isSelected = i === selectedWpIdx;
     const isHighlighted = i === highlightedWpIdx;
     const isOriginWaypoint = !!wp.isOrigin;
-    const isInSequence = isOriginWaypoint || _seqRouteNodes.some(routeNode => {
-      const routeWaypoint = routeNode && routeNode.waypoint;
-      return routeWaypoint === wp || (routeWaypoint && routeWaypoint.id === wp.id);
-    });
+    const isInSequence = isOriginWaypoint || usedWaypointIds.has(wp.id);
+    const wpOpacity = getSpatialWaypointOpacity(wp, usedWaypointIds);
     const originYaw_rad = originYaw * Math.PI / 180;
     const screenYaw = originYaw_rad - wp.yaw_rad;
     if (isSelected || isHighlighted) {
       mctx.save();
+      mctx.globalAlpha = Math.max(0.12, wpOpacity);
       mctx.beginPath();
       mctx.arc(p.x, p.y, isSelected ? 18 : 15, 0, Math.PI * 2);
       mctx.strokeStyle = isSelected ? 'rgba(0,212,255,.95)' : 'rgba(77,255,145,.95)';
@@ -1810,6 +2208,7 @@ function renderMap(){
       mctx.restore();
     }
     mctx.save();
+    mctx.globalAlpha = wpOpacity;
     drawTriangle(
       mctx,
       p.x,
@@ -1822,6 +2221,7 @@ function renderMap(){
     mctx.restore();
     // Draw WP DATA number (matching the list display numbering)
     mctx.save();
+    mctx.globalAlpha = Math.max(0.02, wpOpacity);
     mctx.beginPath();
     mctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
     mctx.fillStyle = isOriginWaypoint
@@ -1837,11 +2237,19 @@ function renderMap(){
     mctx.textBaseline = 'middle';
     mctx.fillText(wpDisplayNum.toString(), p.x, p.y);
     mctx.restore();
-    // Draw coordinates label
-    mctx.save(); mctx.font='8px Courier New';
-    const lbl=`(${wp.x_m.toFixed(2)},${wp.y_m.toFixed(2)})`, tw=mctx.measureText(lbl).width;
-    mctx.fillStyle='rgba(10,14,23,.85)'; mctx.fillRect(p.x+14,p.y-15,tw+4,11);
-    mctx.fillStyle='#00d4ff'; mctx.textAlign='left'; mctx.textBaseline='alphabetic'; mctx.fillText(lbl,p.x+16,p.y-6); mctx.restore();
+    if (dashboardShowWaypointLabels) {
+      mctx.save(); mctx.font='8px Courier New';
+      mctx.globalAlpha = getWaypointLabelOpacity();
+      const lbl=`(${wp.x_m.toFixed(2)},${wp.y_m.toFixed(2)})`, tw=mctx.measureText(lbl).width;
+      mctx.fillStyle='rgba(10,14,23,.85)'; mctx.fillRect(p.x+14,p.y-15,tw+4,11);
+      mctx.fillStyle='#00d4ff'; mctx.textAlign='left'; mctx.textBaseline='alphabetic'; mctx.fillText(lbl,p.x+16,p.y-6); mctx.restore();
+    } else {
+      mctx.save(); mctx.font='8px Courier New';
+      mctx.globalAlpha = getWaypointLabelOpacity();
+      const lbl=`(${wp.x_m.toFixed(2)},${wp.y_m.toFixed(2)})`, tw=mctx.measureText(lbl).width;
+      mctx.fillStyle='rgba(10,14,23,.78)'; mctx.fillRect(p.x+14,p.y-15,tw+4,11);
+      mctx.fillStyle='#8aa6bd'; mctx.textAlign='left'; mctx.textBaseline='alphabetic'; mctx.fillText(lbl,p.x+16,p.y-6); mctx.restore();
+    }
   });
 
   // Draw dotted line from robot to current sequence waypoint
@@ -1856,6 +2264,7 @@ function renderMap(){
     const activeRouteColor = activeRouteNode && activeRouteNode.variant === 'branch' ? '#9c27b0' : '#ff6b35';
     if (rp && wp1) {
       mctx.save();
+      mctx.globalAlpha = sequenceOverlayAlpha;
       mctx.setLineDash([7, 7]);
       mctx.strokeStyle = activeRouteColor;
       mctx.lineWidth = 2;
@@ -1882,6 +2291,7 @@ function renderMap(){
   // Dotted arrows between sequence waypoints only
   if (_seqRouteNodes.length > 1) {
     mctx.save();
+    mctx.globalAlpha = sequenceOverlayAlpha;
     mctx.setLineDash([7, 7]);
     mctx.lineWidth = 2;
     for (let i = 0; i < _seqRouteNodes.length - 1; i++) {
@@ -1896,7 +2306,7 @@ function renderMap(){
         mctx.moveTo(p1.x, p1.y);
         mctx.lineTo(p2.x, p2.y);
         mctx.stroke();
-        if (routeNode2.caseName) {
+        if (dashboardShowWaypointLabels && routeNode2.caseName) {
           const labelX = p1.x + (p2.x - p1.x) * 0.18;
           const labelY = p1.y + (p2.y - p1.y) * 0.18;
           mctx.save();
@@ -1933,6 +2343,7 @@ function renderMap(){
     const seqNum = wp.id || (i + 1);
     const routeFill = routeNode.variant === 'branch' ? 'rgba(156,39,176,0.92)' : 'rgba(255,107,53,0.9)';
     mctx.save();
+    mctx.globalAlpha = sequenceOverlayAlpha;
     mctx.beginPath();
     mctx.arc(p.x, p.y, 12, 0, Math.PI * 2);
     mctx.fillStyle = routeFill;
@@ -1961,6 +2372,47 @@ function renderMap(){
     if (isSpatialWaypoint(highlightedWaypoint)) {
       drawWaypointSelectionOverlay(highlightedWaypoint, 'rgba(77,255,145,.96)', selectedWaypoint === highlightedWaypoint ? 24 : 17, selectedWaypoint === highlightedWaypoint ? 2.4 : 2.8);
     }
+  }
+
+  const measureTarget = getMeasureTargetPoint();
+  if (dashboardMeasureMode && dashboardMeasureStart && measureTarget) {
+    const startX = dashboardMeasureStart.cellX * SC + SC / 2;
+    const startY = dashboardMeasureStart.cellY * SC + SC / 2;
+    const endX = measureTarget.cellX * SC + SC / 2;
+    const endY = measureTarget.cellY * SC + SC / 2;
+    const components = getMeasureComponentsMeters();
+    const distanceM = components ? components.distance : null;
+    const midX = (startX + endX) / 2;
+    const midY = (startY + endY) / 2;
+
+    mctx.save();
+    mctx.strokeStyle = '#ffd54f';
+    mctx.lineWidth = 2;
+    mctx.setLineDash([8, 6]);
+    mctx.beginPath();
+    mctx.moveTo(startX, startY);
+    mctx.lineTo(endX, endY);
+    mctx.stroke();
+    mctx.setLineDash([]);
+    mctx.fillStyle = '#ffd54f';
+    mctx.beginPath(); mctx.arc(startX, startY, 5, 0, Math.PI * 2); mctx.fill();
+    mctx.beginPath(); mctx.arc(endX, endY, 5, 0, Math.PI * 2); mctx.fill();
+    mctx.font = 'bold 10px Segoe UI';
+    const measureLabel = formatMeasuredDistance(distanceM);
+    const detailLabel = components ? `ΔX ${components.dx.toFixed(2)} m  ΔY ${components.dy.toFixed(2)} m` : '';
+    const labelWidth = Math.max(mctx.measureText(measureLabel).width, mctx.measureText(detailLabel).width);
+    mctx.fillStyle = 'rgba(10,14,23,.92)';
+    mctx.fillRect(midX - labelWidth / 2 - 8, midY - 27, labelWidth + 16, 30);
+    mctx.fillStyle = '#fff3c8';
+    mctx.textAlign = 'center';
+    mctx.textBaseline = 'alphabetic';
+    mctx.fillText(measureLabel, midX, midY - 10);
+    if (detailLabel) {
+      mctx.font = '9px Segoe UI';
+      mctx.fillStyle = 'rgba(255,243,200,.82)';
+      mctx.fillText(detailLabel, midX, midY + 1);
+    }
+    mctx.restore();
   }
 
 // Draw a small triangle (like a dot) with a black base, facing up at yaw=0
@@ -2126,6 +2578,7 @@ function drawTriangle(ctx,cx,cy,yaw,sz,col,options={}){
   // yaw = screen heading angle (CCW from screen right), ctx.rotate is CW positive
   // so we negate yaw, and add π/2 to orient triangle graphic (black side at front)
   ctx.save(); ctx.translate(cx,cy); ctx.rotate(-yaw + Math.PI/2);
+  const inheritedAlpha = ctx.globalAlpha;
   const fillAlpha = typeof options.fillAlpha === 'number' ? options.fillAlpha : 0.18;
   const showDetectionCircle = options.showDetectionCircle !== false;
   
@@ -2155,9 +2608,9 @@ function drawTriangle(ctx,cx,cy,yaw,sz,col,options={}){
   ctx.closePath();
   
   ctx.fillStyle = col;
-  ctx.globalAlpha = fillAlpha;
+  ctx.globalAlpha = inheritedAlpha * fillAlpha;
   ctx.fill();
-  ctx.globalAlpha = 1;
+  ctx.globalAlpha = inheritedAlpha;
   ctx.strokeStyle = col;
   ctx.lineWidth = 2;
   ctx.stroke();
@@ -2168,11 +2621,12 @@ function drawTriangle(ctx,cx,cy,yaw,sz,col,options={}){
   const baseY = -triangleHeight * 0.52;      // position at front (top of triangle)
   
   ctx.fillStyle = '#000000';
+  ctx.globalAlpha = inheritedAlpha;
   ctx.fillRect(-baseWidth / 2, baseY - baseHeight / 2, baseWidth, baseHeight);
   
   // Draw a single 47cm wide light parallel line at the base of the triangle (robot size)
   ctx.save();
-  ctx.globalAlpha = 0.35;
+  ctx.globalAlpha = inheritedAlpha * 0.35;
   ctx.strokeStyle = '#ffffff';
   ctx.lineWidth = 2;
   // 47cm in pixels
@@ -2183,10 +2637,10 @@ function drawTriangle(ctx,cx,cy,yaw,sz,col,options={}){
   ctx.moveTo(-robotWidthPx/2, yBase);
   ctx.lineTo(robotWidthPx/2, yBase);
   ctx.stroke();
-  ctx.globalAlpha = 1.0;
   ctx.restore();
   // Draw center point
   ctx.fillStyle = col;
+  ctx.globalAlpha = inheritedAlpha;
   ctx.beginPath();
   ctx.arc(0, 0, 3, 0, Math.PI * 2);
   ctx.fill();
@@ -2235,6 +2689,7 @@ function drawSelectedOriginOverlay() {
 
 // origin click
 function toggleOrigin(){
+  if(!settingOrig && dashboardMeasureMode) clearDashboardMeasure(false);
   settingOrig=!settingOrig;
   const btn=document.getElementById('origBtn');
   btn.classList.toggle('on',settingOrig);
@@ -2245,6 +2700,26 @@ function toggleOrigin(){
   }
 }
 mapCanvas.addEventListener('click',e=>{
+  if (shouldSuppressMapCanvasClick()) return;
+  if (dashboardMeasureMode && !settingOrig && !wpMapClickActive) {
+    const r=mapCanvas.getBoundingClientRect();
+    const mx=Math.floor((e.clientX-r.left)/SC), my=Math.floor((e.clientY-r.top)/SC);
+    if(mx<0||mx>=mapW||my<0||my>=mapH) return;
+    const point = { cellX: mx, cellY: my };
+    if (!dashboardMeasureStart || dashboardMeasureEnd) {
+      dashboardMeasureStart = point;
+      dashboardMeasureEnd = null;
+      showToast('📏 Start set — move and click second point');
+    } else {
+      dashboardMeasureEnd = point;
+      const measuredDistance = formatMeasuredDistance(getMeasureDistanceMeters());
+      showToast(`📏 Locked ${measuredDistance} — click again to start a new measure`);
+    }
+    dashboardMeasureHover = point;
+    updateDashboardMeasureUI();
+    renderMap();
+    return;
+  }
   if(!settingOrig||!mapW) return;
   const r=mapCanvas.getBoundingClientRect();
   const mx=Math.floor((e.clientX-r.left)/SC), my=Math.floor((e.clientY-r.top)/SC);
@@ -3772,6 +4247,7 @@ function updateWaypointModeUI(){
 }
 
 function selectWaypointMode(){
+  if (dashboardMeasureMode) clearDashboardMeasure(false);
   wpModeSelection = 'waypoint';
   document.getElementById('wpmodeOverlay').classList.remove('open');
   document.getElementById('addWpOverlay').classList.remove('open');  // Don't block map!
@@ -3787,6 +4263,7 @@ function selectWaypointMode(){
 }
 
 function selectMoveMode(){
+  if (dashboardMeasureMode) clearDashboardMeasure(false);
   wpModeSelection = 'move';
   document.getElementById('wpmodeOverlay').classList.remove('open');
   document.getElementById('addWpOverlay').classList.add('open');
@@ -3829,15 +4306,25 @@ let wpDragging = false;  // is user dragging the waypoint?
 
 // Mouse move for waypoint preview
 mapCanvas.addEventListener('mousemove', e=>{
-  if(!wpMapClickActive && !settingOrig) return;
+  if (dashboardPanState.active) return;
+  if(!wpMapClickActive && !settingOrig && !dashboardMeasureMode) return;
   const r = mapCanvas.getBoundingClientRect();
   const px = Math.floor((e.clientX - r.left) / SC);
   const py = Math.floor((e.clientY - r.top) / SC);
   if(px < 0 || px >= mapW || py < 0 || py >= mapH) {
     wpHoverX = null;
     wpHoverY = null;
+    if (dashboardMeasureMode) {
+      dashboardMeasureHover = null;
+      updateDashboardMeasureUI();
+    }
     renderMap();
     return;
+  }
+
+  if(dashboardMeasureMode){
+    dashboardMeasureHover = { cellX: px, cellY: py };
+    updateDashboardMeasureUI();
   }
   
   // For waypoint mode: convert pixel to odom coordinates for preview
@@ -3865,17 +4352,20 @@ mapCanvas.addEventListener('mousemove', e=>{
 });
 
 mapCanvas.addEventListener('mouseleave', e=>{
-  if(!wpMapClickActive && !settingOrig) return;
+  if(!wpMapClickActive && !settingOrig && !dashboardMeasureMode) return;
   wpHoverX = null;
   wpHoverY = null;
   hoverPixelX = null;
   hoverPixelY = null;
+  dashboardMeasureHover = null;
+  updateDashboardMeasureUI();
   wpDragging = false;  // Stop dragging if mouse leaves canvas
   renderMap();
 });
 
 // Mouse down to start dragging in edit mode
 mapCanvas.addEventListener('mousedown', e=>{
+  if (beginDashboardPan(e)) return;
   if(!wpMapClickActive || !wpEditMode) return;
   if(wpSelectedX === null) return;
   
@@ -3898,6 +4388,10 @@ mapCanvas.addEventListener('mousedown', e=>{
 
 // Mouse up to stop dragging
 mapCanvas.addEventListener('mouseup', e=>{
+  if (dashboardPanState.active) {
+    stopDashboardPan();
+    return;
+  }
   if(wpDragging){
     wpDragging = false;
     mapCanvas.style.cursor = wpMapClickActive ? 'crosshair' : 'default';
@@ -3905,6 +4399,8 @@ mapCanvas.addEventListener('mouseup', e=>{
 });
 
 mapCanvas.addEventListener('click', e=>{
+  if (shouldSuppressMapCanvasClick()) return;
+  if (dashboardMeasureMode) return;
   if(!wpMapClickActive) return;
   const r = mapCanvas.getBoundingClientRect();
   const px = Math.floor((e.clientX - r.left) / SC);
@@ -3924,6 +4420,7 @@ mapCanvas.addEventListener('click', e=>{
 
 // Double-click on waypoint to edit it
 mapCanvas.addEventListener('dblclick', e=>{
+  if (shouldSuppressMapCanvasClick()) return;
   console.log('[DBLCLICK] Event fired, wpMapClickActive:', wpMapClickActive, 'settingOrig:', settingOrig, 'simEditMode:', simEditMode);
   // Allow edit in simEditMode (paused visualization) or normal mode
   if(settingOrig) return;  // Don't allow edit while setting origin
@@ -3986,6 +4483,8 @@ function findSpatialWaypointAtCanvasPoint(canvasX, canvasY, maxDistance = 40) {
 }
 
 mapCanvas.addEventListener('click', e=>{
+  if (shouldSuppressMapCanvasClick()) return;
+  if (dashboardMeasureMode) return;
   if (settingOrig || wpMapClickActive || !mapW || !mapH) return;
 
   const r = mapCanvas.getBoundingClientRect();
@@ -4003,6 +4502,13 @@ mapCanvas.addEventListener('click', e=>{
   expandSidebarSection('waypoints');
   setSelectedWaypoint(idx, { scrollWaypoint: true, scrollSequence: true });
   pulseWaypointHighlight(idx, true);
+});
+
+mapCanvas.addEventListener('contextmenu', e => {
+  if (!dashboardMeasureMode) return;
+  e.preventDefault();
+  clearDashboardMeasure(true);
+  showToast('📏 Measure cleared');
 });
 
 // Handle arrow keys for waypoint orientation
@@ -4689,6 +5195,132 @@ function showToast(msg, dur=2800){
   t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), dur);
 }
+
+if (mapWrap) {
+  mapWrap.addEventListener('wheel', e => {
+    if (!e.ctrlKey && !e.metaKey) return;
+    if (isEditorOpen() || !mapW || !mapH) return;
+    const rect = mapCanvas.getBoundingClientRect();
+    const anchorCell = {
+      x: Math.max(0, Math.min(mapW - 1, (e.clientX - rect.left) / Math.max(1, SC))),
+      y: Math.max(0, Math.min(mapH - 1, (e.clientY - rect.top) / Math.max(1, SC)))
+    };
+    e.preventDefault();
+    zoomDashboardMapBy(e.deltaY < 0 ? 1 : -1, { anchorCell });
+  }, { passive: false });
+}
+
+window.addEventListener('mousemove', event => {
+  if (!dashboardPanState.active || !mapWrap) return;
+  const deltaX = event.clientX - dashboardPanState.startX;
+  const deltaY = event.clientY - dashboardPanState.startY;
+  if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) dashboardPanState.moved = true;
+  mapWrap.scrollLeft = dashboardPanState.startLeft - deltaX;
+  mapWrap.scrollTop = dashboardPanState.startTop - deltaY;
+});
+
+window.addEventListener('mouseup', () => {
+  stopDashboardPan();
+});
+
+window.addEventListener('blur', () => {
+  dashboardPanModifierActive = false;
+  stopDashboardPan();
+});
+
+document.addEventListener('keydown', e => {
+  if (isEditorOpen()) return;
+  if (isTypingTarget(e.target)) return;
+
+  if (e.code === 'Space') {
+    dashboardPanModifierActive = true;
+    e.preventDefault();
+    return;
+  }
+
+  if ((e.key === 'm' || e.key === 'M') && !settingOrig && !wpMapClickActive) {
+    toggleDashboardMeasureMode();
+    e.preventDefault();
+    return;
+  }
+
+  if (e.key === 'Escape' && dashboardMeasureMode && !settingOrig && !wpMapClickActive) {
+    clearDashboardMeasure(false);
+    e.preventDefault();
+    return;
+  }
+
+  if ((e.key === '=' || e.key === '+') && !e.ctrlKey && !e.metaKey) {
+    zoomDashboardMapBy(1);
+    e.preventDefault();
+    return;
+  }
+
+  if ((e.key === '-' || e.key === '_') && !e.ctrlKey && !e.metaKey) {
+    zoomDashboardMapBy(-1);
+    e.preventDefault();
+    return;
+  }
+
+  if (e.key === '0' && !e.ctrlKey && !e.metaKey) {
+    zoomDashboardMapToFit();
+    e.preventDefault();
+    return;
+  }
+
+  if ((e.key === 'c' || e.key === 'C') && !e.shiftKey && !settingOrig && !wpMapClickActive) {
+    centerDashboardOnRobot('smooth');
+    e.preventDefault();
+    return;
+  }
+
+  if (e.altKey && e.key === 'ArrowLeft') {
+    panDashboardMapBy(-Math.max(120, (mapWrap ? mapWrap.clientWidth : 240) * 0.22), 0);
+    e.preventDefault();
+    return;
+  }
+
+  if (e.altKey && e.key === 'ArrowRight') {
+    panDashboardMapBy(Math.max(120, (mapWrap ? mapWrap.clientWidth : 240) * 0.22), 0);
+    e.preventDefault();
+    return;
+  }
+
+  if (e.altKey && e.key === 'ArrowUp') {
+    panDashboardMapBy(0, -Math.max(120, (mapWrap ? mapWrap.clientHeight : 240) * 0.22));
+    e.preventDefault();
+    return;
+  }
+
+  if (e.altKey && e.key === 'ArrowDown') {
+    panDashboardMapBy(0, Math.max(120, (mapWrap ? mapWrap.clientHeight : 240) * 0.22));
+    e.preventDefault();
+    return;
+  }
+
+  if (e.shiftKey && (e.key === 'Y' || e.key === 'y')) {
+    toggleUsedWaypointVisibility();
+    e.preventDefault();
+    return;
+  }
+
+  if (e.shiftKey && (e.key === 'U' || e.key === 'u')) {
+    toggleUnusedWaypointVisibility();
+    e.preventDefault();
+    return;
+  }
+
+  if (e.shiftKey && (e.key === 'L' || e.key === 'l')) {
+    toggleWaypointLabelVisibility();
+    e.preventDefault();
+  }
+});
+
+document.addEventListener('keyup', e => {
+  if (e.code === 'Space') {
+    dashboardPanModifierActive = false;
+  }
+});
 
 let confirmModalResolver = null;
 
@@ -6142,6 +6774,8 @@ function loadMapData(d){
   console.log('[LOAD] mapPixels set:', {length: mapPixels.length, first5: Array.from(mapPixels.slice(0, 5))});
   
   selectedMapName = d.name || selectedMapName;
+  dashboardScaleMode = 'fit';
+  dashboardManualScale = null;
   if(selectedMapName) document.getElementById('eSaveName').value = selectedMapName;
   refreshMapLibrary(lastKnownMaps);
   originPx  = null;   // reset origin — user must set it
