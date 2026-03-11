@@ -3548,8 +3548,7 @@ document.addEventListener('keydown', function(e) {
 
 function handleQKeyPress() {
   if (wpMapClickActive && wpModeSelection === 'waypoint' && !wpEditMode) {
-    closeAddWP();
-    showToast('Waypoint click mode off');
+    cancelWaypointInteraction();
     return;
   }
 
@@ -4758,6 +4757,25 @@ mapCanvas.addEventListener('contextmenu', e => {
   showToast('📏 Measure cleared');
 });
 
+function cancelWaypointInteraction() {
+  if (!wpMapClickActive) return false;
+
+  if (wpEditMode) {
+    cancelWPEdit();
+  } else {
+    closeAddWP();
+    showToast('Waypoint click mode off');
+  }
+
+  return true;
+}
+
+mapCanvas.addEventListener('contextmenu', e => {
+  if (!wpMapClickActive) return;
+  e.preventDefault();
+  cancelWaypointInteraction();
+});
+
 // Handle arrow keys for waypoint orientation
 document.addEventListener('keydown', e=>{
   // Waypoint orientation mode
@@ -4794,11 +4812,7 @@ document.addEventListener('keydown', e=>{
       }
     }
     else if(e.key === 'Escape') {
-      if(wpEditMode) {
-        cancelWPEdit();  // Cancel waypoint edit
-      } else {
-        closeAddWP();   // Cancel with Escape
-      }
+      cancelWaypointInteraction();
     }
     return;
   }
